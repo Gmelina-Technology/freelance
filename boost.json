@@ -1,0 +1,14 @@
+{
+    "agents": [
+        "copilot"
+    ],
+    "guidelines": true,
+    "packages": [
+        "filament/filament"
+    ],
+    "skills": [
+        "laravel-best-practices",
+        "pest-testing",
+        "tailwindcss-development"
+    ]
+}
