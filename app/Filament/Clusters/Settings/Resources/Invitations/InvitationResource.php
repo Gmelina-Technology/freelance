@@ -2,8 +2,6 @@
 
 namespace App\Filament\Clusters\Settings\Resources\Invitations;
 
-use App\Filament\Clusters\Settings\Resources\Invitations\Pages\CreateInvitation;
-use App\Filament\Clusters\Settings\Resources\Invitations\Pages\EditInvitation;
 use App\Filament\Clusters\Settings\Resources\Invitations\Pages\ListInvitations;
 use App\Filament\Clusters\Settings\Resources\Invitations\Schemas\InvitationForm;
 use App\Filament\Clusters\Settings\Resources\Invitations\Tables\InvitationsTable;

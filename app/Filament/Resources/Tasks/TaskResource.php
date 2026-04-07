@@ -11,20 +11,32 @@ use App\Filament\Resources\Tasks\Schemas\TaskInfolist;
 use App\Filament\Resources\Tasks\Tables\TasksTable;
 use App\Models\Task;
 use BackedEnum;
+use Filament\Facades\Filament;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
+use Illuminate\Support\Facades\Auth;
 
 class TaskResource extends Resource
 {
     protected static ?string $model = Task::class;
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
+    protected static string|BackedEnum|null $navigationIcon = Heroicon::RectangleGroup;
+
+    protected static ?string $navigationLabel = 'My Tasks';
+
+    protected static ?int $navigationSort = 2;
 
     protected static ?string $recordTitleAttribute = 'name';
 
-    protected static ?string $tenantOwnershipRelationshipName = 'account';
+    public static function getNavigationLabel(): string
+    {
+        return Auth::user()->isMember(Filament::getTenant())
+            ? 'My Tasks'
+            : 'Tasks';
+    }
+
 
     public static function form(Schema $schema): Schema
     {

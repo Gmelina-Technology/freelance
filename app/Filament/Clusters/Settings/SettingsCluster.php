@@ -12,6 +12,8 @@ class SettingsCluster extends Cluster
 {
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedSquares2x2;
 
+    protected static ?int $navigationSort = 4;
+
     public static function canAccess(): bool
     {
         return !Auth::user()->isMember(Filament::getTenant());
