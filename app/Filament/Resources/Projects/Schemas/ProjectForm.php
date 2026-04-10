@@ -3,10 +3,9 @@
 namespace App\Filament\Resources\Projects\Schemas;
 
 use Filament\Forms\Components\DateTimePicker;
-use Filament\Forms\Components\MultiSelect;
 use Filament\Forms\Components\Select;
-use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Textarea;
+use Filament\Forms\Components\TextInput;
 use Filament\Schemas\Schema;
 
 class ProjectForm
@@ -22,8 +21,9 @@ class ProjectForm
                     ->required(),
                 Textarea::make('description')
                     ->columnSpanFull(),
-                MultiSelect::make('assignees')
+                Select::make('assignees')
                     ->relationship('assignees', 'name')
+                    ->multiple()
                     ->preload(),
                 TextInput::make('status')
                     ->required()

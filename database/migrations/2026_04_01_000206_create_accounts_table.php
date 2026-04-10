@@ -15,6 +15,12 @@ return new class extends Migration
             $table->id();
             $table->foreignId('owner_id')->constrained('users')->cascadeOnDelete();
             $table->string('name');
+            $table->string('address')->nullable();
+            $table->string('email')->nullable();
+            $table->foreignId('default_bank_detail_id')
+                ->nullable()
+                ->constrained('bank_details')
+                ->nullOnDelete();
             $table->timestamps();
         });
     }

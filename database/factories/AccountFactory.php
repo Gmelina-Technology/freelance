@@ -21,6 +21,8 @@ class AccountFactory extends Factory
         return [
             'name' => fake()->company(),
             'owner_id' => User::factory(),
+            'address' => fake()->address(),
+            'email' => fake()->companyEmail(),
         ];
     }
 }

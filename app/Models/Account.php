@@ -2,13 +2,12 @@
 
 namespace App\Models;
 
+use App\Enums\AccountRole;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-
-use App\Enums\AccountRole;
 
 class Account extends Model
 {
@@ -17,6 +16,9 @@ class Account extends Model
     protected $fillable = [
         'name',
         'owner_id',
+        'address',
+        'email',
+        'default_bank_detail_id',
     ];
 
     public function owner(): BelongsTo
@@ -50,6 +52,16 @@ class Account extends Model
     public function tasks(): HasMany
     {
         return $this->hasMany(Task::class);
+    }
+
+    public function bankDetails(): HasMany
+    {
+        return $this->hasMany(BankDetail::class);
+    }
+
+    public function defaultBankDetail(): BelongsTo
+    {
+        return $this->belongsTo(BankDetail::class, 'default_bank_detail_id');
     }
 
     public function getUserRole(User $user): ?AccountRole

@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Projects\Pages;
 
+use App\Filament\Common\Forms\Components\StatusField;
 use App\Filament\Resources\Projects\ProjectResource;
 use App\Models\Task;
 use Filament\Actions\Action;
@@ -17,9 +18,7 @@ use Filament\Notifications\Notification;
 use Filament\Resources\Pages\Concerns\InteractsWithRecord;
 use Filament\Schemas\Components\Group;
 use Filament\Schemas\Schema;
-use Filament\Support\Enums\Width;
 use Filament\Support\Icons\Heroicon;
-use Filament\Tables\Enums\FiltersLayout;
 use Filament\Tables\Filters\Filter;
 use Filament\Tables\Filters\SelectFilter;
 use Illuminate\Support\Facades\Auth;
@@ -27,7 +26,6 @@ use Relaticle\Flowforge\Board;
 use Relaticle\Flowforge\BoardResourcePage;
 use Relaticle\Flowforge\Column;
 use Relaticle\Flowforge\Components\CardFlex;
-use Relaticle\Flowforge\Concerns\InteractsWithBoard;
 
 class ProjectTaskBoard extends BoardResourcePage
 {
@@ -40,6 +38,11 @@ class ProjectTaskBoard extends BoardResourcePage
     public function mount(int|string $record): void
     {
         $this->record = $this->resolveRecord($record);
+    }
+
+    public function getTitle(): string
+    {
+        return 'Tasks';
     }
 
     public function getHeaderActions(): array
@@ -60,7 +63,7 @@ class ProjectTaskBoard extends BoardResourcePage
 
                     return $data;
                 })
-                ->after(fn(Task $record) => Notification::make('notifyAssignee')
+                ->after(fn (Task $record) => Notification::make('notifyAssignee')
                     ->title('Task Created')
                     ->body("Task '{$record->title}' has been created and assigned to you.")
                     ->success()
@@ -69,10 +72,10 @@ class ProjectTaskBoard extends BoardResourcePage
                 ->hiddenLabel()
                 ->icon(Heroicon::Cog6Tooth)
                 ->outlined()
-                ->url(fn() => route('filament.app.resources.projects.edit', [
+                ->url(fn () => route('filament.app.resources.projects.edit', [
                     'tenant' => Filament::getTenant(),
-                    'record' => $this->record
-                ]))
+                    'record' => $this->record,
+                ])),
         ];
     }
 
@@ -91,8 +94,7 @@ class ProjectTaskBoard extends BoardResourcePage
                     'completed' => 'Completed',
                 ]),
                 Filter::make('overdue')->query(
-                    fn($q) =>
-                    $q->where('due_date', '<', now())
+                    fn ($q) => $q->where('due_date', '<', now())
                 ),
             ])
             ->columns([
@@ -101,7 +103,7 @@ class ProjectTaskBoard extends BoardResourcePage
                 Column::make('review')->label('Review')->color('amber'),
                 Column::make('completed')->label('Completed')->color('green'),
             ])
-            ->cardSchema(fn(Schema $schema) => $schema->components([
+            ->cardSchema(fn (Schema $schema) => $schema->components([
                 TextEntry::make('description')
                     ->hiddenLabel()
                     ->limit(100)
@@ -139,29 +141,21 @@ class ProjectTaskBoard extends BoardResourcePage
             ->send();
     }
 
-    public static function taskForm(): array
+    private function taskForm(): array
     {
         return [
             Group::make([
                 Group::make([
                     TextInput::make('title')->required(),
-                    RichEditor::make('description')
-
+                    RichEditor::make('description'),
                 ])->columnSpan(5),
                 Group::make([
-                    Select::make('status')
-                        ->options([
-                            'open' => 'Backlog',
-                            'in_progress' => 'In Progress',
-                            'review' => 'Review',
-                            'completed' => 'Completed',
-                        ])
-                        ->default('open'),
+                    StatusField::make('status'),
                     Select::make('assigned_user_id')
-                        ->relationship('assignee', 'name')
+                        ->options(fn () => $this->getRecord()->assignees->pluck('name', 'id'))
                         ->searchable()
                         ->preload(),
-                ])->columnSpan(2)
+                ])->columnSpan(2),
             ])->columns(7),
         ];
     }

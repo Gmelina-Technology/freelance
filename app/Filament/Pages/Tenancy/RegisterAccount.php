@@ -3,6 +3,9 @@
 namespace App\Filament\Pages\Tenancy;
 
 use App\Enums\AccountRole;
+use App\Filament\Common\Schemas\AccountProfileForm;
+use App\Models\Account;
+use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Pages\Tenancy\RegisterTenant;
 use Filament\Schemas\Schema;
@@ -19,13 +22,7 @@ class RegisterAccount extends RegisterTenant
 
     public function form(Schema $schema): Schema
     {
-        return $schema
-            ->components([
-                TextInput::make('name')
-                    ->label('Account Name')
-                    ->required()
-                    ->maxLength(255),
-            ]);
+        return $schema->components(AccountProfileForm::components());
     }
 
     protected function handleRegistration(array $data): Model
@@ -35,6 +32,8 @@ class RegisterAccount extends RegisterTenant
         $account = $this->getModel()::create([
             'name' => $data['name'],
             'owner_id' => $user->getKey(),
+            'address' => $data['address'] ?? null,
+            'email' => $data['email'] ?? null,
         ]);
 
         $account->users()->attach($user->getKey(), [

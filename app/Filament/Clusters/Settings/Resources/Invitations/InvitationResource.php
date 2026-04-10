@@ -17,7 +17,7 @@ class InvitationResource extends Resource
 {
     protected static ?string $model = Invitation::class;
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
+    protected static string|BackedEnum|null $navigationIcon = Heroicon::Envelope;
 
     protected static ?string $cluster = SettingsCluster::class;
 
@@ -43,7 +43,7 @@ class InvitationResource extends Resource
     public static function getPages(): array
     {
         return [
-            'index' => ListInvitations::route('/')
+            'index' => ListInvitations::route('/'),
         ];
     }
 }

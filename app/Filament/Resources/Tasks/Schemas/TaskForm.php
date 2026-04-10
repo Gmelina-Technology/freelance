@@ -2,10 +2,13 @@
 
 namespace App\Filament\Resources\Tasks\Schemas;
 
+use App\Filament\Common\Forms\Components\StatusField;
 use Filament\Forms\Components\DateTimePicker;
+use Filament\Forms\Components\RichEditor;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
-use Filament\Forms\Components\Textarea;
+use Filament\Schemas\Components\Group;
+use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Schema;
 
 class TaskForm
@@ -14,21 +17,28 @@ class TaskForm
     {
         return $schema
             ->components([
-                Select::make('client_id')
-                    ->relationship('client', 'name'),
-                Select::make('project_id')
-                    ->relationship('project', 'name'),
-                Select::make('assigned_user_id')
-                    ->relationship('assignee', 'name')
-                    ->label('Assignee'),
-                TextInput::make('title')
-                    ->required(),
-                Textarea::make('description')
-                    ->columnSpanFull(),
-                TextInput::make('status')
-                    ->required()
-                    ->default('open'),
-                DateTimePicker::make('due_date'),
-            ]);
+                Group::make([
+                    TextInput::make('title')
+                        ->required(),
+                    RichEditor::make('description')
+                        ->hiddenLabel(),
+                ])->columnSpan(6),
+                Group::make([
+                    Select::make('client_id')
+                        ->relationship('client', 'name')
+                        ->live(),
+                    Select::make('project_id')
+                        ->relationship('project', 'name', function ($query, Get $get) {
+                            $query->when($get('client_id'), function ($query, $clientId) {
+                                $query->where('client_id', $clientId);
+                            });
+                        }),
+                    Select::make('assigned_user_id')
+                        ->relationship('assignee', 'name')
+                        ->label('Assignee'),
+                    StatusField::make('status'),
+                    DateTimePicker::make('due_date'),
+                ])->columnSpan(3),
+            ])->columns(9);
     }
 }
