@@ -34,7 +34,7 @@ class AppPanelProvider extends PanelProvider
             ->login()
             ->registration()
             ->colors([
-                'primary' => Color::Amber,
+                'primary' => Color::Blue,
             ])
             ->tenant(Account::class, 'id', 'account')
             ->tenantRegistration(RegisterAccount::class)
@@ -46,10 +46,6 @@ class AppPanelProvider extends PanelProvider
                 Dashboard::class,
             ])
             ->discoverWidgets(in: app_path('Filament/Widgets'), for: 'App\Filament\Widgets')
-            ->widgets([
-                AccountWidget::class,
-                FilamentInfoWidget::class,
-            ])
             ->databaseNotifications()
             ->middleware([
                 EncryptCookies::class,
