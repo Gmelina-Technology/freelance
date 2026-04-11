@@ -24,8 +24,7 @@ class ProjectForm
                 Textarea::make('description')
                     ->columnSpanFull(),
                 Select::make('assignees')
-                    ->relationship('assignees', 'name', fn(Builder $query) =>
-                    $query->whereHas('accounts', fn($subQuery) => $subQuery->whereKey(Filament::getTenant()->id)))
+                    ->relationship('assignees', 'name', fn (Builder $query) => $query->whereHas('accounts', fn ($subQuery) => $subQuery->whereKey(Filament::getTenant()->id)))
                     ->multiple()
                     ->preload(),
                 TextInput::make('status')

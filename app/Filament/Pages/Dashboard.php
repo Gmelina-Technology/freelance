@@ -10,7 +10,7 @@ class Dashboard extends BaseDashboard
 {
     protected static string|BackedEnum|null $navigationIcon = Heroicon::UserPlus;
 
-    public function getColumns(): int | array
+    public function getColumns(): int|array
     {
         return 4;
     }

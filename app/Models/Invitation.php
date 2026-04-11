@@ -12,7 +12,7 @@ use Illuminate\Support\Str;
 
 class Invitation extends Model
 {
-    use HasFactory, HasAccount;
+    use HasAccount, HasFactory;
 
     protected $fillable = [
         'account_id',
@@ -41,12 +41,10 @@ class Invitation extends Model
         });
     }
 
-
     public function invitedBy(): BelongsTo
     {
         return $this->belongsTo(User::class, 'invited_by_id');
     }
-
 
     public function isPending(): bool
     {

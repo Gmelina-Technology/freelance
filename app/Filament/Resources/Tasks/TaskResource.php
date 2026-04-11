@@ -37,7 +37,6 @@ class TaskResource extends Resource
             : 'Tasks';
     }
 
-
     public static function form(Schema $schema): Schema
     {
         return TaskForm::configure($schema);

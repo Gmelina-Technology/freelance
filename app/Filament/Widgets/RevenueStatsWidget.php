@@ -34,7 +34,7 @@ class RevenueStatsWidget extends BaseWidget
         $estimatedRevenue = $completedThisMonth * 500; // Assuming $500 per project average
 
         return [
-            Stat::make('Monthly Revenue', '$' . number_format($estimatedRevenue))
+            Stat::make('Monthly Revenue', '$'.number_format($estimatedRevenue))
                 ->description('This month')
                 ->descriptionIcon('heroicon-m-banknotes')
                 ->color('success'),

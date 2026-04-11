@@ -11,7 +11,6 @@ use Filament\Actions\Concerns\InteractsWithActions;
 use Filament\Actions\Contracts\HasActions;
 use Filament\Facades\Filament;
 use Filament\Forms\Components\Select;
-use Filament\Forms\Components\TextInput;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Filament\Schemas\Components\Section;
@@ -20,14 +19,15 @@ use Filament\Schemas\Contracts\HasSchemas;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 
-class AccountProfilePage extends Page implements HasSchemas, HasActions
+class AccountProfilePage extends Page implements HasActions, HasSchemas
 {
-    use InteractsWithSchemas;
     use InteractsWithActions;
+    use InteractsWithSchemas;
 
     public ?array $data = [];
 
     protected static ?string $navigationLabel = 'Account Profile';
+
     protected static string|BackedEnum|null $navigationIcon = Heroicon::UserPlus;
 
     protected string $view = 'filament.clusters.settings.pages.account-profile-page';

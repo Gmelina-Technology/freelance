@@ -11,8 +11,9 @@ class ProjectStatsWidget extends BaseWidget
 {
     protected static ?int $sort = 1;
 
-    protected int | string | array $columnSpan = 1;
-    protected int | array | null $columns = 2;
+    protected int|string|array $columnSpan = 1;
+
+    protected int|array|null $columns = 2;
 
     protected function getStats(): array
     {

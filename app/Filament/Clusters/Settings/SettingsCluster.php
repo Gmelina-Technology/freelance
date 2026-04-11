@@ -16,6 +16,6 @@ class SettingsCluster extends Cluster
 
     public static function canAccess(): bool
     {
-        return !Auth::user()->isMember(Filament::getTenant());
+        return ! Auth::user()->isMember(Filament::getTenant());
     }
 }

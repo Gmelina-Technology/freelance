@@ -11,7 +11,7 @@ enum AccountRole: string implements HasLabel
     case Manager = 'manager';
     case Member = 'member';
 
-    public function getLabel(): string | Htmlable | null
+    public function getLabel(): string|Htmlable|null
     {
         return match ($this) {
             self::Owner => 'Owner',

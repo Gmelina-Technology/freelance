@@ -5,7 +5,6 @@ namespace App\Traits;
 use App\Models\Account;
 use Filament\Facades\Filament;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Support\Facades\Auth;
 
 trait HasAccount
 {

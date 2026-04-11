@@ -11,7 +11,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Project extends Model
 {
-    use HasFactory, HasAccount;
+    use HasAccount, HasFactory;
 
     protected $fillable = [
         'account_id',

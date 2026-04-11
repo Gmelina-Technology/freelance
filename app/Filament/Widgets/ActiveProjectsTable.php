@@ -22,7 +22,7 @@ class ActiveProjectsTable extends BaseTableWidget
 
         return $table
             ->query(
-                fn() => Project::where('account_id', $accountId)
+                fn () => Project::where('account_id', $accountId)
                     ->where('status', '!=', 'completed')
                     ->latest()
             )

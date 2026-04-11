@@ -6,12 +6,11 @@ use App\Traits\HasAccount;
 use Database\Factories\BankDetailFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class BankDetail extends Model
 {
     /** @use HasFactory<BankDetailFactory> */
-    use HasFactory, HasAccount;
+    use HasAccount, HasFactory;
 
     protected $fillable = [
         'account_id',

@@ -40,7 +40,7 @@ class MembersPage extends Page implements HasActions, HasSchemas, HasTable
     public function table(Table $table): Table
     {
         return $table
-            ->query(fn() => Filament::getTenant()->users())
+            ->query(fn () => Filament::getTenant()->users())
             ->columns([
                 TextColumn::make('name')->label('Name'),
                 TextColumn::make('email')->label('Email'),
@@ -50,8 +50,8 @@ class MembersPage extends Page implements HasActions, HasSchemas, HasTable
             ->recordActions([
                 Action::make('change_role')
                     ->label('Change Role')
-                    ->visible(fn(User $record) => $record->role !== AccountRole::Owner->value)
-                    ->fillForm(fn(User $record) => [
+                    ->visible(fn (User $record) => $record->role !== AccountRole::Owner->value)
+                    ->fillForm(fn (User $record) => [
                         'role' => $record->role,
                     ])
                     ->schema([

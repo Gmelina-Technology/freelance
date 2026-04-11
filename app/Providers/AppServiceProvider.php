@@ -16,10 +16,10 @@ class AppServiceProvider extends ServiceProvider
     public function register(): void
     {
         FilamentView::registerRenderHook(
-            TablesRenderHook::TOOLBAR_GROUPING_SELECTOR_AFTER ,
-            fn(): string => new HtmlString('<h2 class="fi-ta-header-heading text-lg font-semibold text-gray-900">My tasks</h2>'),
+            TablesRenderHook::TOOLBAR_GROUPING_SELECTOR_AFTER,
+            fn (): string => new HtmlString('<h2 class="fi-ta-header-heading text-lg font-semibold text-gray-900">My tasks</h2>'),
             scopes: [
-                MyTasksTable::class
+                MyTasksTable::class,
             ]
         );
     }

@@ -5,12 +5,10 @@ namespace App\Filament\Widgets;
 use App\Enums\TaskStatus;
 use App\Models\Task;
 use Filament\Facades\Filament;
-use Filament\Schemas\Components\Html;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Filament\Widgets\TableWidget as BaseTableWidget;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\HtmlString;
 
 class MyTasksTable extends BaseTableWidget
 {
@@ -29,7 +27,7 @@ class MyTasksTable extends BaseTableWidget
             ->header(null)
             ->heading(null)
             ->query(
-                fn() => Task::where('account_id', $accountId)
+                fn () => Task::where('account_id', $accountId)
                     ->where('assigned_user_id', $userId)
                     ->where('status', '!=', TaskStatus::COMPLETED)
                     ->latest('due_date')
@@ -52,7 +50,7 @@ class MyTasksTable extends BaseTableWidget
                         'warning' => TaskStatus::IN_PROGRESS,
                         'secondary' => TaskStatus::REVIEW,
                     ])
-                    ->formatStateUsing(fn(TaskStatus $state): string => $state->getLabel())
+                    ->formatStateUsing(fn (TaskStatus $state): string => $state->getLabel())
                     ->sortable(),
             ])
             ->defaultSort('due_date')

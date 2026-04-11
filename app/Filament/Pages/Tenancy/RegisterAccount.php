@@ -4,9 +4,6 @@ namespace App\Filament\Pages\Tenancy;
 
 use App\Enums\AccountRole;
 use App\Filament\Common\Schemas\AccountProfileForm;
-use App\Models\Account;
-use Filament\Forms\Components\Textarea;
-use Filament\Forms\Components\TextInput;
 use Filament\Pages\Tenancy\RegisterTenant;
 use Filament\Schemas\Schema;
 use Illuminate\Database\Eloquent\Model;
@@ -14,7 +11,6 @@ use Illuminate\Support\Facades\Auth;
 
 class RegisterAccount extends RegisterTenant
 {
-
     public static function getLabel(): string
     {
         return 'Create Account';
