@@ -33,6 +33,7 @@ class AppPanelProvider extends PanelProvider
             ->path('app')
             ->viteTheme('resources/css/filament/app/theme.css')
             ->login()
+            ->emailVerification()
             ->registration()
             ->colors([
                 'primary' => Color::Blue,
