@@ -1,6 +1,34 @@
-@import '../../../../vendor/filament/filament/resources/css/theme.css';
+@import "../../../../vendor/filament/filament/resources/css/theme.css";
 
 @source '../../../../app/Filament/**/*';
 @source '../../../../resources/views/filament/**/*';
 @source "../../../../vendor/relaticle/flowforge/resources/views/**/*.blade.php";
 
+.fi-in-table-repeatable {
+    @supports (container-type: inline-size) {
+        & > table {
+            & > tbody {
+                & > tr {
+                    & > td {
+                        @container (width >= 36rem) {
+                            padding-inline: calc(var(--spacing) * 5);
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+.fi-in-table-repeatable {
+    & > table {
+        & > thead {
+            & > tr {
+                & > th {
+                    padding-inline: calc(var(--spacing) * 5);
+                    padding-block: calc(var(--spacing) * 3);
+                }
+            }
+        }
+    }
+}

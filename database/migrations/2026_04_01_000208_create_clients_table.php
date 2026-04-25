@@ -14,10 +14,16 @@ return new class extends Migration
         Schema::create('clients', function (Blueprint $table) {
             $table->id();
             $table->foreignId('account_id')->constrained()->cascadeOnDelete();
+            $table->string('currency_code')->nullable();
             $table->string('name');
             $table->string('email')->nullable();
             $table->string('phone')->nullable();
             $table->timestamps();
+
+            $table->foreign('currency_code')
+                ->references('code')
+                ->on('currencies')
+                ->nullOnDelete();
         });
     }
 

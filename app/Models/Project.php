@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\ProjectStatus;
 use App\Traits\HasAccount;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -24,6 +25,7 @@ class Project extends Model
 
     protected $casts = [
         'due_date' => 'datetime',
+        'status' => ProjectStatus::class
     ];
 
     public function account(): BelongsTo

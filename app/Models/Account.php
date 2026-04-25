@@ -19,6 +19,8 @@ class Account extends Model
         'address',
         'email',
         'default_bank_detail_id',
+        'logo_path',
+        'currency_code',
     ];
 
     public function owner(): BelongsTo
@@ -86,5 +88,10 @@ class Account extends Model
     public function hasManager(User $user): bool
     {
         return $this->hasUserRole($user, AccountRole::Manager);
+    }
+
+    public function currency()
+    {
+        return $this->belongsTo(Currency::class, 'currency_code', 'code');
     }
 }

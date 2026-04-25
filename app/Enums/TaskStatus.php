@@ -2,10 +2,11 @@
 
 namespace App\Enums;
 
+use Filament\Support\Contracts\HasColor;
 use Filament\Support\Contracts\HasLabel;
 use Illuminate\Contracts\Support\Htmlable;
 
-enum TaskStatus: string implements HasLabel
+enum TaskStatus: string implements HasLabel, HasColor
 {
     case OPEN = 'open';
     case IN_PROGRESS = 'in_progress';
@@ -19,6 +20,16 @@ enum TaskStatus: string implements HasLabel
             self::IN_PROGRESS => 'In Progress',
             self::REVIEW => 'Review',
             self::COMPLETED => 'Completed',
+        };
+    }
+
+    public function getColor(): string
+    {
+        return match ($this) {
+            self::OPEN => 'gray',
+            self::IN_PROGRESS => 'primary',
+            self::REVIEW => 'warning',
+            self::COMPLETED => 'success',
         };
     }
 }

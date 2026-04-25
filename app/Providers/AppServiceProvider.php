@@ -2,7 +2,8 @@
 
 namespace App\Providers;
 
-use App\Filament\Widgets\MyTasksTable;
+use App\Filament\App\Widgets\MyTasksTable;
+use Carbon\Carbon;
 use Filament\Support\Facades\FilamentView;
 use Filament\Tables\View\TablesRenderHook;
 use Illuminate\Support\HtmlString;

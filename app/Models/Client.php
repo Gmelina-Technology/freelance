@@ -14,6 +14,7 @@ class Client extends Model
 
     protected $fillable = [
         'account_id',
+        'currency_code',
         'name',
         'email',
         'phone',
@@ -32,5 +33,15 @@ class Client extends Model
     public function tasks(): HasMany
     {
         return $this->hasMany(Task::class);
+    }
+
+    public function currency()
+    {
+        return $this->belongsTo(Currency::class, 'currency_code', 'code');
+    }
+
+    public function invoices(): HasMany
+    {
+        return $this->hasMany(Invoice::class);
     }
 }

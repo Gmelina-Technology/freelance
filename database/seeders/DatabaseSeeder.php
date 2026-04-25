@@ -22,7 +22,7 @@ class DatabaseSeeder extends Seeder
     {
         $owner = User::factory()->create([
             'name' => 'Test User',
-            'email' => 'test@example.com',
+            'email' => 'test@test.com',
         ]);
 
         $account = Account::factory()->for($owner, 'owner')->create([

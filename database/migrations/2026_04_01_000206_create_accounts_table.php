@@ -17,11 +17,18 @@ return new class extends Migration
             $table->string('name');
             $table->string('address')->nullable();
             $table->string('email')->nullable();
+            $table->string('logo')->nullable();
+            $table->string('currency_code')->nullable();
             $table->foreignId('default_bank_detail_id')
                 ->nullable()
                 ->constrained('bank_details')
                 ->nullOnDelete();
             $table->timestamps();
+
+            $table->foreign('currency_code')
+                ->references('code')
+                ->on('currencies')
+                ->nullOnDelete();
         });
     }
 
