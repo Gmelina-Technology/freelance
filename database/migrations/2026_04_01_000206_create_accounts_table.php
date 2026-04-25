@@ -19,10 +19,7 @@ return new class extends Migration
             $table->string('email')->nullable();
             $table->string('logo')->nullable();
             $table->string('currency_code')->nullable();
-            $table->foreignId('default_bank_detail_id')
-                ->nullable()
-                ->constrained('bank_details')
-                ->nullOnDelete();
+            $table->string('default_bank_detail_id')->nullable();
             $table->timestamps();
 
             $table->foreign('currency_code')
