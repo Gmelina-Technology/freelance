@@ -4,7 +4,6 @@ namespace App\Filament\App\Resources\Tasks\Pages;
 
 use App\Filament\App\Resources\Tasks\TaskResource;
 use Filament\Actions\DeleteAction;
-use Filament\Actions\ViewAction;
 use Filament\Resources\Pages\EditRecord;
 
 class EditTask extends EditRecord

@@ -6,16 +6,9 @@ use App\Filament\App\Clusters\Settings\Resources\EmailTemplates\Pages\ManageEmai
 use App\Filament\App\Clusters\Settings\SettingsCluster;
 use App\Models\EmailTemplate;
 use BackedEnum;
-use Filament\Actions\BulkActionGroup;
-use Filament\Actions\DeleteAction;
-use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
-use Filament\Actions\ViewAction;
 use Filament\Forms\Components\RichEditor;
-use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
-use Filament\Forms\Components\Textarea;
-use Filament\Infolists\Components\TextEntry;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
@@ -38,7 +31,7 @@ class EmailTemplateResource extends Resource
                     ->required(),
                 RichEditor::make('body')
                     ->required()
-                    ->mergeTags(fn($record) => config('email-templates.merge_tags')[$record->type] ?? [])
+                    ->mergeTags(fn ($record) => config('email-templates.merge_tags')[$record->type] ?? [])
                     ->activePanel('mergeTags'),
             ])->columns(1);
     }

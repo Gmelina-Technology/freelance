@@ -6,7 +6,7 @@ use Filament\Support\Contracts\HasColor;
 use Filament\Support\Contracts\HasLabel;
 use Illuminate\Contracts\Support\Htmlable;
 
-enum ProjectStatus: string implements HasLabel, HasColor
+enum ProjectStatus: string implements HasColor, HasLabel
 {
     case BACKLOG = 'backlog';
     case IN_PROGRESS = 'in_progress';

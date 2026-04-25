@@ -25,7 +25,7 @@ class Project extends Model
 
     protected $casts = [
         'due_date' => 'datetime',
-        'status' => ProjectStatus::class
+        'status' => ProjectStatus::class,
     ];
 
     public function account(): BelongsTo

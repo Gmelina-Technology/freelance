@@ -3,20 +3,22 @@
 namespace App\Models;
 
 use App\Traits\HasAccount;
+use Database\Factories\EmailTemplateFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class EmailTemplate extends Model
 {
-    /** @use HasFactory<\Database\Factories\EmailTemplateFactory> */
-    use HasFactory;
     use HasAccount;
+
+    /** @use HasFactory<EmailTemplateFactory> */
+    use HasFactory;
 
     protected $fillable = [
         'account_id',
         'type',
         'subject',
         'body',
-        'metadata'
+        'metadata',
     ];
 }

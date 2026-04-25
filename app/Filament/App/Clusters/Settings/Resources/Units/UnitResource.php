@@ -6,17 +6,13 @@ use App\Filament\App\Clusters\Settings\Resources\Units\Pages\ManageUnits;
 use App\Filament\App\Clusters\Settings\SettingsCluster;
 use App\Models\Unit;
 use BackedEnum;
-use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteAction;
-use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
-use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
-use Filament\Tables\Columns\TextInputColumn;
 use Filament\Tables\Table;
 
 class UnitResource extends Resource
@@ -44,7 +40,7 @@ class UnitResource extends Resource
             ->recordTitleAttribute('name')
             ->columns([
                 TextColumn::make('name')
-                    ->searchable()
+                    ->searchable(),
             ])
             ->recordActions([
                 EditAction::make(),

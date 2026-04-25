@@ -21,7 +21,7 @@ class SentInvoiceAction
             ->icon(Heroicon::Envelope)
             ->iconPosition(IconPosition::After)
             ->requiresConfirmation()
-            ->visible(fn($record) => self::isVisible($record))
+            ->visible(fn ($record) => self::isVisible($record))
             ->action(function (Invoice $record) {
                 DB::transaction(function () use ($record) {
                     self::sentInvoiceEmailToClient($record);

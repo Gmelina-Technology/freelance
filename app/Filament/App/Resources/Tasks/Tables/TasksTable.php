@@ -3,16 +3,10 @@
 namespace App\Filament\App\Resources\Tasks\Tables;
 
 use App\Enums\TaskStatus;
-use App\Filament\App\Resources\Tasks\Pages\EditTask;
 use Carbon\Carbon;
-use Carbon\CarbonInterface;
-use Filament\Actions\Action;
 use Filament\Actions\BulkAction;
-use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteAction;
-use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
-use Filament\Actions\ViewAction;
 use Filament\Facades\Filament;
 use Filament\Forms\Components\Select;
 use Filament\Notifications\Notification;
@@ -54,10 +48,10 @@ class TasksTable
                     ->sortable()
                     ->searchable(),
                 TextColumn::make('due_date')
-                    ->formatStateUsing(fn($state) => str($state?->diffForHumans([
+                    ->formatStateUsing(fn ($state) => str($state?->diffForHumans([
                         'options' => Carbon::JUST_NOW | Carbon::ONE_DAY_WORDS | Carbon::TWO_DAY_WORDS,
                         'syntax' => Carbon::DIFF_RELATIVE_TO_NOW,
-                        'parts' => 1
+                        'parts' => 1,
                     ]))->title())
                     ->dateTimeTooltip('M d, Y h:m a')
                     ->sortable(),
@@ -85,7 +79,7 @@ class TasksTable
                         });
                     })
                     ->preload()
-                    ->visible(fn() => ! Auth::user()->isMember(Filament::getTenant())),
+                    ->visible(fn () => ! Auth::user()->isMember(Filament::getTenant())),
             ])
             ->filtersFormColumns(3)
             ->columnManagerColumns(3)
@@ -103,7 +97,7 @@ class TasksTable
                     ->iconButton(),
                 DeleteAction::make()
                     ->iconButton()
-                    ->iconSize(IconSize::Small)
+                    ->iconSize(IconSize::Small),
             ])
             ->toolbarActions([
                 BulkAction::make('updateStatus')
@@ -111,19 +105,19 @@ class TasksTable
                     ->schema([
                         Select::make('status')
                             ->required()
-                            ->options(TaskStatus::class)
+                            ->options(TaskStatus::class),
                     ])->action(function (Collection $records, array $data) {
                         $status = $data['status'];
                         $records->each->update([
-                            'status' => $data['status']
+                            'status' => $data['status'],
                         ]);
 
                         Notification::make('updateStatus')
                             ->success()
                             ->title('Bulk Update Status')
-                            ->body('Select records updated status successfully to - ' . $status->getLabel())
+                            ->body('Select records updated status successfully to - '.$status->getLabel())
                             ->send();
-                    })
+                    }),
             ]);
     }
 }

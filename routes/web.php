@@ -24,8 +24,8 @@ Route::prefix('temp/invoices')->group(function () {
         ->name('temp.invoice.render');
 });
 
-Route::get('/migrate', function() {
-    Schema::table('tasks', function(Blueprint $table) {
+Route::get('/migrate', function () {
+    Schema::table('tasks', function (Blueprint $table) {
         $table->string('priority')->default(TaskPriority::Low);
     });
 });

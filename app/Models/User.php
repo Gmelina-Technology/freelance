@@ -20,10 +20,11 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Collection;
 
-class User extends Authenticatable implements FilamentUser, HasEmailAuthentication, HasDefaultTenant, HasTenants, MustVerifyEmail
+class User extends Authenticatable implements FilamentUser, HasDefaultTenant, HasEmailAuthentication, HasTenants, MustVerifyEmail
 {
     /** @use HasFactory<UserFactory> */
     use HasFactory, Notifiable;
+
     use InteractsWithEmailAuthentication;
 
     /**

@@ -4,8 +4,6 @@ namespace App\Filament\App\Resources\Tasks\Schemas;
 
 use App\Enums\TaskPriority;
 use App\Filament\App\Common\Forms\Components\StatusField;
-use App\Models\Task;
-use App\Models\User;
 use Filament\Actions\Action;
 use Filament\Facades\Filament;
 use Filament\Forms\Components\DateTimePicker;
@@ -17,7 +15,6 @@ use Filament\Schemas\Components\Group;
 use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Components\Utilities\Set;
 use Filament\Schemas\Schema;
-use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Auth;
 
 class TaskForm
@@ -48,9 +45,9 @@ class TaskForm
                         ->belowContent([
                             Action::make('assignToMe')
                                 ->label('Assign to me')
-                                ->action(function(Set $set) {
+                                ->action(function (Set $set) {
                                     $set('assigned_user_id', Auth::id());
-                                })
+                                }),
                         ])
                         ->label('Assignee'),
                     Select::make('priority')
@@ -60,7 +57,7 @@ class TaskForm
                         ->live(),
                     Select::make('project_id')
                         ->live()
-                        ->hidden(fn(Get $get) => empty($get('client_id')))
+                        ->hidden(fn (Get $get) => empty($get('client_id')))
                         ->relationship('project', 'name', function ($query, Get $get) {
                             $query->when($get('client_id'), function ($query, $clientId) {
                                 $query->where('client_id', $clientId);

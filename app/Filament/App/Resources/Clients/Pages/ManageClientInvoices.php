@@ -6,7 +6,6 @@ use App\Enums\InvoiceStatus;
 use App\Filament\App\Common\Tables\Columns\ClientInvoiceAmountColumn;
 use App\Filament\App\Resources\Clients\ClientResource;
 use App\Filament\App\Resources\Invoices\InvoiceResource;
-use Filament\Actions\CreateAction;
 use Filament\Actions\ViewAction;
 use Filament\Resources\Pages\ManageRelatedRecords;
 use Filament\Tables\Columns\TextColumn;
@@ -34,26 +33,26 @@ class ManageClientInvoices extends ManageRelatedRecords
                     ->badge(),
                 ClientInvoiceAmountColumn::make(),
                 TextColumn::make('due_date')
-                    ->dateTime()
+                    ->dateTime(),
             ])
             ->groups([
                 Group::make('project.name')
                     ->label('Project')
-                    ->collapsible()
+                    ->collapsible(),
             ])
             ->filters([
                 SelectFilter::make('status')
-                    ->options(InvoiceStatus::class)
+                    ->options(InvoiceStatus::class),
             ])
             ->recordActions([
                 ViewAction::make()
                     ->modal()
-                    ->modalHeading(fn($record) => 'Invoice: #' . $record->number)
+                    ->modalHeading(fn ($record) => 'Invoice: #'.$record->number)
                     ->slideOver()
                     ->modalCancelAction()
                     ->modalFooterActions([
-                        ViewAction::make()
-                    ])
+                        ViewAction::make(),
+                    ]),
             ]);
     }
 }

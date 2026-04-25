@@ -41,7 +41,7 @@ class RegisterAccount extends RegisterTenant
                 'account_id' => $account->id,
                 'type' => EmailTemplateType::INVOICE,
                 'subject' => 'Task Service Invoice',
-                'body' => config('email-templates.defaults.invoice.body')
+                'body' => config('email-templates.defaults.invoice.body'),
             ]);
 
             $account->users()->attach($user->getKey(), [

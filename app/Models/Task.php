@@ -29,7 +29,7 @@ class Task extends Model
     protected $casts = [
         'due_date' => 'datetime',
         'status' => TaskStatus::class,
-        'priority' => TaskPriority::class
+        'priority' => TaskPriority::class,
     ];
 
     public function account(): BelongsTo

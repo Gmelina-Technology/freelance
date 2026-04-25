@@ -5,7 +5,6 @@ namespace App\Filament\App\Resources\Tasks;
 use App\Filament\App\Resources\Tasks\Pages\CreateTask;
 use App\Filament\App\Resources\Tasks\Pages\EditTask;
 use App\Filament\App\Resources\Tasks\Pages\ListTasks;
-use App\Filament\App\Resources\Tasks\Pages\ViewTask;
 use App\Filament\App\Resources\Tasks\Schemas\TaskForm;
 use App\Filament\App\Resources\Tasks\Schemas\TaskInfolist;
 use App\Filament\App\Resources\Tasks\Tables\TasksTable;

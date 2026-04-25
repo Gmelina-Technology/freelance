@@ -25,9 +25,9 @@ class ListTasks extends ListRecords
         return [
             'all' => Tab::make(),
             'urgent' => Tab::make()
-                ->modifyQueryUsing(fn(Builder $query) => $query->where('priority', TaskPriority::High)),
+                ->modifyQueryUsing(fn (Builder $query) => $query->where('priority', TaskPriority::High)),
             'due_today' => Tab::make('Due Today')
-                ->modifyQueryUsing(fn(Builder $query) => $query->whereDate('due_date', now())),
+                ->modifyQueryUsing(fn (Builder $query) => $query->whereDate('due_date', now())),
         ];
     }
 }

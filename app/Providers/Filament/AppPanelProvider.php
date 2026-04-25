@@ -7,7 +7,6 @@ use App\Filament\App\Pages\Tenancy\RegisterAccount;
 use App\Models\Account;
 use Filament\Actions\CreateAction;
 use Filament\Auth\MultiFactor\Email\EmailAuthentication;
-use Filament\Enums\GlobalSearchPosition;
 use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
 use Filament\Http\Middleware\DisableBladeIconComponents;
@@ -61,7 +60,7 @@ class AppPanelProvider extends PanelProvider
                 DispatchServingFilamentEvent::class,
             ])
             ->multiFactorAuthentication([
-                EmailAuthentication::make()
+                EmailAuthentication::make(),
             ], isRequired: true)
             ->authMiddleware([
                 Authenticate::class,
@@ -73,7 +72,7 @@ class AppPanelProvider extends PanelProvider
      */
     public function boot(): void
     {
-        CreateAction::configureUsing(function(CreateAction $action) {
+        CreateAction::configureUsing(function (CreateAction $action) {
             $action->icon(Heroicon::Plus);
         });
     }

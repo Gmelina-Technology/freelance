@@ -6,7 +6,7 @@ use Filament\Support\Contracts\HasColor;
 use Filament\Support\Contracts\HasLabel;
 use Illuminate\Contracts\Support\Htmlable;
 
-enum TaskPriority: string implements HasLabel, HasColor
+enum TaskPriority: string implements HasColor, HasLabel
 {
     case High = 'High';
     case Medium = 'Medium';
@@ -19,7 +19,7 @@ enum TaskPriority: string implements HasLabel, HasColor
 
     public function getColor(): string|array|null
     {
-        return match($this) {
+        return match ($this) {
             $this::High => 'danger',
             $this::Medium => 'warning',
             $this::Low => 'gray'

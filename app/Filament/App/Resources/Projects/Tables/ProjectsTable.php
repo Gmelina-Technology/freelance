@@ -2,10 +2,6 @@
 
 namespace App\Filament\App\Resources\Projects\Tables;
 
-use Filament\Actions\BulkActionGroup;
-use Filament\Actions\DeleteBulkAction;
-use Filament\Actions\EditAction;
-use Filament\Actions\ViewAction;
 use Filament\Facades\Filament;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Grouping\Group;
@@ -18,7 +14,7 @@ class ProjectsTable
     public static function configure(Table $table): Table
     {
         return $table
-            ->modifyQueryUsing(fn(Builder $query) => $query->when(
+            ->modifyQueryUsing(fn (Builder $query) => $query->when(
                 Auth::user()->isMember(Filament::getTenant()),
                 function (Builder $query) {
                     $query->whereHas('tasks', function (Builder $subQuery) {
@@ -46,7 +42,7 @@ class ProjectsTable
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
             ])->groups([
-                Group::make('client.name')
+                Group::make('client.name'),
             ]);
     }
 }

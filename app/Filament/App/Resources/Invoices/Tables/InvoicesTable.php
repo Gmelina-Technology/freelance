@@ -6,11 +6,6 @@ use App\Filament\App\Common\Tables\Columns\ClientInvoiceAmountColumn;
 use App\Filament\App\Resources\Invoices\Actions\SentInvoiceAction;
 use App\Filament\App\Resources\Invoices\Actions\VoidInvoiceAction;
 use Filament\Actions\ActionGroup;
-use Filament\Actions\BulkActionGroup;
-use Filament\Actions\DeleteBulkAction;
-use Filament\Actions\EditAction;
-use Filament\Support\Enums\IconSize;
-use Filament\Support\Enums\Size;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 
@@ -46,7 +41,7 @@ class InvoicesTable
             ->recordActions([
                 ActionGroup::make([
                     SentInvoiceAction::handle(),
-                    VoidInvoiceAction::handle()
+                    VoidInvoiceAction::handle(),
 
                 ])
                     ->label('Actions'),

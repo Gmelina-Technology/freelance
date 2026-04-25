@@ -34,7 +34,7 @@ class InvoiceInfolist
                         ])
                         ->schema([
                             TextEntry::make('task.title')
-                                ->aboveContent(fn($record) => $record->task->category?->name),
+                                ->aboveContent(fn ($record) => $record->task->category?->name),
                             TextEntry::make('unit.name'),
                             TextEntry::make('quantity'),
                             TextEntry::make('unit_price'),
@@ -44,8 +44,8 @@ class InvoiceInfolist
                         ->schema([
                             TextEntry::make('amount')
                                 ->label('Total Amount')
-                                ->inlineLabel()
-                        ])
+                                ->inlineLabel(),
+                        ]),
                 ])->columnSpan(5),
                 Section::make('Other Details')
                     ->schema([
@@ -61,7 +61,7 @@ class InvoiceInfolist
             ])->columns([
                 'sm' => 1,
                 'md' => 7,
-                'lg' => 7
+                'lg' => 7,
             ]);
     }
 }

@@ -49,7 +49,7 @@ class ClientResource extends Resource
     {
         return $page->generateNavigationItems([
             EditClient::class,
-            ManageClientInvoices::class
+            ManageClientInvoices::class,
         ]);
     }
 

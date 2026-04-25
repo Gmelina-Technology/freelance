@@ -9,7 +9,6 @@ use Filament\Facades\Filament;
 use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\Hidden;
 use Filament\Forms\Components\Repeater;
-use Filament\Forms\Components\RichEditor;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
@@ -44,7 +43,7 @@ class CreateInvoice extends CreateRecord
     {
         return [
             $this->detailsStep(),
-            $this->invoiceItemsStep()
+            $this->invoiceItemsStep(),
         ];
     }
 
@@ -138,10 +137,10 @@ class CreateInvoice extends CreateRecord
                 ])
                 ->afterStateUpdated(function (array $state, Set $set) {
                     $items = $state ?? [];
-                    $totalAmount = collect($items)->sum(fn($item) => ($item['unit_price'] ?? 0) * ($item['quantity'] ?? 0));
+                    $totalAmount = collect($items)->sum(fn ($item) => ($item['unit_price'] ?? 0) * ($item['quantity'] ?? 0));
                     $set('amount', $totalAmount);
 
-                    Log::info('Updated invoice items. Total amount: ' . $totalAmount);
+                    Log::info('Updated invoice items. Total amount: '.$totalAmount);
                     Log::info('Updated invoice items. Total amount: ', $items);
                 })
                 ->columns(5)

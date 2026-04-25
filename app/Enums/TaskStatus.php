@@ -6,7 +6,7 @@ use Filament\Support\Contracts\HasColor;
 use Filament\Support\Contracts\HasLabel;
 use Illuminate\Contracts\Support\Htmlable;
 
-enum TaskStatus: string implements HasLabel, HasColor
+enum TaskStatus: string implements HasColor, HasLabel
 {
     case OPEN = 'open';
     case IN_PROGRESS = 'in_progress';

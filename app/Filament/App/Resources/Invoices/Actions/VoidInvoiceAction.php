@@ -20,7 +20,7 @@ class VoidInvoiceAction
             ->color(Color::Red)
             ->iconPosition(IconPosition::After)
             ->requiresConfirmation()
-            ->visible(fn($record) => self::isVisible($record))
+            ->visible(fn ($record) => self::isVisible($record))
             ->action(function (Invoice $record) {
                 $record->update([
                     'status' => InvoiceStatus::Void,

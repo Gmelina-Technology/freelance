@@ -85,7 +85,7 @@ class InvoiceMailSent extends Mailable implements ShouldQueue
 
         $logoPath = null;
         if ($this->invoice->account->logo_path) {
-            $fullPath = storage_path('app/public/' . $this->invoice->account->logo_path);
+            $fullPath = storage_path('app/public/'.$this->invoice->account->logo_path);
             if (file_exists($fullPath)) {
                 $logoPath = $fullPath;
             }
@@ -128,7 +128,7 @@ class InvoiceMailSent extends Mailable implements ShouldQueue
         $invoicePdf->save('local');
 
         // Return the full path to the saved PDF file
-        return $filename . '.pdf';
+        return $filename.'.pdf';
     }
 
     private function renderEmailContent(): string
@@ -159,6 +159,6 @@ class InvoiceMailSent extends Mailable implements ShouldQueue
             return '$0.00';
         }
 
-        return '$' . number_format((float) $amount, 2);
+        return '$'.number_format((float) $amount, 2);
     }
 }
