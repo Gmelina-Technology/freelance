@@ -2,6 +2,7 @@
 
 namespace App\Mail;
 
+use App\Enums\InvoiceStatus;
 use App\Models\EmailTemplate;
 use App\Models\Invoice;
 use Filament\Forms\Components\RichEditor\RichContentRenderer;
@@ -15,6 +16,7 @@ use Illuminate\Support\Facades\Log;
 use LaravelDaily\Invoices\Classes\InvoiceItem;
 use LaravelDaily\Invoices\Classes\Party;
 use LaravelDaily\Invoices\Invoice as InvoicePdf;
+use Throwable;
 
 class InvoiceMailSent extends Mailable implements ShouldQueue
 {
@@ -61,6 +63,18 @@ class InvoiceMailSent extends Mailable implements ShouldQueue
 
             return [];
         }
+    }
+
+    /**
+     * Handle a queued email's failure.
+     */
+    public function failed(Throwable $exception): void
+    {
+        $this->invoice->update([
+            'status' => InvoiceStatus::Draft,
+        ]);
+
+        Log::info('Failed to send email for invoice: '.$this->invoice->number);
     }
 
     private function generateAndSaveInvoicePdf(): string
