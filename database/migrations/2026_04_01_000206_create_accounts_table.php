@@ -20,6 +20,7 @@ return new class extends Migration
             $table->string('logo')->nullable();
             $table->string('currency_code')->nullable();
             $table->string('default_bank_detail_id')->nullable();
+            $table->string('logo_path')->nullable();
             $table->timestamps();
 
             $table->foreign('currency_code')
