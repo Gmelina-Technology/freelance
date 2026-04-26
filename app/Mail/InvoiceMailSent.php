@@ -97,9 +97,9 @@ class InvoiceMailSent extends Mailable implements ShouldQueue
             ],
         ]);
 
-        $logoPath = null;
-        if ($this->invoice->account->logo_path) {
-            $fullPath = storage_path('app/public/'.$this->invoice->account->logo_path);
+        $logoPath = '';
+        if ($this->invoice->account->logo) {
+            $fullPath = storage_path('app/public/'.$this->invoice->account->logo);
             if (file_exists($fullPath)) {
                 $logoPath = $fullPath;
             }

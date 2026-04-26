@@ -19,7 +19,7 @@ class Account extends Model
         'address',
         'email',
         'default_bank_detail_id',
-        'logo_path',
+        'logo',
         'currency_code',
     ];
 
