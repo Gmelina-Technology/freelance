@@ -4,5 +4,5 @@ namespace App\Enums;
 
 enum EmailTemplateType
 {
-    case INVOICE;
+    case INVOICE_REQUEST;
 }

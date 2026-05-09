@@ -6,6 +6,7 @@ use App\Enums\TaskStatus;
 use App\Models\Task;
 use Filament\Facades\Filament;
 use Filament\Widgets\ChartWidget;
+use Illuminate\Support\Facades\Auth;
 
 class TasksByTeamChart extends ChartWidget
 {
@@ -14,6 +15,11 @@ class TasksByTeamChart extends ChartWidget
     protected ?string $heading = 'Team Workload';
 
     protected static ?int $contentHeight = 300;
+
+    public static function canView(): bool
+    {
+        return Auth::user()->isOwner(Filament::getTenant());;
+    }
 
     protected function getData(): array
     {

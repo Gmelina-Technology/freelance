@@ -15,7 +15,7 @@ class RevenueStatsWidget extends BaseWidget
 
     public static function canView(): bool
     {
-        return Auth::user()->isOwner(Filament::getTenant());
+        return false;
     }
 
     protected function getStats(): array

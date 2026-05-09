@@ -70,7 +70,7 @@ class User extends Authenticatable implements FilamentUser, HasDefaultTenant, Ha
     {
         return $this->belongsToMany(Account::class)
             ->using(AccountUser::class)
-            ->withPivot(['role'])
+            ->withPivot('role')
             ->withTimestamps();
     }
 
@@ -86,7 +86,7 @@ class User extends Authenticatable implements FilamentUser, HasDefaultTenant, Ha
 
     public function getAccountRole(Account $account): ?AccountRole
     {
-        $pivot = $this->accounts()->where('account_id', $account->getKey())->first()?->pivot;
+        $pivot = $this->accounts->where('id', $account->getKey())->first()?->pivot;
 
         return $pivot?->role;
     }
@@ -130,6 +130,10 @@ class User extends Authenticatable implements FilamentUser, HasDefaultTenant, Ha
 
     public function canAccessPanel(Panel $panel): bool
     {
-        return true;
+        if ($panel->getId() === 'app') {
+            return true;
+        }
+
+        return in_array($this->email, explode(',', config('app.admin_emails')));
     }
 }

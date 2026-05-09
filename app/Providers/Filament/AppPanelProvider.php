@@ -2,11 +2,11 @@
 
 namespace App\Providers\Filament;
 
-use App\Filament\App\Pages\Tenancy\EditAccountPage;
 use App\Filament\App\Pages\Tenancy\RegisterAccount;
 use App\Models\Account;
 use Filament\Actions\CreateAction;
 use Filament\Auth\MultiFactor\Email\EmailAuthentication;
+use Filament\Forms\Components\Select;
 use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
 use Filament\Http\Middleware\DisableBladeIconComponents;
@@ -40,7 +40,6 @@ class AppPanelProvider extends PanelProvider
             ])
             ->tenant(Account::class, 'id', 'account')
             ->tenantRegistration(RegisterAccount::class)
-            ->tenantProfile(EditAccountPage::class)
             ->discoverClusters(in: app_path('Filament/App/Clusters'), for: 'App\Filament\App\Clusters')
             ->discoverResources(in: app_path('Filament/App/Resources'), for: 'App\Filament\App\Resources')
             ->discoverPages(in: app_path('Filament/App/Pages'), for: 'App\Filament\App\Pages')
@@ -49,6 +48,7 @@ class AppPanelProvider extends PanelProvider
             ])
             ->discoverWidgets(in: app_path('Filament/App/Widgets'), for: 'App\Filament\App\Widgets')
             ->databaseNotifications()
+            ->databaseNotificationsPolling('30s')
             ->middleware([
                 EncryptCookies::class,
                 AddQueuedCookiesToResponse::class,
@@ -75,6 +75,10 @@ class AppPanelProvider extends PanelProvider
     {
         CreateAction::configureUsing(function (CreateAction $action) {
             $action->icon(Heroicon::Plus);
+        });
+
+        Select::configureUsing(function(Select $component) {
+            $component->native(false);
         });
     }
 }

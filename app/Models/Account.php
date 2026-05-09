@@ -32,7 +32,7 @@ class Account extends Model
     {
         return $this->belongsToMany(User::class)
             ->using(AccountUser::class)
-            ->withPivot(['role'])
+            ->withPivot('role')
             ->withTimestamps();
     }
 

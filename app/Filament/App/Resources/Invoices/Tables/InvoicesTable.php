@@ -3,6 +3,7 @@
 namespace App\Filament\App\Resources\Invoices\Tables;
 
 use App\Filament\App\Common\Tables\Columns\ClientInvoiceAmountColumn;
+use App\Filament\App\Resources\Invoices\Actions\MarkAsPaidAction;
 use App\Filament\App\Resources\Invoices\Actions\SentInvoiceAction;
 use App\Filament\App\Resources\Invoices\Actions\VoidInvoiceAction;
 use Filament\Actions\ActionGroup;
@@ -40,9 +41,9 @@ class InvoicesTable
             ])
             ->recordActions([
                 ActionGroup::make([
+                    MarkAsPaidAction::handle(),
                     SentInvoiceAction::handle(),
                     VoidInvoiceAction::handle(),
-
                 ])
                     ->label('Actions'),
 

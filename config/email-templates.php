@@ -8,7 +8,7 @@ return [
         ],
     ],
     'merge_tags' => [
-        'INVOICE' => [
+        'INVOICE_REQUEST' => [
             'client_name' => 'Client Name',
             'invoice_number' => 'Invoice Number',
             'invoice_amount' => 'Invoice Amount',

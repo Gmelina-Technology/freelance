@@ -2,6 +2,7 @@
 
 namespace App\Filament\App\Clusters\Settings\Resources\EmailTemplates;
 
+use App\Enums\EmailTemplateType;
 use App\Filament\App\Clusters\Settings\Resources\EmailTemplates\Pages\ManageEmailTemplates;
 use App\Filament\App\Clusters\Settings\SettingsCluster;
 use App\Models\EmailTemplate;
@@ -31,7 +32,7 @@ class EmailTemplateResource extends Resource
                     ->required(),
                 RichEditor::make('body')
                     ->required()
-                    ->mergeTags(fn ($record) => config('email-templates.merge_tags')[$record->type] ?? [])
+                    ->mergeTags(fn ($record) => config('email-templates.merge_tags')[$record->type->name] ?? [])
                     ->activePanel('mergeTags'),
             ])->columns(1);
     }
@@ -40,7 +41,7 @@ class EmailTemplateResource extends Resource
     {
         return $table
             ->columns([
-                TextColumn::make('type'),
+                TextColumn::make('type.name'),
                 TextColumn::make('subject'),
             ])
             ->recordActions([

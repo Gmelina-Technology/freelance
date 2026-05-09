@@ -11,11 +11,11 @@ use Filament\Widgets\StatsOverviewWidget\Stat;
 
 class TaskStatsWidget extends BaseWidget
 {
-    protected static ?int $sort = 2;
+    protected static ?int $sort = 1;
 
-    protected int|string|array $columnSpan = 1;
+    // protected int|string|array $columnSpan = 1;
 
-    protected int|array|null $columns = 2;
+    protected int|array|null $columns = 3;
 
     protected function getStats(): array
     {
@@ -39,21 +39,19 @@ class TaskStatsWidget extends BaseWidget
             ->count();
 
         return [
-            Stat::make('Pending Tasks', $pendingTasks)
-                ->description('Open & in progress')
-                ->descriptionIcon('heroicon-m-list-bullet')
-                ->color('warning'),
-
-            Stat::make('Tasks This Week', $tasksThisWeek)
-                ->description('Due this week')
-                ->descriptionIcon('heroicon-m-calendar')
-                ->color('info'),
-
             Stat::make('Overdue Tasks', $overdueTasks)
                 ->description('Needs attention')
                 ->descriptionIcon('heroicon-m-exclamation-triangle')
                 ->color('danger')
                 ->visible($overdueTasks > 0),
+            Stat::make('Tasks This Week', $tasksThisWeek)
+                ->description('Due this week')
+                ->descriptionIcon('heroicon-m-calendar')
+                ->color('info'),
+            Stat::make('Pending Tasks', $pendingTasks)
+                ->description('Open & In Progress')
+                ->descriptionIcon('heroicon-m-list-bullet')
+                ->color('warning'),
         ];
     }
 }

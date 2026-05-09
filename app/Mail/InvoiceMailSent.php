@@ -2,7 +2,9 @@
 
 namespace App\Mail;
 
+use App\Enums\EmailTemplateType;
 use App\Enums\InvoiceStatus;
+use App\Models\Currency;
 use App\Models\EmailTemplate;
 use App\Models\Invoice;
 use Filament\Forms\Components\RichEditor\RichContentRenderer;
@@ -22,7 +24,14 @@ class InvoiceMailSent extends Mailable implements ShouldQueue
 {
     use Queueable;
 
-    public function __construct(public Invoice $invoice) {}
+    private ?EmailTemplate $emailTemplate = null;
+
+    public function __construct(public Invoice $invoice)
+    {
+        $this->emailTemplate = $htmlContent = EmailTemplate::where('account_id', $invoice->account_id)
+            ->where('type', EmailTemplateType::INVOICE_REQUEST)
+            ->first();
+    }
 
     public function envelope(): Envelope
     {
@@ -74,7 +83,7 @@ class InvoiceMailSent extends Mailable implements ShouldQueue
             'status' => InvoiceStatus::Draft,
         ]);
 
-        Log::info('Failed to send email for invoice: '.$this->invoice->number);
+        Log::info('Failed to send email for invoice: ' . $this->invoice->number);
     }
 
     private function generateAndSaveInvoicePdf(): string
@@ -99,7 +108,7 @@ class InvoiceMailSent extends Mailable implements ShouldQueue
 
         $logoPath = '';
         if ($this->invoice->account->logo) {
-            $fullPath = storage_path('app/public/'.$this->invoice->account->logo);
+            $fullPath = storage_path('app/public/' . $this->invoice->account->logo);
             if (file_exists($fullPath)) {
                 $logoPath = $fullPath;
             }
@@ -142,22 +151,19 @@ class InvoiceMailSent extends Mailable implements ShouldQueue
         $invoicePdf->save('local');
 
         // Return the full path to the saved PDF file
-        return $filename.'.pdf';
+        return $filename . '.pdf';
     }
 
     private function renderEmailContent(): string
     {
-        $htmlContent = EmailTemplate::where('account_id', $this->invoice->account_id)
-            ->where('type', 'INVOICE')
-            ->value('body') ?? '';
 
         // Use Filament's RichContentRenderer to process merge tags
         // Merge tags use {{ tag }} format and are replaced with dynamic values
-        return RichContentRenderer::make($htmlContent)
+        return RichContentRenderer::make($this->emailTemplate?->body ?? '')
             ->mergeTags([
                 'client_name' => $this->invoice->client->name ?? 'Client',
                 'invoice_number' => $this->invoice->number ?? '',
-                'invoice_amount' => $this->formatCurrency($this->invoice->amount),
+                'invoice_amount' => $this->formatCurrency($this->invoice->client->currency, $this->invoice->amount),
                 'issued_date' => $this->invoice->issued_at?->format('F j, Y') ?? now()->format('F j, Y'),
                 'due_date' => $this->invoice->due_date?->format('F j, Y') ?? 'Not specified',
                 'account_name' => $this->invoice->account->name ?? 'Account',
@@ -167,12 +173,13 @@ class InvoiceMailSent extends Mailable implements ShouldQueue
             ->toHtml();
     }
 
-    private function formatCurrency(float|int|null $amount): string
+    private function formatCurrency(Currency $currency, float|int|null $amount): string
     {
+        $symbol = $currency->symbol ?? '$';
         if ($amount === null) {
-            return '$0.00';
+            return $symbol . '0.00';
         }
 
-        return '$'.number_format((float) $amount, 2);
+        return $symbol . number_format((float) $amount, 2);
     }
 }

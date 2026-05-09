@@ -25,7 +25,7 @@ class MyTasksTable extends BaseTableWidget
 
         return $table
             ->header(null)
-            ->heading(null)
+
             ->query(
                 fn () => Task::where('account_id', $accountId)
                     ->where('assigned_user_id', $userId)

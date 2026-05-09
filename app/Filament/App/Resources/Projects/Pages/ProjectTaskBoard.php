@@ -2,6 +2,7 @@
 
 namespace App\Filament\App\Resources\Projects\Pages;
 
+use App\Filament\App\Common\Actions\NotifyTaskAssignee;
 use App\Filament\App\Common\Forms\Components\StatusField;
 use App\Filament\App\Common\Schemas\TaskForm;
 use App\Filament\App\Resources\Projects\ProjectResource;
@@ -65,22 +66,14 @@ class ProjectTaskBoard extends BoardResourcePage
 
                     return $data;
                 })
-                ->after(fn (Task $record) => Notification::make('notifyAssignee')
-                    ->title('Task Created')
-                    ->body("Task '{$record->title}' has been created and assigned to you.")
-                    ->success()
-                    ->actions([
-                        Action::make('viewTask')
-                            ->url(EditTask::getUrl(['tenant' => Filament::getTenant(), 'record' => $record])),
-                    ])
-                    ->sendToDatabase($record->assignee)),
+                ->after(fn(Task $record) => NotifyTaskAssignee::handle($record)),
             Action::make('editProject')
                 ->hiddenLabel()
                 ->icon(Heroicon::Cog6Tooth)
                 ->outlined()
-                ->url(fn () => route('filament.app.resources.projects.edit', [
+                ->url(fn() => route('filament.app.resources.projects.edit', [
                     'tenant' => Filament::getTenant(),
-                    'record' => $this->record,
+                    'record' => $this->getRecord(),
                 ])),
         ];
     }
@@ -88,19 +81,17 @@ class ProjectTaskBoard extends BoardResourcePage
     public function board(Board $board): Board
     {
         return $board
-            ->query($this->record->tasks()->orderBy('position')->getQuery())
+            ->query(fn() => $this->getRecord()->tasks()->with(['category', 'assignee', 'project'])->orderBy('position')->getQuery())
             ->columnIdentifier('status')
             ->positionIdentifier('position')
             ->searchable(['title', 'description'])
-            ->filters([                                       // Add filters
-                SelectFilter::make('status')->options([
-                    'open' => 'Backlog',
-                    'in_progress' => 'In Progress',
-                    'review' => 'Review',
-                    'completed' => 'Completed',
-                ]),
+            ->filters([
+                SelectFilter::make('assignee')
+                    ->relationship('assignee', 'name'),
+                SelectFilter::make('category')
+                    ->relationship('category', 'name'),
                 Filter::make('overdue')->query(
-                    fn ($q) => $q->where('due_date', '<', now())
+                    fn($query) => $query->where('due_date', '<', now())
                 ),
             ])
             ->columns([
@@ -109,7 +100,7 @@ class ProjectTaskBoard extends BoardResourcePage
                 Column::make('review')->label('Review')->color('amber'),
                 Column::make('completed')->label('Completed')->color('green'),
             ])
-            ->cardSchema(fn (Schema $schema) => $schema->components([
+            ->cardSchema(fn(Schema $schema) => $schema->components([
                 TextEntry::make('description')
                     ->html()
                     ->hiddenLabel()
@@ -122,14 +113,19 @@ class ProjectTaskBoard extends BoardResourcePage
                         ->icon('heroicon-o-user'),
                     TextEntry::make('category.name')
                         ->hiddenLabel()
-                        ->badge(fn ($state) => $state?->color ?? 'secondary')
+                        ->badge(fn($state) => $state?->color ?? 'secondary')
                         ->icon('heroicon-o-tag'),
                 ])->wrap()->justify('start'),
             ]))
             ->cardActions([
                 EditAction::make('editTask')->model(Task::class)
                     ->slideOver()
-                    ->schema(TaskForm::components($this->record)),
+                    ->schema(TaskForm::components($this->record))
+                    ->after(function (Task $record) {
+                        if ($record->wasChanged('assigned_user_id')) {
+                            NotifyTaskAssignee::handle($record);
+                        }
+                    }),
 
                 DeleteAction::make()->model(Task::class),
             ])
@@ -163,7 +159,8 @@ class ProjectTaskBoard extends BoardResourcePage
                 Group::make([
                     StatusField::make('status'),
                     Select::make('assigned_user_id')
-                        ->options(fn () => $this->getRecord()->assignees->pluck('name', 'id'))
+                        ->label('Assignee')
+                        ->options(fn() => $this->getRecord()->assignees->pluck('name', 'id'))
                         ->searchable()
                         ->preload(),
                     Select::make('category_id')

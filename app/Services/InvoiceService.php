@@ -2,10 +2,36 @@
 
 namespace App\Services;
 
+use App\Enums\InvoiceStatus;
+use App\Filament\App\Common\Actions\Sales\CreateSaleAction;
 use App\Models\Invoice;
+use Filament\Notifications\Notification;
+use Illuminate\Support\Facades\DB;
 
 class InvoiceService
 {
+    public function markAsPaid(Invoice $invoice)
+    {
+        DB::transaction(function () use ($invoice) {
+            $invoice->update([
+                'status' => InvoiceStatus::Paid
+            ]);
+
+            CreateSaleAction::handle([
+                'account_id' => $invoice->account_id,
+                'category' => 'Service',
+                'reference_key' => $invoice->number,
+                'amount' => $invoice->amount,
+                'transaction_date' => now()
+            ]);
+
+            Notification::make('markAsPaid')
+                ->success()
+                ->title('Invoice mark as paid')
+                ->body('Invoice #' . $invoice->number . ' was marked as paid.')
+                ->send();
+        });
+    }
     /**
      * Generate unique invoice number
      */

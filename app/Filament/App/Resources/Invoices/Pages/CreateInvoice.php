@@ -20,6 +20,7 @@ use Filament\Schemas\Components\Utilities\Set;
 use Filament\Schemas\Components\Wizard\Step;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Number;
 
 class CreateInvoice extends CreateRecord
 {
@@ -137,7 +138,7 @@ class CreateInvoice extends CreateRecord
                 ])
                 ->afterStateUpdated(function (array $state, Set $set) {
                     $items = $state ?? [];
-                    $totalAmount = collect($items)->sum(fn ($item) => ($item['unit_price'] ?? 0) * ($item['quantity'] ?? 0));
+                    $totalAmount = collect($items)->sum(fn ($item) => Number::parseFloat($item['unit_price'] ?? 0) * Number::parseFloat($item['quantity'] ?? 0));
                     $set('amount', $totalAmount);
 
                     Log::info('Updated invoice items. Total amount: '.$totalAmount);

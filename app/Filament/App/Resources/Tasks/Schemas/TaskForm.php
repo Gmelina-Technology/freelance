@@ -45,6 +45,7 @@ class TaskForm
                         ->belowContent([
                             Action::make('assignToMe')
                                 ->label('Assign to me')
+                                ->hidden(fn($record) => $record?->assigned_user_id == Auth::id())
                                 ->action(function (Set $set) {
                                     $set('assigned_user_id', Auth::id());
                                 }),

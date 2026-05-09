@@ -14,12 +14,12 @@ class ProjectsTable
     public static function configure(Table $table): Table
     {
         return $table
-            ->modifyQueryUsing(fn (Builder $query) => $query->when(
+            ->modifyQueryUsing(fn(Builder $query) => $query->when(
                 Auth::user()->isMember(Filament::getTenant()),
                 function (Builder $query) {
-                    $query->whereHas('tasks', function (Builder $subQuery) {
-                        $subQuery->where('assigned_user_id', Auth::id());
-                    });
+                    $query->whereHas('assignees', function (Builder $subQuery) {
+                        $subQuery->wherekey(Auth::id());
+                     });
                 }
             ))
             ->columns([

@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\EmailTemplateType;
 use App\Traits\HasAccount;
 use Database\Factories\EmailTemplateFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -20,5 +21,9 @@ class EmailTemplate extends Model
         'subject',
         'body',
         'metadata',
+    ];
+
+    protected $casts = [
+        'type' => EmailTemplateType::class
     ];
 }

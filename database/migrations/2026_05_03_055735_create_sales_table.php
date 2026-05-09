@@ -11,12 +11,16 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('units', function (Blueprint $table) {
+        Schema::create('sales', function (Blueprint $table) {
             $table->id();
             $table->foreignId('account_id')->constrained()->cascadeOnDelete();
-            $table->string('name');
+            $table->string('category');
+            $table->dateTime('transaction_date');
+            $table->decimal('amount', 8, 2);
+            $table->string('reference_key')->nullable();
             $table->timestamps();
-            $table->unique(['account_id', 'name']);
+
+            $table->index('reference_key');
         });
     }
 
@@ -25,6 +29,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('units');
+        Schema::dropIfExists('sales');
     }
 };
