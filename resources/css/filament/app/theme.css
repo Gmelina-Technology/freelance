@@ -32,3 +32,33 @@
         }
     }
 }
+
+.fi-in-table-repeatable {
+    & > table {
+        & > thead {
+            & > tr {
+                & > th {
+                    &:not(:first-of-type) {
+                        border-inline-start-style: var(--tw-border-style);
+                        border-inline-start-width: 0px;
+                    }
+                }
+            }
+        }
+    }
+}
+
+.fi-in-table-repeatable {
+    & > table {
+        & > thead {
+            & > tr {
+                & > th {
+                    &:not(:last-of-type) {
+                        border-inline-end-style: var(--tw-border-style);
+                        border-inline-end-width: 0px;
+                    }
+                }
+            }
+        }
+    }
+}

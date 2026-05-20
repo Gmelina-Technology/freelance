@@ -18,6 +18,11 @@ class Client extends Model
         'name',
         'email',
         'phone',
+        'pocs',
+    ];
+
+    protected $casts = [
+        'pocs' => 'array',
     ];
 
     public function account(): BelongsTo

@@ -11,6 +11,7 @@ use Filament\Forms\Components\RichEditor\RichContentRenderer;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Mail\Mailable;
+use Illuminate\Mail\Mailables\Address;
 use Illuminate\Mail\Mailables\Attachment;
 use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
@@ -28,7 +29,7 @@ class InvoiceMailSent extends Mailable implements ShouldQueue
 
     public function __construct(public Invoice $invoice)
     {
-        $this->emailTemplate = $htmlContent = EmailTemplate::where('account_id', $invoice->account_id)
+        $this->emailTemplate = EmailTemplate::where('account_id', $invoice->account_id)
             ->where('type', EmailTemplateType::INVOICE_REQUEST)
             ->first();
     }
@@ -37,7 +38,9 @@ class InvoiceMailSent extends Mailable implements ShouldQueue
     {
         return new Envelope(
             subject: "Invoice #{$this->invoice->number}",
-            to: [$this->invoice->client->email],
+            from: new Address(config('mail.from.address'), $this->invoice->account->name ?? config('mail.from.name')),
+            to: [new Address($this->invoice->client->email, $this->invoice->client->name)],
+            cc: array_map(fn($poc) => new Address($poc['email'], $poc['name']), $this->invoice->client->pocs ?? []),
         );
     }
 
