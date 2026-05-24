@@ -3,14 +3,20 @@
 namespace App\Livewire;
 
 use App\Contracts\Commentable;
+use App\Filament\App\Resources\Tasks\Pages\EditTask;
 use App\Models\Comment;
 use App\Models\User;
+use App\Services\MentionParser;
+use Filament\Actions\Action;
+use Filament\Facades\Filament;
 use Filament\Forms\Components\RichEditor;
 use Filament\Forms\Components\RichEditor\MentionProvider;
 use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
+use Filament\Notifications\Notification;
 use Filament\Schemas\Schema;
 use Illuminate\Contracts\View\View;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Auth;
@@ -100,55 +106,36 @@ class CommentThread extends Component implements HasForms
     public function form(Schema $schema): Schema
     {
         return $schema
-            ->components([
-                RichEditor::make('body')
-                    ->hiddenLabel()
-                    ->placeholder('Write your comment...')
-                    ->toolbarButtons([
-                        ['bold', 'italic', 'strike', 'link'],
-                    ])
-                    ->mentions($this->getCommentMentionProviders())
-                    ->extraInputAttributes([
-                        'class' => 'fi-commentable-rich-editor',
-                    ]),
-            ])
+            ->components([$this->makeRichEditorField('Write your comment...')])
             ->statePath('data');
     }
 
     public function replyForm(Schema $schema): Schema
     {
         return $schema
-            ->components([
-                RichEditor::make('body')
-                    ->hiddenLabel()
-                    ->placeholder('Write a reply...')
-                    ->toolbarButtons([
-                        ['bold', 'italic', 'strike', 'link'],
-                    ])
-                    ->mentions($this->getCommentMentionProviders())
-                    ->extraInputAttributes([
-                        'class' => 'fi-commentable-rich-editor',
-                    ]),
-            ])
+            ->components([$this->makeRichEditorField('Write a reply...')])
             ->statePath('replyData');
     }
 
     public function editForm(Schema $schema): Schema
     {
         return $schema
-            ->components([
-                RichEditor::make('body')
-                    ->hiddenLabel()
-                    ->placeholder('Edit your comment...')
-                    ->toolbarButtons([
-                        ['bold', 'italic', 'strike', 'link'],
-                    ])
-                    ->mentions($this->getCommentMentionProviders())
-                    ->extraInputAttributes([
-                        'class' => 'fi-commentable-rich-editor',
-                    ]),
-            ])
+            ->components([$this->makeRichEditorField('Edit your comment...')])
             ->statePath('editingData');
+    }
+
+    private function makeRichEditorField(string $placeholder): RichEditor
+    {
+        return RichEditor::make('body')
+            ->hiddenLabel()
+            ->placeholder($placeholder)
+            ->toolbarButtons([
+                ['bold', 'italic', 'strike', 'link'],
+            ])
+            ->mentions($this->getCommentMentionProviders())
+            ->extraInputAttributes([
+                'class' => 'fi-commentable-rich-editor',
+            ]);
     }
 
     public function addComment(): void
@@ -174,6 +161,13 @@ class CommentThread extends Component implements HasForms
         $this->form->fill([
             'body' => '',
         ]);
+
+        $this->sendMentionNotifications(
+            $body,
+            'You are being mentioned in a comment on task by '.Auth::user()->name,
+            $commentable,
+        );
+
         $this->dispatch('comment-created');
     }
 
@@ -211,6 +205,12 @@ class CommentThread extends Component implements HasForms
 
         $this->storeAttachments($comment, $this->replyAttachments);
 
+        $this->sendMentionNotifications(
+            $body,
+            Auth::user()->name.' reply on a comment and mentioned you in it.',
+            $commentable,
+        );
+
         $this->reset(['replyingTo', 'replyBody', 'replyAttachments']);
         $this->replyForm->fill([
             'body' => '',
@@ -246,6 +246,12 @@ class CommentThread extends Component implements HasForms
         $comment->update([
             'body' => $body,
         ]);
+
+        $this->sendMentionNotifications(
+            $body,
+            Auth::user()->name.' updated a comment and mentioned you in it.',
+            $comment->commentable,
+        );
 
         $this->reset(['editingCommentId', 'editingBody']);
     }
@@ -300,7 +306,7 @@ class CommentThread extends Component implements HasForms
     private function validateCommentInput(mixed $body): void
     {
         $this->validate([
-            'attachments.*' => ['file', 'max:' . config('comments.attachments.max_size')],
+            'attachments.*' => ['file', 'max:'.config('comments.attachments.max_size')],
         ]);
 
         if ($this->richContentIsBlank($body) && empty($this->attachments)) {
@@ -313,7 +319,7 @@ class CommentThread extends Component implements HasForms
     private function validateReplyInput(mixed $body): void
     {
         $this->validate([
-            'replyAttachments.*' => ['file', 'max:' . config('comments.attachments.max_size')],
+            'replyAttachments.*' => ['file', 'max:'.config('comments.attachments.max_size')],
         ]);
 
         if ($this->richContentIsBlank($body) && empty($this->replyAttachments)) {
@@ -369,11 +375,11 @@ class CommentThread extends Component implements HasForms
         }
 
         if (isset($content['text']) && is_string($content['text'])) {
-            $text .= $content['text'] . ' ';
+            $text .= $content['text'].' ';
         }
 
         if (($content['type'] ?? null) === 'mention') {
-            $text .= ($content['attrs']['label'] ?? $content['attrs']['id'] ?? '') . ' ';
+            $text .= ($content['attrs']['label'] ?? $content['attrs']['id'] ?? '').' ';
         }
 
         return trim($text);
@@ -385,7 +391,7 @@ class CommentThread extends Component implements HasForms
     private function storeAttachments(Comment $comment, array $attachments): void
     {
         $disk = config('comments.attachments.disk');
-        $directory = trim(config('comments.attachments.directory'), '/') . '/' . $comment->account_id;
+        $directory = trim(config('comments.attachments.directory'), '/').'/'.$comment->account_id;
 
         foreach ($attachments as $attachment) {
             $path = $attachment->store($directory, $disk);
@@ -404,17 +410,19 @@ class CommentThread extends Component implements HasForms
 
     private function getCommentable(): ?Model
     {
-        if (! $this->commentableType || ! $this->commentableId || ! is_a($this->commentableType, Model::class, true)) {
-            return null;
-        }
+        return once(function () {
+            if (! $this->commentableType || ! $this->commentableId || ! is_a($this->commentableType, Model::class, true)) {
+                return null;
+            }
 
-        $commentable = $this->commentableType::query()->find($this->commentableId);
+            $commentable = $this->commentableType::query()->find($this->commentableId);
 
-        if (! $commentable instanceof Commentable) {
-            return null;
-        }
+            if (! $commentable instanceof Commentable) {
+                return null;
+            }
 
-        return $commentable;
+            return $commentable;
+        });
     }
 
     private function findComment(int $commentId): Comment
@@ -453,12 +461,7 @@ class CommentThread extends Component implements HasForms
             return [];
         }
 
-        return User::query()
-            ->where(function ($query) use ($commentable) {
-                $query
-                    ->whereHas('accounts', fn($accountQuery) => $accountQuery->whereKey($commentable->getCommentAccountId()))
-                    ->orWhereHas('ownedAccounts', fn($accountQuery) => $accountQuery->whereKey($commentable->getCommentAccountId()));
-            })
+        return $this->usersInAccountQuery($commentable)
             ->orderBy('name')
             ->pluck('name', 'id')
             ->all();
@@ -471,8 +474,8 @@ class CommentThread extends Component implements HasForms
     {
         return [
             MentionProvider::make('@')
-                ->getSearchResultsUsing(fn(string $search): array => $this->searchMentionableUsers($search))
-                ->getLabelsUsing(fn(array $ids): array => User::query()
+                ->getSearchResultsUsing(fn (string $search): array => $this->searchMentionableUsers($search))
+                ->getLabelsUsing(fn (array $ids): array => User::query()
                     ->whereIn('id', $ids)
                     ->pluck('name', 'id')
                     ->all()),
@@ -486,11 +489,40 @@ class CommentThread extends Component implements HasForms
     {
         return [
             MentionProvider::make('@')
-                ->getLabelsUsing(fn(array $ids): array => User::query()
+                ->getLabelsUsing(fn (array $ids): array => User::query()
                     ->whereIn('id', $ids)
                     ->pluck('name', 'id')
                     ->all()),
         ];
+    }
+
+    private function sendMentionNotifications(string $body, string $notificationBody, Model $commentable): void
+    {
+        $mentionedUsers = app(MentionParser::class)->extract($body);
+
+        if (empty($mentionedUsers)) {
+            return;
+        }
+
+        Notification::make()
+            ->success()
+            ->title('You were mentioned in a comment')
+            ->body($notificationBody)
+            ->actions([
+                Action::make('viewTask')
+                    ->url(EditTask::getUrl(['tenant' => Filament::getTenant(), 'record' => $commentable])),
+            ])
+            ->sendToDatabase($mentionedUsers);
+    }
+
+    private function usersInAccountQuery(Commentable $commentable): Builder
+    {
+        return User::query()
+            ->where(function ($query) use ($commentable) {
+                $query
+                    ->whereHas('accounts', fn ($q) => $q->whereKey($commentable->getCommentAccountId()))
+                    ->orWhereHas('ownedAccounts', fn ($q) => $q->whereKey($commentable->getCommentAccountId()));
+            });
     }
 
     /**
@@ -504,13 +536,8 @@ class CommentThread extends Component implements HasForms
             return [];
         }
 
-        return User::query()
-            ->where(function ($query) use ($commentable) {
-                $query
-                    ->whereHas('accounts', fn($accountQuery) => $accountQuery->whereKey($commentable->getCommentAccountId()))
-                    ->orWhereHas('ownedAccounts', fn($accountQuery) => $accountQuery->whereKey($commentable->getCommentAccountId()));
-            })
-            ->when($search !== '', fn($query) => $query->where('name', 'like', "%{$search}%"))
+        return $this->usersInAccountQuery($commentable)
+            ->when($search !== '', fn ($query) => $query->where('name', 'like', "%{$search}%"))
             ->orderBy('name')
             ->limit(10)
             ->pluck('name', 'id')
