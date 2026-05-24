@@ -3,9 +3,12 @@
 namespace App\Providers;
 
 use App\Filament\App\Widgets\MyTasksTable;
+use App\Models\Comment;
+use App\Policies\CommentPolicy;
 use Filament\Support\Facades\FilamentView;
 use Filament\Tables\View\TablesRenderHook;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\HtmlString;
 use Illuminate\Support\ServiceProvider;
 
@@ -30,6 +33,8 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        Gate::policy(Comment::class, CommentPolicy::class);
+
         Model::preventLazyLoading(! $this->app->isProduction());
     }
 }

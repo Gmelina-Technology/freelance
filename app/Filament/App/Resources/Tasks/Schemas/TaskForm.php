@@ -4,6 +4,8 @@ namespace App\Filament\App\Resources\Tasks\Schemas;
 
 use App\Enums\TaskPriority;
 use App\Filament\App\Common\Forms\Components\StatusField;
+use App\Filament\App\Resources\Tasks\Pages\EditTask;
+use App\Livewire\CommentThread;
 use Filament\Actions\Action;
 use Filament\Facades\Filament;
 use Filament\Forms\Components\DateTimePicker;
@@ -11,7 +13,13 @@ use Filament\Forms\Components\Hidden;
 use Filament\Forms\Components\RichEditor;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
+use Filament\Infolists\Components\RepeatableEntry;
+use Filament\Infolists\Components\RepeatableEntry\TableColumn;
+use Filament\Infolists\Components\TextEntry;
 use Filament\Schemas\Components\Group;
+use Filament\Schemas\Components\Livewire;
+use Filament\Schemas\Components\Tabs;
+use Filament\Schemas\Components\Tabs\Tab;
 use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Components\Utilities\Set;
 use Filament\Schemas\Schema;
@@ -31,6 +39,36 @@ class TaskForm
                             'style' => 'min-height: 20rem; max-height: 50vh; overflow-y: auto;',
                         ])
                         ->hiddenLabel(),
+                    Action::make('saveYow')
+                        ->label('Save Task')
+                        ->action(function (EditTask $livewire) {
+                            $livewire->save(false, true);
+                        }),
+
+                    Tabs::make()->schema([
+                        Tab::make('Comments')
+                            ->schema([
+                                Livewire::make(CommentThread::class)
+                                    ->key(fn ($record): string => 'task-comments-'.$record?->getKey())
+                                    ->hidden(fn ($record): bool => ! $record?->exists),
+                            ]),
+                        Tab::make('Work Logs')
+                            ->schema([
+                                RepeatableEntry::make('workLogs')
+                                    ->hiddenLabel()
+                                    ->table([
+                                        TableColumn::make('Work Date'),
+                                        TableColumn::make('Hours'),
+                                        TableColumn::make('Description'),
+                                    ])
+                                    ->schema([
+                                        TextEntry::make('worked_date')
+                                            ->dateTime(),
+                                        TextEntry::make('hours'),
+                                        TextEntry::make('description'),
+                                    ])->emptyTooltip('No work logs added yet.'),
+                            ]),
+                    ]),
                 ])->columnSpan(6),
                 Group::make([
                     StatusField::make('status'),
@@ -45,7 +83,7 @@ class TaskForm
                         ->belowContent([
                             Action::make('assignToMe')
                                 ->label('Assign to me')
-                                ->hidden(fn($record) => $record?->assigned_user_id == Auth::id())
+                                ->hidden(fn ($record) => $record?->assigned_user_id == Auth::id())
                                 ->action(function (Set $set) {
                                     $set('assigned_user_id', Auth::id());
                                 }),

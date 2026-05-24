@@ -1,6 +1,7 @@
 <?php
 
 use App\Enums\TaskPriority;
+use App\Http\Controllers\CommentAttachmentDownloadController;
 use App\Http\Controllers\InvitationAcceptanceController;
 use App\Http\Controllers\TemporaryInvoicePreviewController;
 use Illuminate\Database\Schema\Blueprint;
@@ -14,6 +15,10 @@ Route::get('/', function () {
 Route::middleware(['signed'])
     ->get('/invitations/accept/{token}', [InvitationAcceptanceController::class, 'accept'])
     ->name('invitations.accept');
+
+Route::middleware(['auth'])
+    ->get('/comments/attachments/{commentAttachment}/download', CommentAttachmentDownloadController::class)
+    ->name('comments.attachments.download');
 
 // Temporary Invoice Preview Routes (for testing/debugging)
 // Remove these routes in production

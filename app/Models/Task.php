@@ -2,16 +2,18 @@
 
 namespace App\Models;
 
+use App\Contracts\Commentable;
 use App\Enums\TaskPriority;
 use App\Enums\TaskStatus;
 use App\Traits\HasAccount;
+use App\Traits\HasComments;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-class Task extends Model
+class Task extends Model implements Commentable
 {
-    use HasAccount, HasFactory;
+    use HasAccount, HasComments, HasFactory;
 
     protected $fillable = [
         'account_id',
@@ -55,5 +57,10 @@ class Task extends Model
     public function category()
     {
         return $this->belongsTo(Category::class);
+    }
+
+    public function workLogs()
+    {
+        return $this->hasMany(WorkLog::class);
     }
 }

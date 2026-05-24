@@ -128,6 +128,16 @@ class User extends Authenticatable implements FilamentUser, HasDefaultTenant, Ha
         return $this->hasMany(Task::class, 'assigned_user_id');
     }
 
+    public function comments(): HasMany
+    {
+        return $this->hasMany(Comment::class);
+    }
+
+    public function commentReactions(): HasMany
+    {
+        return $this->hasMany(CommentReaction::class);
+    }
+
     public function canAccessPanel(Panel $panel): bool
     {
         if ($panel->getId() === 'app') {

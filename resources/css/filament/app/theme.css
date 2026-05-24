@@ -2,7 +2,32 @@
 
 @source '../../../../app/Filament/**/*';
 @source '../../../../resources/views/filament/**/*';
+@source '../../../../resources/views/livewire/**/*.blade.php';
 @source "../../../../vendor/relaticle/flowforge/resources/views/**/*.blade.php";
+
+.fi-commentable-content span[data-type="mention"],
+.fi-commentable-content a[data-type="mention"] {
+    @apply my-0 inline-block rounded bg-primary-50 px-1 font-medium text-primary-600 no-underline whitespace-nowrap dark:bg-primary-400/10 dark:text-primary-400;
+    text-decoration: none !important;
+}
+
+.fi-commentable-editor-shell {
+    .fi-fo-field-wrp {
+        gap: 0;
+    }
+
+    .fi-fo-rich-editor {
+        @apply rounded-lg border border-gray-200 bg-white shadow-sm dark:border-white/1 dark:bg-gray-500;
+    }
+
+    .fi-fo-rich-editor-toolbar {
+        @apply border-b-0 px-2 py-2;
+    }
+
+    .fi-fo-rich-editor-editor {
+        @apply min-h-16 px-3 pb-3 pt-1 text-sm;
+    }
+}
 
 .fi-in-table-repeatable {
     @supports (container-type: inline-size) {
