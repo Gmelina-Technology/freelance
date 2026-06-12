@@ -55,6 +55,7 @@ class TaskController extends Controller
             'due_date' => $request->input('due_date'),
             'client_id' => $request->input('client_id'),
             'project_id' => $request->input('project_id'),
+            'assigned_user_id' => $request->input('assigned_user_id'),
         ]);
 
         return response()->json(['data' => $this->present($task)], 201);
@@ -70,7 +71,7 @@ class TaskController extends Controller
         $model = $account->tasks()->findOrFail($task);
 
         $model->fill($request->only([
-            'title', 'description', 'status', 'priority', 'due_date', 'client_id', 'project_id',
+            'title', 'description', 'status', 'priority', 'due_date', 'client_id', 'project_id', 'assigned_user_id',
         ]));
         $model->save();
 
@@ -93,6 +94,7 @@ class TaskController extends Controller
             'due_date' => $task->due_date?->toDateString(),
             'client' => $task->client?->name,
             'project_id' => $task->project_id,
+            'assigned_user_id' => $task->assigned_user_id,
         ];
     }
 }

@@ -89,3 +89,55 @@ it('cannot update a task from another account', function () {
     $this->patchJson("/api/tasks/{$task->id}", ['status' => 'completed'])
         ->assertNotFound();
 });
+
+it('creates a task with a valid assigned_user_id in the account', function () {
+    Sanctum::actingAs($this->owner);
+
+    $assignee = User::factory()->create();
+    $this->account->users()->syncWithoutDetaching([
+        $assignee->id => ['role' => 'member'],
+    ]);
+
+    $this->postJson('/api/tasks', [
+        'title' => 'Assigned task',
+        'assigned_user_id' => $assignee->id,
+    ])
+        ->assertCreated()
+        ->assertJsonPath('data.assigned_user_id', $assignee->id);
+
+    expect(Task::where('account_id', $this->account->id)
+        ->where('assigned_user_id', $assignee->id)->exists())->toBeTrue();
+});
+
+it('updates assigned_user_id on an existing task', function () {
+    Sanctum::actingAs($this->owner);
+
+    $task = Task::factory()->for($this->account)->create(['assigned_user_id' => null]);
+
+    $assignee = User::factory()->create();
+    $this->account->users()->syncWithoutDetaching([
+        $assignee->id => ['role' => 'member'],
+    ]);
+
+    $this->patchJson("/api/tasks/{$task->id}", ['assigned_user_id' => $assignee->id])
+        ->assertOk()
+        ->assertJsonPath('data.assigned_user_id', $assignee->id);
+
+    expect($task->fresh()->assigned_user_id)->toBe($assignee->id);
+});
+
+it('rejects assigned_user_id from another account with 422', function () {
+    Sanctum::actingAs($this->owner);
+
+    $outsider = User::factory()->create();
+    $otherAccount = Account::factory()->for(User::factory(), 'owner')->create();
+    $otherAccount->users()->syncWithoutDetaching([
+        $outsider->id => ['role' => 'member'],
+    ]);
+
+    $this->postJson('/api/tasks', [
+        'title' => 'Bad assign',
+        'assigned_user_id' => $outsider->id,
+    ])
+        ->assertStatus(422);
+});

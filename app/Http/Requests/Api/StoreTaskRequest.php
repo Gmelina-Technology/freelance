@@ -28,6 +28,7 @@ class StoreTaskRequest extends FormRequest
             'due_date' => ['nullable', 'date'],
             'client_id' => ['nullable', Rule::exists('clients', 'id')->where('account_id', $account->id)],
             'project_id' => ['nullable', Rule::exists('projects', 'id')->where('account_id', $account->id)],
+            'assigned_user_id' => ['nullable', 'integer', Rule::exists('account_user', 'user_id')->where('account_id', $account->id)],
         ];
     }
 }
