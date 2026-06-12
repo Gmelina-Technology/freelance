@@ -24,7 +24,7 @@ class ProjectFactory extends Factory
             'client_id' => Client::factory(),
             'name' => fake()->catchPhrase(),
             'description' => fake()->paragraph(),
-            'status' => fake()->randomElement(['pending', 'active', 'completed']),
+            'status' => fake()->randomElement(['backlog', 'in_progress', 'blocked', 'completed']),
             'due_date' => fake()->optional()->dateTimeBetween('now', '+90 days'),
         ];
     }
