@@ -127,12 +127,12 @@ class InvoiceMailSent extends Mailable implements ShouldQueue
             ->buyer($buyer)
             ->date($this->invoice->issued_at)
             ->series($this->invoice->number)
+            ->payUntilDays($this->invoice->due_date?->diffInDays($this->invoice->issued_at) ?? 0)
             ->dateFormat('M d, Y')
-            ->payUntilDays(7)
             ->currencySymbol($currency?->symbol ?? '$')
             ->currencyCode($currency?->code ?? 'USD')
             ->filename($filename)
-            ->status($this->invoice->status->value);
+            ->status(InvoiceStatus::Sent->value);
 
         // Add items from the invoice
         foreach ($this->invoice->items as $item) {
