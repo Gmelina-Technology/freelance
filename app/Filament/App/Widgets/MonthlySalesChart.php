@@ -5,12 +5,23 @@ namespace App\Filament\App\Widgets;
 use App\Models\Sale;
 use Filament\Facades\Filament;
 use Filament\Widgets\ChartWidget;
+use Illuminate\Support\Facades\Auth;
 
 class MonthlySalesChart extends ChartWidget
 {
     protected ?string $heading = 'Monthly Sales';
 
     protected static ?int $sort = 2;
+
+    public function getColumns(): int | array
+    {
+        return  Auth::user()->isMember(Filament::getTenant()) ? 3 : 12;
+    }
+
+    public static function canView(): bool
+    {
+        return ! Auth::user()->isMember(Filament::getTenant());
+    }
 
     protected function getData(): array
     {

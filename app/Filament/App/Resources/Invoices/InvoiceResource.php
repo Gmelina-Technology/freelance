@@ -10,10 +10,12 @@ use App\Filament\App\Resources\Invoices\Schemas\InvoiceInfolist;
 use App\Filament\App\Resources\Invoices\Tables\InvoicesTable;
 use App\Models\Invoice;
 use BackedEnum;
+use Filament\Facades\Filament;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
+use Illuminate\Support\Facades\Auth;
 
 class InvoiceResource extends Resource
 {
@@ -22,6 +24,11 @@ class InvoiceResource extends Resource
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
 
     protected static ?string $recordTitleAttribute = 'number';
+
+    public static function canAccess(): bool
+    {
+        return ! Auth::user()->isMember(Filament::getTenant());
+    }
 
     public static function form(Schema $schema): Schema
     {

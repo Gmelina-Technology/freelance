@@ -41,34 +41,37 @@ class TaskForm
                         ->hiddenLabel(),
                     Action::make('saveYow')
                         ->label('Save Task')
+                        ->visible(fn(string $operation) => 'edit' == $operation)
                         ->action(function (EditTask $livewire) {
                             $livewire->save(false, true);
                         }),
 
-                    Tabs::make()->schema([
-                        Tab::make('Comments')
-                            ->schema([
-                                Livewire::make(CommentThread::class)
-                                    ->key(fn ($record): string => 'task-comments-'.$record?->getKey())
-                                    ->hidden(fn ($record): bool => ! $record?->exists),
-                            ]),
-                        Tab::make('Work Logs')
-                            ->schema([
-                                RepeatableEntry::make('workLogs')
-                                    ->hiddenLabel()
-                                    ->table([
-                                        TableColumn::make('Work Date'),
-                                        TableColumn::make('Hours'),
-                                        TableColumn::make('Description'),
-                                    ])
-                                    ->schema([
-                                        TextEntry::make('worked_date')
-                                            ->dateTime(),
-                                        TextEntry::make('hours'),
-                                        TextEntry::make('description'),
-                                    ])->emptyTooltip('No work logs added yet.'),
-                            ]),
-                    ]),
+                    Tabs::make()
+                        ->visible(fn(string $operation) => 'edit' == $operation)
+                        ->schema([
+                            Tab::make('Comments')
+                                ->schema([
+                                    Livewire::make(CommentThread::class)
+                                        ->key(fn($record): string => 'task-comments-' . $record?->getKey())
+                                        ->hidden(fn($record): bool => ! $record?->exists),
+                                ]),
+                            Tab::make('Work Logs')
+                                ->schema([
+                                    RepeatableEntry::make('workLogs')
+                                        ->hiddenLabel()
+                                        ->table([
+                                            TableColumn::make('Work Date'),
+                                            TableColumn::make('Hours'),
+                                            TableColumn::make('Description'),
+                                        ])
+                                        ->schema([
+                                            TextEntry::make('worked_date')
+                                                ->dateTime(),
+                                            TextEntry::make('hours'),
+                                            TextEntry::make('description'),
+                                        ])->emptyTooltip('No work logs added yet.'),
+                                ]),
+                        ]),
                 ])->columnSpan(6),
                 Group::make([
                     StatusField::make('status'),
@@ -83,20 +86,21 @@ class TaskForm
                         ->belowContent([
                             Action::make('assignToMe')
                                 ->label('Assign to me')
-                                ->hidden(fn ($record) => $record?->assigned_user_id == Auth::id())
+                                ->hidden(fn($record) => $record?->assigned_user_id == Auth::id())
                                 ->action(function (Set $set) {
                                     $set('assigned_user_id', Auth::id());
                                 }),
                         ])
                         ->label('Assignee'),
                     Select::make('priority')
+                        ->required()
                         ->options(TaskPriority::class),
                     Select::make('client_id')
                         ->relationship('client', 'name')
                         ->live(),
                     Select::make('project_id')
                         ->live()
-                        ->hidden(fn (Get $get) => empty($get('client_id')))
+                        ->hidden(fn(Get $get) => empty($get('client_id')))
                         ->relationship('project', 'name', function ($query, Get $get) {
                             $query->when($get('client_id'), function ($query, $clientId) {
                                 $query->where('client_id', $clientId);

@@ -9,14 +9,20 @@ use Filament\Tables;
 use Filament\Tables\Table;
 use Filament\Widgets\TableWidget as BaseTableWidget;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\HtmlString;
 
 class MyTasksTable extends BaseTableWidget
 {
     protected static ?int $sort = 8;
 
-    protected static ?string $heading = 'My Tasks';
+    protected static ?string $heading = null;
 
     protected static ?int $defaultPaginationPageOption = 5;
+
+    public function getColumnSpan(): int
+    {
+        return  Auth::user()->isMember(Filament::getTenant()) ? 3 : 'full';
+    }
 
     public function table(Table $table): Table
     {
@@ -25,7 +31,7 @@ class MyTasksTable extends BaseTableWidget
 
         return $table
             ->header(null)
-
+            ->heading(null)
             ->query(
                 fn () => Task::where('account_id', $accountId)
                     ->where('assigned_user_id', $userId)

@@ -41,6 +41,12 @@ class InvoiceMailSent extends Mailable implements ShouldQueue
             from: new Address(config('mail.from.address'), $this->invoice->account->name ?? config('mail.from.name')),
             to: [new Address($this->invoice->client->email, $this->invoice->client->name)],
             cc: array_map(fn($poc) => new Address($poc['email'], $poc['name']), $this->invoice->client->pocs ?? []),
+            replyTo: [
+                new Address(
+                    $this->invoice->account->email ?? config('mail.from.address'),
+                    $this->invoice->account->name ?? config('mail.from.name')
+                )
+            ]
         );
     }
 

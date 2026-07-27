@@ -17,6 +17,7 @@ use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
+use Illuminate\Support\Facades\Auth;
 
 class SaleResource extends Resource
 {
@@ -25,6 +26,11 @@ class SaleResource extends Resource
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
 
     protected static ?string $recordTitleAttribute = 'id';
+
+    public static function canAccess(): bool
+    {
+        return ! Auth::user()->isMember(Filament::getTenant());
+    }
 
     public static function table(Table $table): Table
     {
