@@ -21,7 +21,7 @@ class MyTasksTable extends BaseTableWidget
 
     public function getColumnSpan(): int
     {
-        return  Auth::user()->isMember(Filament::getTenant()) ? 3 : 'full';
+        return  Auth::user()->isMember(Filament::getTenant()) ? 3 : 12;
     }
 
     public function table(Table $table): Table
