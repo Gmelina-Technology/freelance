@@ -3,8 +3,10 @@
 namespace Database\Seeders;
 
 use App\Enums\AccountRole;
+use App\Enums\EmailTemplateType;
 use App\Models\Account;
 use App\Models\Client;
+use App\Models\EmailTemplate;
 use App\Models\Project;
 use App\Models\Task;
 use App\Models\User;
@@ -27,6 +29,20 @@ class DatabaseSeeder extends Seeder
 
         $account = Account::factory()->for($owner, 'owner')->create([
             'name' => 'Freelance Studio',
+        ]);
+
+        EmailTemplate::create([
+            'account_id' => $account->id,
+            'type' => EmailTemplateType::INVOICE_REQUEST,
+            'subject' => 'Task Service Invoice',
+            'body' => config('email-templates.defaults.invoice.body'),
+        ]);
+
+        EmailTemplate::create([
+            'account_id' => $account->id,
+            'type' => EmailTemplateType::QUOTE_REQUEST,
+            'subject' => 'Task Service Quote',
+            'body' => config('email-templates.defaults.quote.body'),
         ]);
 
         $team = User::factory(2)->create();

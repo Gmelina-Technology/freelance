@@ -44,6 +44,13 @@ class RegisterAccount extends RegisterTenant
                 'body' => config('email-templates.defaults.invoice.body'),
             ]);
 
+            EmailTemplate::create([
+                'account_id' => $account->id,
+                'type' => EmailTemplateType::QUOTE_REQUEST,
+                'subject' => 'Task Service Quote',
+                'body' => config('email-templates.defaults.quote.body'),
+            ]);
+
             $account->users()->attach($user->getKey(), [
                 'role' => AccountRole::Owner,
             ]);
