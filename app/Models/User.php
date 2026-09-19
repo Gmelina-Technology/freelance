@@ -37,6 +37,7 @@ class User extends Authenticatable implements FilamentUser, HasDefaultTenant, Ha
         'name',
         'email',
         'password',
+        'terms_accepted_at',
     ];
 
     /**
@@ -58,6 +59,7 @@ class User extends Authenticatable implements FilamentUser, HasDefaultTenant, Ha
     {
         return [
             'email_verified_at' => 'datetime',
+            'terms_accepted_at' => 'datetime',
             'password' => 'hashed',
         ];
     }

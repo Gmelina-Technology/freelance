@@ -21,9 +21,9 @@
             font-family: "DejaVu Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
             font-weight: 400;
             line-height: 1.4;
-            color: #1F2937;
+            color: #10231a;
             text-align: left;
-            background-color: #F9FAFB;
+            background-color: #f6f9f7;
             font-size: 9px;
             margin: 0;
             padding: 12pt;
@@ -43,7 +43,7 @@
             width: 100%;
             margin-bottom: 12pt;
             padding-bottom: 8pt;
-            border-bottom: 2px solid #E5E7EB;
+            border-bottom: 2px solid #e7ece9;
         }
 
         .logo-section {
@@ -73,14 +73,14 @@
         .invoice-title {
             font-size: 22pt;
             font-weight: 700;
-            color: #1F2937;
+            color: #10231a;
             margin-bottom: 2pt;
         }
 
         .invoice-status {
             font-size: 10pt;
             font-weight: 600;
-            color: #10B981;
+            color: #1f8a4c;
             text-transform: uppercase;
             letter-spacing: 0.3pt;
         }
@@ -101,7 +101,7 @@
         }
 
         .invoice-meta-value {
-            color: #1F2937;
+            color: #10231a;
             font-weight: 600;
         }
 
@@ -131,7 +131,7 @@
             text-transform: uppercase;
             letter-spacing: 0.3pt;
             margin-bottom: 6pt;
-            border-bottom: 2px solid #3B82F6;
+            border-bottom: 2px solid #176b3b;
             padding-bottom: 4pt;
         }
 
@@ -143,7 +143,7 @@
         .party-name {
             font-size: 10pt;
             font-weight: 700;
-            color: #1F2937;
+            color: #10231a;
             margin-bottom: 3pt;
         }
 
@@ -166,7 +166,7 @@
         .table-items thead {}
 
         .table-items thead th {
-            color: #1F2937;
+            color: #10231a;
             font-weight: 700;
             padding: 8pt;
             text-align: left;
@@ -191,7 +191,7 @@
 
         .item-title {
             font-weight: 600;
-            color: #1F2937;
+            color: #10231a;
         }
 
         .item-description {
@@ -225,17 +225,17 @@
 
         .summary-table .summary-value {
             text-align: right;
-            color: #1F2937;
+            color: #10231a;
             font-weight: 600;
             font-size: 10pt;
         }
 
         .summary-table .total-row {
-            color: #1F2937;
+            color: #10231a;
             font-weight: 700;
             font-size: 10pt;
-            border-top: 2px solid #3B82F6;
-            border-bottom: 2px solid #3B82F6;
+            border-top: 2px solid #176b3b;
+            border-bottom: 2px solid #176b3b;
         }
 
         .summary-table .total-row td {
@@ -247,7 +247,7 @@
         .footer-section {
             margin-top: 12pt;
             padding-top: 8pt;
-            border-top: 2px solid #E5E7EB;
+            border-top: 2px solid #e7ece9;
         }
 
         .footer-item {
@@ -263,13 +263,13 @@
         }
 
         .footer-value {
-            color: #1F2937;
+            color: #10231a;
         }
 
         .notes {
-            background: #F9FAFB;
+            background: #f6f9f7;
             padding: 8pt;
-            border-left: 4px solid #3B82F6;
+            border-left: 4px solid #176b3b;
             margin-bottom: 8pt;
             font-size: 8pt;
             color: #6B7280;

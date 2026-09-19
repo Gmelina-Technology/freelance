@@ -7,6 +7,7 @@ use App\Models\Comment;
 use App\Policies\CommentPolicy;
 use Filament\Support\Facades\FilamentView;
 use Filament\Tables\View\TablesRenderHook;
+use Filament\View\PanelsRenderHook;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\HtmlString;
@@ -25,6 +26,11 @@ class AppServiceProvider extends ServiceProvider
             scopes: [
                 MyTasksTable::class,
             ]
+        );
+
+        FilamentView::registerRenderHook(
+            PanelsRenderHook::AUTH_LOGIN_FORM_AFTER,
+            fn (): string => view('legal.auth-notice')->render(),
         );
     }
 
