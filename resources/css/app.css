@@ -12,6 +12,22 @@
     --color-brand-600: #1f8a4c;
     --color-brand-700: #176b3b;
     --color-brand-800: #12562f;
-    --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
+    --font-sans: 'Inter Variable', 'Inter', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
         'Segoe UI Symbol', 'Noto Color Emoji';
+}
+
+.legal {
+    @apply space-y-4 leading-7 text-brand-ink/80 dark:text-gray-300;
+
+    h2 {
+        @apply mt-10 text-xl font-extrabold tracking-tight text-brand-ink dark:text-white;
+    }
+
+    ul {
+        @apply list-disc space-y-2 pl-6;
+    }
+
+    a {
+        @apply font-medium text-brand-700 underline underline-offset-2 hover:text-brand-800 dark:text-green-400;
+    }
 }

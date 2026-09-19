@@ -2,6 +2,7 @@
 
 namespace App\Providers\Filament;
 
+use App\Filament\App\Pages\Auth\Register;
 use App\Filament\App\Pages\Tenancy\RegisterAccount;
 use App\Models\Account;
 use Filament\Actions\CreateAction;
@@ -33,7 +34,7 @@ class AppPanelProvider extends PanelProvider
             ->viteTheme('resources/css/filament/app/theme.css')
             ->login()
             ->emailVerification()
-            ->registration()
+            ->registration(Register::class)
             ->passwordReset()
             ->colors([
                 'primary' => Color::Green,
