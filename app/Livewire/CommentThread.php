@@ -510,7 +510,7 @@ class CommentThread extends Component implements HasForms
             ->body($notificationBody)
             ->actions([
                 Action::make('viewTask')
-                    ->url(EditTask::getUrl(['tenant' => Filament::getTenant(), 'record' => $commentable])),
+                    ->url(EditTask::getUrl(['tenant' => Filament::getTenant() ?? $commentable->getCommentAccountId(), 'record' => $commentable])),
             ])
             ->sendToDatabase($mentionedUsers);
     }
