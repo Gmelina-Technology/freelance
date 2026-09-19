@@ -5,309 +5,198 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
 
-    <title>{{ config('app.name', 'Laravel') }}</title>
+    <title>Freelance Manager: quotes, tasks and invoices for solo studios</title>
+    <meta name="description"
+        content="Track the work, send the quote, get paid. A small tool for freelancers and tiny teams.">
 
-    <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.bunny.net">
     <link href="https://fonts.bunny.net/css?family=inter:400,500,600,700,800" rel="stylesheet" />
 
-
     @vite(['resources/css/app.css', 'resources/js/app.js'])
-
 </head>
 
-<body class="bg-white dark:bg-[#0a0a0a] text-gray-900 dark:text-gray-100">
-    <!-- Navigation Header -->
-    <header class="sticky top-0 z-50 bg-white dark:bg-[#0a0a0a] border-b border-brand-line dark:border-gray-800">
-        <nav class="max-w-7xl mx-auto px-6 lg:px-8 py-4 flex items-center justify-between">
-            <div class="flex items-center gap-2">
-                <svg class="w-8 h-8 text-brand-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                        d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2">
-                    </path>
-                </svg>
-                <span class="font-bold text-xl text-brand-ink dark:text-white">Freelance Manager</span>
+<body class="bg-brand-soft text-brand-ink antialiased dark:bg-[#08110c] dark:text-gray-100">
+    @php
+        $loginUrl = route('filament.app.auth.login');
+        $registerUrl = route('filament.app.auth.register');
+    @endphp
+
+    <header
+        class="sticky top-0 z-50 border-b border-brand-line bg-brand-soft/85 backdrop-blur dark:border-white/10 dark:bg-[#08110c]/85">
+        <nav class="mx-auto flex max-w-6xl items-center justify-between px-6 py-3.5">
+            <a href="/" class="flex items-center gap-2.5 font-extrabold tracking-tight">
+                <span class="grid size-7 place-items-center rounded-lg bg-brand-700 text-sm text-white">F</span>
+                Freelance Manager
+            </a>
+
+            <div class="hidden items-center gap-8 text-sm font-medium text-brand-ink/70 md:flex dark:text-gray-400">
+                <a href="#what-you-get" class="transition hover:text-brand-700">What you get</a>
+                <a href="#flow" class="transition hover:text-brand-700">How it flows</a>
             </div>
 
-            <div class="hidden md:flex items-center gap-8">
-                <a href="#features"
-                    class="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white">Features</a>
-                <a href="#how-it-works"
-                    class="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white">How It Works</a>
-            </div>
-
-            <div class="flex items-center gap-4">
+            <div class="flex items-center gap-2 text-sm font-semibold">
                 @auth
                     <a href="{{ url('/app') }}"
-                        class="px-4 py-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white">Dashboard</a>
+                        class="rounded-lg bg-brand-700 px-4 py-2 text-white transition hover:bg-brand-800">Open app</a>
                 @else
-                    <a href="{{ route('filament.app.auth.login') }}"
-                        class="px-4 py-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white">Log
-                        in</a>
-                    @if (Route::has('register'))
-                        <a href="{{ route('register') }}"
-                            class="px-4 py-2 bg-brand-700 text-white rounded-lg hover:bg-brand-800">Sign up</a>
-                    @endif
+                    <a href="{{ $loginUrl }}" class="px-3 py-2 text-brand-ink/70 transition hover:text-brand-700 dark:text-gray-300">Log in</a>
+                    <a href="{{ $registerUrl }}"
+                        class="rounded-lg bg-brand-700 px-4 py-2 text-white transition hover:bg-brand-800">Sign up</a>
                 @endauth
             </div>
         </nav>
     </header>
 
-    <!-- Hero Section -->
-    <section
-        class="relative min-h-screen flex items-center justify-center bg-gradient-to-b from-white to-brand-soft dark:from-[#0a0a0a] dark:to-[#1a1a1a] overflow-hidden">
-        <div class="absolute inset-0 opacity-10 dark:opacity-5">
-            <div class="absolute top-10 right-10 w-72 h-72 bg-green-300 rounded-full mix-blend-multiply filter blur-3xl">
-            </div>
-            <div
-                class="absolute bottom-10 left-10 w-72 h-72 bg-green-200 rounded-full mix-blend-multiply filter blur-3xl">
-            </div>
-        </div>
-
-        <div class="relative max-w-7xl mx-auto px-6 lg:px-8 py-20 text-center">
-            <h1 class="text-5xl md:text-6xl lg:text-7xl font-extrabold tracking-tight text-brand-ink dark:text-white mb-6 leading-[1.1]">
-                Manage Your Freelance Projects with Ease
-            </h1>
-            <p class="text-xl text-gray-600 dark:text-gray-300 max-w-3xl mx-auto mb-10">
-                All-in-one platform to organize projects, track tasks, manage clients, and collaborate seamlessly with
-                your team
-            </p>
-            <div class="flex flex-col sm:flex-row gap-4 justify-center">
-                @auth
-                    <a href="{{ url('/app') }}"
-                        class="px-8 py-4 bg-brand-700 text-white font-semibold rounded-lg hover:bg-brand-800 transition">
-                        Go to Dashboard
-                    </a>
-                @else
-                    <a href="{{ route('filament.app.auth.login') }}"
-                        class="px-8 py-4 bg-brand-700 text-white font-semibold rounded-lg hover:bg-brand-800 transition">
-                        Get Started Free
-                    </a>
-                    @if (Route::has('register'))
-                        <a href="{{ route('filament.app.auth.register') }}"
-                            class="px-8 py-4 border-2 border-gray-300 dark:border-gray-600 text-brand-ink dark:text-white font-semibold rounded-lg hover:bg-gray-50 dark:hover:bg-gray-900 transition">
-                            Learn More
-                        </a>
-                    @endif
-                @endauth
-            </div>
-        </div>
-    </section>
-
-    <!-- Features Section -->
-    <section id="features" class="py-20 bg-white dark:bg-[#0a0a0a] border-t border-brand-line dark:border-gray-800">
-        <div class="max-w-7xl mx-auto px-6 lg:px-8">
-            <div class="text-center mb-16">
-                <h2 class="text-4xl font-extrabold tracking-tight text-brand-ink dark:text-white mb-4">Powerful Features</h2>
-                <p class="text-lg text-gray-600 dark:text-gray-400">Everything you need to manage your freelance
-                    business effectively</p>
+    <main>
+        {{-- Hero --}}
+        <section class="mx-auto grid max-w-6xl items-center gap-14 px-6 pb-20 pt-14 md:pb-28 md:pt-20 lg:grid-cols-[1.05fr_1fr]">
+            <div>
+                <p class="mb-5 inline-flex items-center gap-2 rounded-full border border-brand-line bg-white px-3 py-1 font-mono text-xs text-brand-ink/70 dark:border-white/10 dark:bg-white/5 dark:text-gray-400">
+                    <span class="size-1.5 rounded-full bg-brand-600"></span>
+                    for freelancers &amp; tiny studios
+                </p>
+                <h1 class="text-4xl font-extrabold leading-[1.05] tracking-tight md:text-6xl">
+                    The paperwork side of freelancing, <span class="text-brand-700 dark:text-green-400">handled.</span>
+                </h1>
+                <p class="mt-6 max-w-md text-lg text-brand-ink/70 dark:text-gray-400">
+                    Keep clients, projects and tasks in one place. Send a quote, turn it into an invoice, email the PDF.
+                    No spreadsheet in the middle.
+                </p>
+                <div class="mt-9 flex flex-wrap items-center gap-3">
+                    @auth
+                        <a href="{{ url('/app') }}"
+                            class="rounded-lg bg-brand-700 px-6 py-3 font-semibold text-white transition hover:bg-brand-800">Open your workspace</a>
+                    @else
+                        <a href="{{ $registerUrl }}"
+                            class="rounded-lg bg-brand-700 px-6 py-3 font-semibold text-white transition hover:bg-brand-800">Create a free account</a>
+                        <a href="{{ $loginUrl }}"
+                            class="rounded-lg border border-brand-line bg-white px-6 py-3 font-semibold transition hover:border-brand-700 dark:border-white/10 dark:bg-white/5">Log in</a>
+                    @endauth
+                </div>
+                <p class="mt-5 font-mono text-xs text-brand-ink/50 dark:text-gray-500">multi-currency · PDF invoices · team invites</p>
             </div>
 
-            <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-                <!-- Feature 1 -->
-                <div
-                    class="p-8 bg-white dark:bg-gray-900 rounded-2xl shadow-[0_24px_50px_-30px_rgba(16,35,26,0.35)] border border-brand-line dark:border-gray-800 hover:border-brand-600 dark:hover:border-brand-600 transition">
-                    <svg class="w-12 h-12 text-brand-700 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2">
-                        </path>
-                    </svg>
-                    <h3 class="text-xl font-semibold text-brand-ink dark:text-white mb-2">Project Management</h3>
-                    <p class="text-gray-600 dark:text-gray-400">Organize and track all your projects with clear
-                        deadlines, status updates, and client information</p>
-                </div>
-
-                <!-- Feature 2 -->
-                <div
-                    class="p-8 bg-white dark:bg-gray-900 rounded-2xl shadow-[0_24px_50px_-30px_rgba(16,35,26,0.35)] border border-brand-line dark:border-gray-800 hover:border-brand-600 dark:hover:border-brand-600 transition">
-                    <svg class="w-12 h-12 text-brand-700 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                    </svg>
-                    <h3 class="text-xl font-semibold text-brand-ink dark:text-white mb-2">Task Tracking</h3>
-                    <p class="text-gray-600 dark:text-gray-400">Create, assign, and monitor tasks with priority levels,
-                        due dates, and progress indicators</p>
-                </div>
-
-                <!-- Feature 3 -->
-                <div
-                    class="p-8 bg-white dark:bg-gray-900 rounded-2xl shadow-[0_24px_50px_-30px_rgba(16,35,26,0.35)] border border-brand-line dark:border-gray-800 hover:border-brand-600 dark:hover:border-brand-600 transition">
-                    <svg class="w-12 h-12 text-brand-700 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M12 4.354a4 4 0 110 5.292M15 12H9m6 0a6 6 0 11-12 0 6 6 0 0112 0z"></path>
-                    </svg>
-                    <h3 class="text-xl font-semibold text-brand-ink dark:text-white mb-2">Team Collaboration</h3>
-                    <p class="text-gray-600 dark:text-gray-400">Invite team members, assign responsibilities, and
-                        collaborate in real-time on projects</p>
-                </div>
-
-                <!-- Feature 4 -->
-                <div
-                    class="p-8 bg-white dark:bg-gray-900 rounded-2xl shadow-[0_24px_50px_-30px_rgba(16,35,26,0.35)] border border-brand-line dark:border-gray-800 hover:border-brand-600 dark:hover:border-brand-600 transition">
-                    <svg class="w-12 h-12 text-brand-700 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
-                    </svg>
-                    <h3 class="text-xl font-semibold text-brand-ink dark:text-white mb-2">Client Management</h3>
-                    <p class="text-gray-600 dark:text-gray-400">Store client details, communication history, and project
-                        references all in one place</p>
-                </div>
-
-                <!-- Feature 5 -->
-                <div
-                    class="p-8 bg-white dark:bg-gray-900 rounded-2xl shadow-[0_24px_50px_-30px_rgba(16,35,26,0.35)] border border-brand-line dark:border-gray-800 hover:border-brand-600 dark:hover:border-brand-600 transition">
-                    <svg class="w-12 h-12 text-brand-700 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z">
-                        </path>
-                    </svg>
-                    <h3 class="text-xl font-semibold text-brand-ink dark:text-white mb-2">Analytics & Reports</h3>
-                    <p class="text-gray-600 dark:text-gray-400">Get insights into project progress, team productivity,
-                        and business metrics</p>
-                </div>
-
-                <!-- Feature 6 -->
-                <div
-                    class="p-8 bg-white dark:bg-gray-900 rounded-2xl shadow-[0_24px_50px_-30px_rgba(16,35,26,0.35)] border border-brand-line dark:border-gray-800 hover:border-brand-600 dark:hover:border-brand-600 transition">
-                    <svg class="w-12 h-12 text-brand-700 mb-4" fill="none" stroke="currentColor"
-                        viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M13 10V3L4 14h7v7l9-11h-7z"></path>
-                    </svg>
-                    <h3 class="text-xl font-semibold text-brand-ink dark:text-white mb-2">Fast & Reliable</h3>
-                    <p class="text-gray-600 dark:text-gray-400">Lightning-fast performance with 99.9% uptime to keep
-                        your business running smoothly</p>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- How It Works -->
-    <section id="how-it-works" class="py-20 bg-brand-soft dark:bg-gray-900">
-        <div class="max-w-7xl mx-auto px-6 lg:px-8">
-            <div class="text-center mb-16">
-                <h2 class="text-4xl font-extrabold tracking-tight text-brand-ink dark:text-white mb-4">How It Works</h2>
-                <p class="text-lg text-gray-600 dark:text-gray-400">Get started in three simple steps</p>
-            </div>
-
-            <div class="grid md:grid-cols-3 gap-8">
-                <div class="text-center">
-                    <div
-                        class="flex items-center justify-center w-16 h-16 bg-brand-700 text-white rounded-full mx-auto mb-6 text-2xl font-bold">
-                        1</div>
-                    <h3 class="text-2xl font-semibold text-brand-ink dark:text-white mb-2">Create Your Account</h3>
-                    <p class="text-gray-600 dark:text-gray-400">Sign up quickly and set up your workspace in minutes
-                    </p>
-                </div>
-
-                <div class="text-center">
-                    <div
-                        class="flex items-center justify-center w-16 h-16 bg-brand-700 text-white rounded-full mx-auto mb-6 text-2xl font-bold">
-                        2</div>
-                    <h3 class="text-2xl font-semibold text-brand-ink dark:text-white mb-2">Add Your Projects</h3>
-                    <p class="text-gray-600 dark:text-gray-400">Create projects, add clients, and organize your work
-                    </p>
-                </div>
-
-                <div class="text-center">
-                    <div
-                        class="flex items-center justify-center w-16 h-16 bg-brand-700 text-white rounded-full mx-auto mb-6 text-2xl font-bold">
-                        3</div>
-                    <h3 class="text-2xl font-semibold text-brand-ink dark:text-white mb-2">Collaborate & Deliver</h3>
-                    <p class="text-gray-600 dark:text-gray-400">Manage tasks, track progress, and deliver excellence
-                    </p>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- CTA Section -->
-    <section class="py-20 bg-brand-700 dark:bg-brand-800">
-        <div class="max-w-4xl mx-auto px-6 lg:px-8 text-center">
-            <h2 class="text-4xl font-extrabold tracking-tight text-white mb-6">Ready to transform how you work?</h2>
-            <p class="text-xl text-green-100 mb-10">Join thousands of freelancers and teams already using Freelance
-                Manager</p>
-            <div class="flex flex-col sm:flex-row gap-4 justify-center">
-                @auth
-                    <a href="{{ url('/dashboard') }}"
-                        class="px-8 py-4 bg-white text-brand-700 font-semibold rounded-lg hover:bg-gray-100 transition">
-                        Go to Dashboard
-                    </a>
-                @else
-                    <a href="{{ route('filament.app.auth.login') }}"
-                        class="px-8 py-4 bg-white text-brand-700 font-semibold rounded-lg hover:bg-gray-100 transition">
-                        Start Free Trial
-                    </a>
-                    @if (Route::has('register'))
-                        <a href="{{ route('register') }}"
-                            class="px-8 py-4 border-2 border-white text-white font-semibold rounded-lg hover:bg-brand-800 transition">
-                            Create Account
-                        </a>
-                    @endif
-                @endauth
-            </div>
-        </div>
-    </section>
-
-    <!-- Footer -->
-    <footer class="bg-brand-ink dark:bg-black text-gray-300 py-16">
-        <div class="max-w-7xl mx-auto px-6 lg:px-8">
-            <div class="grid md:grid-cols-4 gap-8 mb-12">
-                <!-- Brand -->
-                <div>
-                    <div class="flex items-center gap-2 mb-4">
-                        <svg class="w-8 h-8 text-brand-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2">
-                            </path>
-                        </svg>
-                        <span class="font-bold text-white text-lg">Freelance Manager</span>
+            {{-- Product mock: task board + invoice --}}
+            <div class="relative mx-auto w-full max-w-xl pb-16 lg:max-w-none" aria-hidden="true">
+                <div class="-rotate-1 rounded-2xl border border-brand-line bg-white p-5 shadow-[0_40px_70px_-28px_rgba(16,35,26,0.45)] dark:border-white/10 dark:bg-[#0e1a13]">
+                    <div class="mb-4 flex items-center justify-between">
+                        <div>
+                            <p class="font-mono text-[11px] uppercase tracking-widest text-brand-ink/50 dark:text-gray-500">Project</p>
+                            <p class="font-extrabold tracking-tight">Harbor Coffee rebrand</p>
+                        </div>
+                        <span class="rounded-full bg-brand-soft px-2.5 py-1 font-mono text-[11px] text-brand-700 dark:bg-white/5 dark:text-green-400">due Nov 14</span>
                     </div>
-                    <p class="text-sm">The all-in-one platform for freelance project management</p>
-                </div>
 
-                <!-- Product -->
-                <div>
-                    <h4 class="font-semibold text-white mb-4">Product</h4>
-                    <ul class="space-y-2 text-sm">
-                        <li><a href="#features" class="hover:text-white transition">Features</a></li>
-                        <li><a href="#pricing" class="hover:text-white transition">Pricing</a></li>
-                        <li><a href="#" class="hover:text-white transition">Security</a></li>
-                        <li><a href="#" class="hover:text-white transition">Roadmap</a></li>
-                    </ul>
-                </div>
-
-                <!-- Company -->
-                <div>
-                    <h4 class="font-semibold text-white mb-4">Company</h4>
-                    <ul class="space-y-2 text-sm">
-                        <li><a href="#" class="hover:text-white transition">About</a></li>
-                        <li><a href="#" class="hover:text-white transition">Blog</a></li>
-                        <li><a href="#" class="hover:text-white transition">Careers</a></li>
-                        <li><a href="#" class="hover:text-white transition">Contact</a></li>
-                    </ul>
-                </div>
-
-                <!-- Legal -->
-                <div>
-                    <h4 class="font-semibold text-white mb-4">Legal</h4>
-                    <ul class="space-y-2 text-sm">
-                        <li><a href="#" class="hover:text-white transition">Privacy Policy</a></li>
-                        <li><a href="#" class="hover:text-white transition">Terms of Service</a></li>
-                        <li><a href="#" class="hover:text-white transition">Cookies</a></li>
-                    </ul>
-                </div>
-            </div>
-
-            <div class="border-t border-gray-800 pt-8">
-                <div class="flex flex-col md:flex-row justify-between items-center">
-                    <p class="text-sm">© 2024 Freelance Manager. All rights reserved.</p>
-                    <div class="flex gap-6 mt-4 md:mt-0">
-                        <a href="#" class="hover:text-white transition">Twitter</a>
-                        <a href="#" class="hover:text-white transition">LinkedIn</a>
-                        <a href="#" class="hover:text-white transition">GitHub</a>
+                    <div class="grid grid-cols-3 gap-3 text-xs">
+                        <div>
+                            <p class="mb-2 font-semibold text-brand-ink/50 dark:text-gray-500">To do <span class="font-mono">2</span></p>
+                            <div class="mb-2 rounded-lg border border-brand-line p-2.5 dark:border-white/10">Menu layout, A4</div>
+                            <div class="rounded-lg border border-brand-line p-2.5 dark:border-white/10">Send font licence</div>
+                        </div>
+                        <div>
+                            <p class="mb-2 font-semibold text-brand-ink/50 dark:text-gray-500">Doing <span class="font-mono">1</span></p>
+                            <div class="rounded-lg border border-brand-700/40 bg-brand-soft p-2.5 dark:border-green-400/30 dark:bg-white/5">
+                                Logo, round 2
+                                <p class="mt-2 font-mono text-[10px] text-brand-700 dark:text-green-400">3h 20m logged</p>
+                            </div>
+                        </div>
+                        <div>
+                            <p class="mb-2 font-semibold text-brand-ink/50 dark:text-gray-500">Done <span class="font-mono">3</span></p>
+                            <div class="mb-2 rounded-lg border border-brand-line p-2.5 line-through opacity-60 dark:border-white/10">Moodboard</div>
+                            <div class="rounded-lg border border-brand-line p-2.5 line-through opacity-60 dark:border-white/10">Kickoff call</div>
+                        </div>
                     </div>
                 </div>
+
+                <div class="absolute -bottom-14 -right-2 w-64 lg:-right-6 rotate-2 rounded-2xl border border-brand-line bg-white p-4 shadow-[0_30px_60px_-24px_rgba(16,35,26,0.5)] dark:border-white/10 dark:bg-[#0e1a13]">
+                    <div class="flex items-baseline justify-between">
+                        <p class="font-mono text-[11px] uppercase tracking-widest text-brand-ink/50 dark:text-gray-500">Invoice</p>
+                        <p class="font-mono text-[11px] text-brand-ink/50 dark:text-gray-500">INV-0042</p>
+                    </div>
+                    <dl class="mt-3 space-y-1.5 text-xs">
+                        <div class="flex justify-between"><dt>Brand identity</dt><dd class="font-mono">$1,800.00</dd></div>
+                        <div class="flex justify-between"><dt>Menu design</dt><dd class="font-mono">$600.00</dd></div>
+                    </dl>
+                    <div class="mt-3 flex items-center justify-between border-t border-brand-line pt-3 dark:border-white/10">
+                        <span class="text-xs font-semibold">Total</span>
+                        <span class="font-mono text-base font-bold text-brand-700 dark:text-green-400">$2,400.00</span>
+                    </div>
+                    <p class="mt-3 rounded-md bg-brand-700 py-1.5 text-center text-xs font-semibold text-white">Email PDF to client</p>
+                </div>
+            </div>
+        </section>
+
+        {{-- What you get --}}
+        <section id="what-you-get" class="border-y border-brand-line bg-white dark:border-white/10 dark:bg-[#0b150f]">
+            <div class="mx-auto grid max-w-6xl gap-10 px-6 py-20 md:py-24 lg:grid-cols-[1fr_2fr]">
+                <div>
+                    <p class="font-mono text-xs uppercase tracking-[0.14em] text-brand-700 dark:text-green-400">What you get</p>
+                    <h2 class="mt-3 text-3xl font-extrabold leading-[1.1] tracking-tight md:text-4xl">Fewer tabs. One paper trail.</h2>
+                </div>
+
+                <ul class="divide-y divide-brand-line dark:divide-white/10">
+                    @foreach ([
+                        ['Clients &amp; projects', 'Every client, every job, with its budget, dates and status. Nothing lives in your inbox.', 'clients'],
+                        ['Task board', 'Drag tasks across a kanban board, log the hours, and leave comments where the work is.', 'tasks'],
+                        ['Quotes that become invoices', 'Write a quote, send it as a PDF, and convert it when the client says yes. Line items carry over.', 'quotes'],
+                        ['Invoices by email', 'A clean PDF with your bank details and currency, sent from the app with a template you control.', 'invoices'],
+                        ['Bring your team', 'Invite a collaborator to your account. They see the projects you share, and nothing else.', 'teams'],
+                    ] as [$title, $body, $tag])
+                        <li class="grid gap-2 py-6 first:pt-0 last:pb-0 sm:grid-cols-[1fr_auto] sm:items-baseline sm:gap-8">
+                            <div>
+                                <h3 class="text-lg font-bold tracking-tight">{!! $title !!}</h3>
+                                <p class="mt-1 max-w-xl text-brand-ink/70 dark:text-gray-400">{{ $body }}</p>
+                            </div>
+                            <span class="font-mono text-xs uppercase tracking-widest text-brand-ink/40 dark:text-gray-500">{{ $tag }}</span>
+                        </li>
+                    @endforeach
+                </ul>
+            </div>
+        </section>
+
+        {{-- Flow --}}
+        <section id="flow" class="mx-auto max-w-6xl px-6 py-20 md:py-24">
+            <p class="font-mono text-xs uppercase tracking-[0.14em] text-brand-700 dark:text-green-400">How it flows</p>
+            <h2 class="mt-3 max-w-2xl text-3xl font-extrabold leading-[1.1] tracking-tight md:text-4xl">From “can you do this?” to paid, in four steps.</h2>
+
+            <ol class="mt-12 grid gap-px overflow-hidden rounded-2xl border border-brand-line bg-brand-line sm:grid-cols-2 lg:grid-cols-4 dark:border-white/10 dark:bg-white/10">
+                @foreach ([
+                    ['Add the client', 'Name, contact, currency. Once.'],
+                    ['Quote the job', 'Line items, validity date, one click to send.'],
+                    ['Do the work', 'Tasks on a board, hours on the clock.'],
+                    ['Invoice &amp; get paid', 'Convert the quote, email the PDF.'],
+                ] as $i => [$title, $body])
+                    <li class="bg-brand-soft p-7 dark:bg-[#08110c]">
+                        <span class="block text-5xl font-extrabold tracking-tighter text-brand-700/25 dark:text-green-400/30">0{{ $i + 1 }}</span>
+                        <h3 class="mt-6 font-bold tracking-tight">{!! $title !!}</h3>
+                        <p class="mt-1 text-sm text-brand-ink/70 dark:text-gray-400">{{ $body }}</p>
+                    </li>
+                @endforeach
+            </ol>
+        </section>
+
+        {{-- CTA --}}
+        <section class="mx-auto max-w-6xl px-6 pb-24">
+            <div class="flex flex-col items-start justify-between gap-6 rounded-2xl border border-brand-line bg-white p-8 md:flex-row md:items-center md:p-10 dark:border-white/10 dark:bg-[#0e1a13]">
+                <div>
+                    <h2 class="text-2xl font-extrabold tracking-tight md:text-3xl">Send your first quote today.</h2>
+                    <p class="mt-1 text-brand-ink/70 dark:text-gray-400">Sign-up takes a minute. Bring one client and one job.</p>
+                </div>
+                @auth
+                    <a href="{{ url('/app') }}" class="shrink-0 rounded-lg bg-brand-700 px-6 py-3 font-semibold text-white transition hover:bg-brand-800">Open your workspace</a>
+                @else
+                    <a href="{{ $registerUrl }}" class="shrink-0 rounded-lg bg-brand-700 px-6 py-3 font-semibold text-white transition hover:bg-brand-800">Create a free account</a>
+                @endauth
+            </div>
+        </section>
+    </main>
+
+    <footer class="border-t border-brand-line dark:border-white/10">
+        <div class="mx-auto flex max-w-6xl flex-col items-start justify-between gap-3 px-6 py-8 text-sm text-brand-ink/60 sm:flex-row sm:items-center dark:text-gray-500">
+            <p>© {{ date('Y') }} Freelance Manager</p>
+            <div class="flex gap-6 font-medium">
+                <a href="{{ $loginUrl }}" class="transition hover:text-brand-700">Log in</a>
+                <a href="{{ $registerUrl }}" class="transition hover:text-brand-700">Sign up</a>
             </div>
         </div>
     </footer>
