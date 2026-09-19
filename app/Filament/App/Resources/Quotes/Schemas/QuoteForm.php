@@ -141,14 +141,8 @@ class QuoteForm
      */
     private static function customAttachmentEnabled(): bool
     {
-        $account = Filament::getTenant();
-
-        if ($account === null) {
-            return false;
-        }
-
         return EmailTemplate::query()
-            ->where('account_id', $account->getKey())
+            ->where('account_id', Filament::getTenant()->getKey())
             ->where('type', EmailTemplateType::QUOTE_REQUEST)
             ->first()
             ?->featureEnabled('custom_attachment') ?? false;
