@@ -9,7 +9,6 @@ use Filament\Tables;
 use Filament\Tables\Table;
 use Filament\Widgets\TableWidget as BaseTableWidget;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\HtmlString;
 
 class MyTasksTable extends BaseTableWidget
 {
@@ -21,7 +20,7 @@ class MyTasksTable extends BaseTableWidget
 
     public function getColumnSpan(): int
     {
-        return  Auth::user()->isMember(Filament::getTenant()) ? 3 : 12;
+        return Auth::user()->isMember(Filament::getTenant()) ? 3 : 12;
     }
 
     public function table(Table $table): Table

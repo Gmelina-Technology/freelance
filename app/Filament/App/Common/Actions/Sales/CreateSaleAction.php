@@ -2,12 +2,10 @@
 
 namespace App\Filament\App\Common\Actions\Sales;
 
-use App\Models\Invoice;
 use App\Models\Sale;
 
 class CreateSaleAction
 {
-
     public static function handle(array $data)
     {
         Sale::create([
@@ -15,7 +13,7 @@ class CreateSaleAction
             'category' => $data['category'],
             'reference_key' => $data['reference_key'],
             'amount' => $data['amount'],
-            'transaction_date' => $data['transaction_date']
+            'transaction_date' => $data['transaction_date'],
         ]);
     }
 }

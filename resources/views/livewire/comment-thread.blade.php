@@ -17,7 +17,9 @@
     </form>
 
     <div class="space-y-5">
-        @if ($comments->isNotEmpty())
+        @if ($comments->isEmpty())
+            <p class="text-sm text-gray-500 dark:text-gray-400">No comments yet.</p>
+        @else
             <h3 class="text-sm font-semibold text-gray-950 dark:text-white">
                 {{ $comments->count() }} {{ \Illuminate\Support\Str::plural('comment', $comments->count()) }}
             </h3>

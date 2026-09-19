@@ -45,6 +45,11 @@ class Client extends Model
         return $this->belongsTo(Currency::class, 'currency_code', 'code');
     }
 
+    public function quotes(): HasMany
+    {
+        return $this->hasMany(Quote::class);
+    }
+
     public function invoices(): HasMany
     {
         return $this->hasMany(Invoice::class);

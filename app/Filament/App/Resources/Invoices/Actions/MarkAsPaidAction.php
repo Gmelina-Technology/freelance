@@ -19,9 +19,9 @@ class MarkAsPaidAction
             ->iconPosition(IconPosition::After)
             ->requiresConfirmation()
             ->modalIcon(Heroicon::CreditCard)
-            ->modalDescription(fn(Invoice $record) => 'Marking invoice #' . $record->number . ' as paid.')
-            ->visible(fn($record) => self::isVisible($record))
-            ->action(function(Invoice $invoice, InvoiceService $invoiceService) {
+            ->modalDescription(fn (Invoice $record) => 'Marking invoice #'.$record->number.' as paid.')
+            ->visible(fn ($record) => self::isVisible($record))
+            ->action(function (Invoice $invoice, InvoiceService $invoiceService) {
                 $invoiceService->markAsPaid($invoice);
             });
     }

@@ -15,6 +15,7 @@ class InvoiceItem extends Model
     protected $fillable = [
         'invoice_id',
         'task_id',
+        'quote_item_id',
         'unit_id',
         'quantity',
         'unit_price',
@@ -23,7 +24,7 @@ class InvoiceItem extends Model
     protected function casts(): array
     {
         return [
-            'quantity' => 'integer',
+            'quantity' => 'decimal:2',
             'unit_price' => 'decimal:2',
             'amount' => 'decimal:2',
         ];
@@ -37,6 +38,11 @@ class InvoiceItem extends Model
     public function task(): BelongsTo
     {
         return $this->belongsTo(Task::class);
+    }
+
+    public function quoteItem(): BelongsTo
+    {
+        return $this->belongsTo(QuoteItem::class);
     }
 
     public function unit(): BelongsTo

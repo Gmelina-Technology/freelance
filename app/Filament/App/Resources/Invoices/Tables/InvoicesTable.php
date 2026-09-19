@@ -2,12 +2,14 @@
 
 namespace App\Filament\App\Resources\Invoices\Tables;
 
+use App\Enums\InvoiceStatus;
 use App\Filament\App\Common\Tables\Columns\ClientInvoiceAmountColumn;
 use App\Filament\App\Resources\Invoices\Actions\MarkAsPaidAction;
 use App\Filament\App\Resources\Invoices\Actions\SentInvoiceAction;
 use App\Filament\App\Resources\Invoices\Actions\VoidInvoiceAction;
 use Filament\Actions\ActionGroup;
 use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 
 class InvoicesTable
@@ -37,7 +39,8 @@ class InvoicesTable
                     ->sortable(),
             ])
             ->filters([
-                //
+                SelectFilter::make('status')
+                    ->options(InvoiceStatus::class),
             ])
             ->recordActions([
                 ActionGroup::make([

@@ -2,6 +2,7 @@
 
 namespace Database\Factories;
 
+use App\Models\Account;
 use App\Models\Unit;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
@@ -18,7 +19,8 @@ class UnitFactory extends Factory
     public function definition(): array
     {
         return [
-            //
+            'account_id' => Account::factory(),
+            'name' => $this->faker->unique()->word(),
         ];
     }
 }

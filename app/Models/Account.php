@@ -61,6 +61,11 @@ class Account extends Model
         return $this->hasMany(BankDetail::class);
     }
 
+    public function emailTemplates(): HasMany
+    {
+        return $this->hasMany(EmailTemplate::class);
+    }
+
     public function defaultBankDetail(): BelongsTo
     {
         return $this->belongsTo(BankDetail::class, 'default_bank_detail_id');

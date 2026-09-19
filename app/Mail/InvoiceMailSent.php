@@ -40,12 +40,12 @@ class InvoiceMailSent extends Mailable implements ShouldQueue
             subject: "Invoice #{$this->invoice->number}",
             from: new Address(config('mail.from.address'), $this->invoice->account->name ?? config('mail.from.name')),
             to: [new Address($this->invoice->client->email, $this->invoice->client->name)],
-            cc: array_map(fn($poc) => new Address($poc['email'], $poc['name']), $this->invoice->client->pocs ?? []),
+            cc: array_map(fn ($poc) => new Address($poc['email'], $poc['name']), $this->invoice->client->pocs ?? []),
             replyTo: [
                 new Address(
                     $this->invoice->account->email ?? config('mail.from.address'),
                     $this->invoice->account->name ?? config('mail.from.name')
-                )
+                ),
             ]
         );
     }
@@ -92,7 +92,7 @@ class InvoiceMailSent extends Mailable implements ShouldQueue
             'status' => InvoiceStatus::Draft,
         ]);
 
-        Log::info('Failed to send email for invoice: ' . $this->invoice->number);
+        Log::info('Failed to send email for invoice: '.$this->invoice->number);
     }
 
     private function generateAndSaveInvoicePdf(): string
@@ -117,7 +117,7 @@ class InvoiceMailSent extends Mailable implements ShouldQueue
 
         $logoPath = '';
         if ($this->invoice->account->logo) {
-            $fullPath = storage_path('app/public/' . $this->invoice->account->logo);
+            $fullPath = storage_path('app/public/'.$this->invoice->account->logo);
             if (file_exists($fullPath)) {
                 $logoPath = $fullPath;
             }
@@ -160,7 +160,7 @@ class InvoiceMailSent extends Mailable implements ShouldQueue
         $invoicePdf->save('local');
 
         // Return the full path to the saved PDF file
-        return $filename . '.pdf';
+        return $filename.'.pdf';
     }
 
     private function renderEmailContent(): string
@@ -186,9 +186,9 @@ class InvoiceMailSent extends Mailable implements ShouldQueue
     {
         $symbol = $currency->symbol ?? '$';
         if ($amount === null) {
-            return $symbol . '0.00';
+            return $symbol.'0.00';
         }
 
-        return $symbol . number_format((float) $amount, 2);
+        return $symbol.number_format((float) $amount, 2);
     }
 }

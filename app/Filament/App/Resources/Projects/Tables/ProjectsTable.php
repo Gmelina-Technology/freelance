@@ -2,6 +2,7 @@
 
 namespace App\Filament\App\Resources\Projects\Tables;
 
+use App\Filament\App\Resources\Projects\Actions\GenerateInvoiceAction;
 use Filament\Facades\Filament;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Grouping\Group;
@@ -14,12 +15,12 @@ class ProjectsTable
     public static function configure(Table $table): Table
     {
         return $table
-            ->modifyQueryUsing(fn(Builder $query) => $query->when(
+            ->modifyQueryUsing(fn (Builder $query) => $query->when(
                 Auth::user()->isMember(Filament::getTenant()),
                 function (Builder $query) {
                     $query->whereHas('assignees', function (Builder $subQuery) {
                         $subQuery->wherekey(Auth::id());
-                     });
+                    });
                 }
             ))
             ->columns([
@@ -41,6 +42,9 @@ class ProjectsTable
                     ->dateTime()
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
+            ])
+            ->recordActions([
+                GenerateInvoiceAction::handle(),
             ])->groups([
                 Group::make('client.name'),
             ]);

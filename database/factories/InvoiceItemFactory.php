@@ -20,7 +20,6 @@ class InvoiceItemFactory extends Factory
     {
         return [
             'invoice_id' => Invoice::factory(),
-            'description' => $this->faker->sentence(),
             'quantity' => $this->faker->numberBetween(1, 10),
             'unit_price' => $this->faker->numberBetween(50, 500),
         ];

@@ -10,7 +10,6 @@ use Filament\Notifications\Notification;
 
 class NotifyTaskAssignee
 {
-
     public static function handle(Task $task): void
     {
         Notification::make('notifyAssignee')
