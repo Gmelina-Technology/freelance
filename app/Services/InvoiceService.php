@@ -69,11 +69,11 @@ class InvoiceService
      *
      * @throws NoBillableTasksException
      */
-    public function generateFromCompletedTasks(Project $project): Invoice
+    public function generateFromCompletedTasks(Project $project, ?array $taskIds = null): Invoice
     {
-        return $this->retryOnDuplicateNumber(function (int $attempt) use ($project): Invoice {
-            return DB::transaction(function () use ($project, $attempt): Invoice {
-                $tasks = $this->billableTasksFor($project, lock: true);
+        return $this->retryOnDuplicateNumber(function (int $attempt) use ($project, $taskIds): Invoice {
+            return DB::transaction(function () use ($project, $taskIds, $attempt): Invoice {
+                $tasks = $this->billableTasksFor($project, lock: true, taskIds: $taskIds);
 
                 if ($tasks->isEmpty()) {
                     throw new NoBillableTasksException($project);
@@ -115,15 +115,16 @@ class InvoiceService
      *
      * @return Collection<int, Task>
      */
-    public function billableTasksFor(Project $project, bool $lock = false): Collection
+    public function billableTasksFor(Project $project, bool $lock = false, ?array $taskIds = null): Collection
     {
         return Task::query()
             ->where('project_id', $project->getKey())
             ->where('status', TaskStatus::COMPLETED)
             ->where('billing_status', TaskBillingStatus::Billable)
             ->whereNotNull('quote_item_id')
+            ->when($taskIds !== null, fn ($query) => $query->whereKey($taskIds))
             ->whereHas('quoteItem.quote', fn ($query) => $query->where('status', QuoteStatus::Accepted))
-            ->with('quoteItem')
+            ->with('quoteItem.quote')
             ->when($lock, fn ($query) => $query->lockForUpdate())
             ->get()
             ->sortBy([
