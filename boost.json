@@ -10,9 +10,11 @@
         "relaticle/flowforge"
     ],
     "skills": [
+        "infer-conventions",
         "laravel-best-practices",
-        "pest-testing",
+        "testing-best-practices",
         "tailwindcss-development",
+        "filament-development",
         "flowforge-development"
     ]
 }
