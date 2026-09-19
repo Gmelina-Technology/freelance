@@ -25,5 +25,24 @@ class EmailTemplate extends Model
 
     protected $casts = [
         'type' => EmailTemplateType::class,
+        'metadata' => 'array',
     ];
+
+    /**
+     * The feature flags this template's type supports, keyed by flag name.
+     *
+     * @return array<string, array{label: string, description?: string}>
+     */
+    public function availableFeatures(): array
+    {
+        return config("email-templates.features.{$this->type?->name}", []);
+    }
+
+    /**
+     * Whether the given feature flag (declared in config/email-templates.php) is switched on for this template.
+     */
+    public function featureEnabled(string $feature): bool
+    {
+        return (bool) data_get($this->metadata, "features.{$feature}", false);
+    }
 }

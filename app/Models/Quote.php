@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasManyThrough;
+use Illuminate\Support\Facades\Storage;
 
 class Quote extends Model
 {
@@ -30,7 +31,30 @@ class Quote extends Model
         'accepted_at',
         'notes',
         'email_content',
+        'attachment_path',
     ];
+
+    /**
+     * The disk that holds uploaded quote attachments (private, never publicly served).
+     */
+    public const ATTACHMENT_DISK = 'local';
+
+    protected static function booted(): void
+    {
+        static::updated(function (Quote $quote): void {
+            $previousPath = $quote->getOriginal('attachment_path');
+
+            if ($quote->wasChanged('attachment_path') && filled($previousPath)) {
+                Storage::disk(self::ATTACHMENT_DISK)->delete($previousPath);
+            }
+        });
+
+        static::deleted(function (Quote $quote): void {
+            if (filled($quote->attachment_path)) {
+                Storage::disk(self::ATTACHMENT_DISK)->delete($quote->attachment_path);
+            }
+        });
+    }
 
     protected function casts(): array
     {
@@ -71,6 +95,15 @@ class Quote extends Model
     public function tasks(): HasManyThrough
     {
         return $this->hasManyThrough(Task::class, QuoteItem::class);
+    }
+
+    /**
+     * Whether an uploaded attachment is stored on disk for this quote.
+     */
+    public function hasStoredAttachment(): bool
+    {
+        return filled($this->attachment_path)
+            && Storage::disk(self::ATTACHMENT_DISK)->exists($this->attachment_path);
     }
 
     public function isAccepted(): bool

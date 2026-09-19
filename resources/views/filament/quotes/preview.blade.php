@@ -28,7 +28,12 @@
 
     <div class="space-y-2">
         <div class="flex items-center justify-between text-sm">
-            <span class="font-medium text-gray-500 dark:text-gray-400">Attached PDF</span>
+            <span class="font-medium text-gray-500 dark:text-gray-400">
+                Attached PDF
+                @if ($usesCustomAttachment)
+                    <span class="ml-1 rounded-md bg-primary-50 px-2 py-0.5 text-xs text-primary-700 dark:bg-primary-400/10 dark:text-primary-400">Using your uploaded PDF</span>
+                @endif
+            </span>
             <a href="{{ route('quotes.preview', $quote) }}" target="_blank" class="text-primary-600 hover:underline">Open PDF</a>
         </div>
         <iframe src="{{ route('quotes.preview', $quote) }}" class="h-[32rem] w-full rounded-lg border border-gray-200 bg-white" title="Quote PDF preview"></iframe>

@@ -43,6 +43,7 @@ class PreviewQuoteAction
             'body' => $mail->renderedBody(),
             'hasClientEmail' => $hasClientEmail,
             'hasTemplate' => $mail->hasEmailTemplate(),
+            'usesCustomAttachment' => $mail->usesCustomAttachment(),
         ]);
     }
 }

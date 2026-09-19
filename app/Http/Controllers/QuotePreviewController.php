@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Mail\QuoteMailSent;
 use App\Models\Quote;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 use Symfony\Component\HttpFoundation\Response;
 
 class QuotePreviewController extends Controller
@@ -22,6 +23,17 @@ class QuotePreviewController extends Controller
             403,
         );
 
-        return (new QuoteMailSent($quote))->buildPdf()->stream();
+        $mail = new QuoteMailSent($quote);
+
+        if ($mail->usesCustomAttachment()) {
+            return Storage::disk(Quote::ATTACHMENT_DISK)->response(
+                $quote->attachment_path,
+                $mail->attachmentName(),
+                ['Content-Type' => 'application/pdf'],
+                'inline',
+            );
+        }
+
+        return $mail->buildPdf()->stream();
     }
 }

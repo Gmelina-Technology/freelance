@@ -33,4 +33,18 @@ return [
             'notes' => 'Quote Notes',
         ],
     ],
+    /*
+     * Feature flags each template type can switch on. They are stored per template
+     * in the `metadata` column as `metadata.features.<flag>`; add a flag here to
+     * make it appear as a toggle in the email template settings.
+     */
+    'features' => [
+        'INVOICE_REQUEST' => [],
+        'QUOTE_REQUEST' => [
+            'custom_attachment' => [
+                'label' => 'Use custom attachment',
+                'description' => 'Lets you upload your own PDF on each quote. It is sent instead of the generated quote PDF; quotes without an upload still get the generated PDF.',
+            ],
+        ],
+    ],
 ];

@@ -2,8 +2,13 @@
 
 namespace App\Filament\App\Resources\Quotes\Schemas;
 
+use App\Enums\EmailTemplateType;
 use App\Enums\QuoteStatus;
+use App\Models\EmailTemplate;
+use App\Models\Quote;
+use Filament\Facades\Filament;
 use Filament\Forms\Components\DateTimePicker;
+use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Hidden;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Select;
@@ -49,6 +54,17 @@ class QuoteForm
                         });
                     }),
                 Textarea::make('notes')
+                    ->columnSpanFull(),
+                FileUpload::make('attachment_path')
+                    ->label('Custom attachment')
+                    ->helperText('Sent to the client instead of the generated quote PDF. Leave empty to send the generated PDF.')
+                    ->acceptedFileTypes(['application/pdf'])
+                    ->maxSize(10240)
+                    ->disk(Quote::ATTACHMENT_DISK)
+                    ->directory('quote-attachments')
+                    ->visibility('private')
+                    ->downloadable()
+                    ->visible(fn (): bool => self::customAttachmentEnabled())
                     ->columnSpanFull(),
             ])->columnSpan(5),
             Group::make([
@@ -118,6 +134,18 @@ class QuoteForm
             Hidden::make('amount')
                 ->default(0),
         ];
+    }
+
+    /**
+     * Whether the current account's quote email template allows uploading a custom attachment.
+     */
+    private static function customAttachmentEnabled(): bool
+    {
+        return EmailTemplate::query()
+            ->where('account_id', Filament::getTenant()->getKey())
+            ->where('type', EmailTemplateType::QUOTE_REQUEST)
+            ->first()
+            ?->featureEnabled('custom_attachment') ?? false;
     }
 
     private static function updateSubTotal(Get $get, Set $set): void

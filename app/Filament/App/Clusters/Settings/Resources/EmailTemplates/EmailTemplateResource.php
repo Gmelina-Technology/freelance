@@ -9,7 +9,9 @@ use BackedEnum;
 use Filament\Actions\EditAction;
 use Filament\Forms\Components\RichEditor;
 use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\Toggle;
 use Filament\Resources\Resource;
+use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
@@ -33,7 +35,31 @@ class EmailTemplateResource extends Resource
                     ->required()
                     ->mergeTags(fn ($record) => config('email-templates.merge_tags')[$record->type->name] ?? [])
                     ->activePanel('mergeTags'),
+                Section::make('Features')
+                    ->description('Optional behaviour for emails sent from this template.')
+                    ->schema(self::featureToggles())
+                    ->visible(fn (?EmailTemplate $record): bool => $record !== null && $record->availableFeatures() !== []),
             ])->columns(1);
+    }
+
+    /**
+     * One toggle per feature flag declared in config/email-templates.php, shown only for the template types that support it.
+     *
+     * @return array<int, Toggle>
+     */
+    private static function featureToggles(): array
+    {
+        $featureKeys = collect(config('email-templates.features', []))
+            ->flatMap(fn (array $features): array => array_keys($features))
+            ->unique();
+
+        return $featureKeys
+            ->map(fn (string $key): Toggle => Toggle::make("metadata.features.{$key}")
+                ->label(fn (?EmailTemplate $record): string => $record?->availableFeatures()[$key]['label'] ?? $key)
+                ->helperText(fn (?EmailTemplate $record): ?string => $record?->availableFeatures()[$key]['description'] ?? null)
+                ->default(false)
+                ->visible(fn (?EmailTemplate $record): bool => array_key_exists($key, $record?->availableFeatures() ?? [])))
+            ->all();
     }
 
     public static function table(Table $table): Table
@@ -45,7 +71,15 @@ class EmailTemplateResource extends Resource
             ])
             ->recordActions([
                 EditAction::make()
-                    ->stickyModalHeader(),
+                    ->stickyModalHeader()
+                    ->mutateDataUsing(function (array $data, EmailTemplate $record): array {
+                        // The form only knows about feature flags, so keep any other metadata already stored.
+                        if (isset($data['metadata'])) {
+                            $data['metadata'] = array_replace_recursive($record->metadata ?? [], $data['metadata']);
+                        }
+
+                        return $data;
+                    }),
             ])
             ->paginated(false);
     }

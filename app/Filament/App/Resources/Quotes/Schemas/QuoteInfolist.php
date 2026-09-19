@@ -70,6 +70,9 @@ class QuoteInfolist
                             ->placeholder('-')
                             ->inlineLabel(),
                         TextEntry::make('notes')->label('Notes'),
+                        TextEntry::make('attachment_path')->label('Custom attachment')
+                            ->formatStateUsing(fn (string $state): string => basename($state))
+                            ->visible(fn ($record): bool => filled($record->attachment_path)),
                     ])->columnSpan(2),
 
             ])->columns([

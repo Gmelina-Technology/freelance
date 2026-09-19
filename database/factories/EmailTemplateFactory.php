@@ -2,6 +2,8 @@
 
 namespace Database\Factories;
 
+use App\Enums\EmailTemplateType;
+use App\Models\Account;
 use App\Models\EmailTemplate;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
@@ -18,7 +20,11 @@ class EmailTemplateFactory extends Factory
     public function definition(): array
     {
         return [
-            //
+            'account_id' => Account::factory(),
+            'type' => EmailTemplateType::QUOTE_REQUEST,
+            'subject' => fake()->sentence(3),
+            'body' => '<p>'.fake()->sentence().'</p>',
+            'metadata' => null,
         ];
     }
 }
