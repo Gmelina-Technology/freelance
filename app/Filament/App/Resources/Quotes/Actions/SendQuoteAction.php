@@ -8,7 +8,9 @@ use App\Models\Quote;
 use Filament\Actions\Action;
 use Filament\Notifications\Notification;
 use Filament\Support\Enums\IconPosition;
+use Filament\Support\Enums\Width;
 use Filament\Support\Icons\Heroicon;
+use Illuminate\Contracts\View\View;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
 
@@ -21,6 +23,8 @@ class SendQuoteAction
             ->icon(Heroicon::Envelope)
             ->iconPosition(IconPosition::After)
             ->requiresConfirmation()
+            ->modalWidth(Width::FiveExtraLarge)
+            ->modalContent(fn (Quote $record): View => PreviewQuoteAction::content($record))
             ->visible(fn ($record) => $record->status === QuoteStatus::Draft)
             ->action(function (Quote $record) {
                 DB::transaction(function () use ($record) {

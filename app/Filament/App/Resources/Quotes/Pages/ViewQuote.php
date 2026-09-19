@@ -4,6 +4,7 @@ namespace App\Filament\App\Resources\Quotes\Pages;
 
 use App\Filament\App\Resources\Quotes\Actions\AcceptQuoteAction;
 use App\Filament\App\Resources\Quotes\Actions\DeclineQuoteAction;
+use App\Filament\App\Resources\Quotes\Actions\PreviewQuoteAction;
 use App\Filament\App\Resources\Quotes\Actions\SendQuoteAction;
 use App\Filament\App\Resources\Quotes\Actions\VoidQuoteAction;
 use App\Filament\App\Resources\Quotes\QuoteResource;
@@ -18,6 +19,7 @@ class ViewQuote extends ViewRecord
     protected function getHeaderActions(): array
     {
         return [
+            PreviewQuoteAction::handle(),
             SendQuoteAction::handle(),
             AcceptQuoteAction::handle(),
             DeclineQuoteAction::handle(),

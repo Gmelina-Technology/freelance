@@ -55,7 +55,7 @@ class QuoteMailSent extends Mailable implements ShouldQueue
         return new Content(
             view: 'emails.invoice-mail-sent',
             with: [
-                'renderedContent' => $this->renderEmailContent(),
+                'renderedContent' => $this->renderedBody(),
             ],
         );
     }
@@ -95,8 +95,21 @@ class QuoteMailSent extends Mailable implements ShouldQueue
         Log::info('Failed to send email for quote: '.$this->quote->number);
     }
 
-    private function generateAndSaveQuotePdf(): string
+    /**
+     * Whether the account has a QUOTE_REQUEST email template to render the body from.
+     */
+    public function hasEmailTemplate(): bool
     {
+        return $this->emailTemplate !== null;
+    }
+
+    /**
+     * Build the (unsaved) quote PDF exactly as it is attached to the email.
+     */
+    public function buildPdf(): InvoicePdf
+    {
+        $this->quote->loadMissing(['account', 'client.currency', 'items.unit', 'items.category', 'items.task.category']);
+
         $seller = new Party([
             'name' => $this->quote->account->name,
             'address' => $this->quote->account->address ?? '',
@@ -143,8 +156,11 @@ class QuoteMailSent extends Mailable implements ShouldQueue
         // Add items from the quote
         foreach ($this->quote->items as $item) {
             $quotePdf->addItem(
-                InvoiceItem::make($item->task?->category?->name ?? 'Service')
-                    ->description($item->task?->title ?? '')
+                InvoiceItem::make($item->title ?? $item->task?->title ?? 'Service')
+                    ->description(implode(' - ', array_filter([
+                        $item->category?->name ?? $item->task?->category?->name,
+                        $item->description ?? ($item->title === null ? null : $item->task?->title),
+                    ])))
                     ->units($item->unit?->name)
                     ->quantity($item->quantity)
                     ->pricePerUnit($item->unit_price)
@@ -156,15 +172,23 @@ class QuoteMailSent extends Mailable implements ShouldQueue
             $quotePdf->notes($this->quote->notes);
         }
 
-        // Save the PDF to storage and return the path
-        $quotePdf->save('local');
-
-        // Return the full path to the saved PDF file
-        return $filename.'.pdf';
+        return $quotePdf;
     }
 
-    private function renderEmailContent(): string
+    private function generateAndSaveQuotePdf(): string
     {
+        $quotePdf = $this->buildPdf();
+
+        $quotePdf->save('local');
+
+        return $quotePdf->filename;
+    }
+
+    public function renderedBody(): string
+    {
+        if (blank($this->emailTemplate?->body)) {
+            return '';
+        }
 
         // Use Filament's RichContentRenderer to process merge tags
         // Merge tags use {{ tag }} format and are replaced with dynamic values
@@ -182,9 +206,9 @@ class QuoteMailSent extends Mailable implements ShouldQueue
             ->toHtml();
     }
 
-    private function formatCurrency(Currency $currency, float|int|null $amount): string
+    private function formatCurrency(?Currency $currency, float|int|null $amount): string
     {
-        $symbol = $currency->symbol ?? '$';
+        $symbol = $currency?->symbol ?? '$';
         if ($amount === null) {
             return $symbol.'0.00';
         }

@@ -6,6 +6,7 @@ use App\Enums\QuoteStatus;
 use App\Filament\App\Common\Tables\Columns\ClientInvoiceAmountColumn;
 use App\Filament\App\Resources\Quotes\Actions\AcceptQuoteAction;
 use App\Filament\App\Resources\Quotes\Actions\DeclineQuoteAction;
+use App\Filament\App\Resources\Quotes\Actions\PreviewQuoteAction;
 use App\Filament\App\Resources\Quotes\Actions\SendQuoteAction;
 use App\Filament\App\Resources\Quotes\Actions\VoidQuoteAction;
 use Filament\Actions\ActionGroup;
@@ -56,6 +57,7 @@ class QuotesTable
             ])
             ->recordActions([
                 ActionGroup::make([
+                    PreviewQuoteAction::handle(),
                     SendQuoteAction::handle(),
                     AcceptQuoteAction::handle(),
                     DeclineQuoteAction::handle(),
