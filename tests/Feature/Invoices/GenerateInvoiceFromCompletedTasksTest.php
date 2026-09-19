@@ -3,12 +3,14 @@
 use App\Enums\InvoiceStatus;
 use App\Enums\QuoteStatus;
 use App\Exceptions\NoBillableTasksException;
+use App\Filament\App\Resources\Projects\Pages\ListProjects;
 use App\Models\Invoice;
 use App\Models\Quote;
 use App\Models\QuoteItem;
 use App\Models\Task;
 use App\Services\InvoiceService;
 use App\Services\QuoteService;
+use Filament\Actions\Testing\TestAction;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Collection;
 
@@ -141,4 +143,63 @@ it('draws one invoice from several accepted quotes on the same project', functio
 
     expect($invoice->items)->toHaveCount(4)
         ->and($invoice->items->pluck('quote_item_id')->unique())->toHaveCount(4);
+});
+
+it('bills only the selected tasks and leaves the rest billable', function () {
+    ['scenario' => $s, 'tasks' => $tasks] = acceptedProject();
+    Task::query()->update(['status' => 'completed']);
+
+    $invoice = app(InvoiceService::class)->generateFromCompletedTasks($s['project'], [$tasks[0]->id, $tasks[1]->id]);
+
+    expect($invoice->items()->pluck('task_id')->all())->toEqual([$tasks[0]->id, $tasks[1]->id])
+        ->and($invoice->amount)->toEqual('800.00')
+        ->and($tasks[2]->fresh()->billing_status->value)->toBe('billable');
+
+    $second = app(InvoiceService::class)->generateFromCompletedTasks($s['project']);
+
+    expect($second->items()->pluck('task_id')->all())->toEqual([$tasks[2]->id]);
+});
+
+it('ignores selected tasks that are not eligible', function () {
+    ['scenario' => $s, 'tasks' => $tasks] = acceptedProject();
+    $tasks[0]->update(['status' => 'completed']);
+    $tasks[1]->update(['status' => 'in_progress']);
+
+    $invoice = app(InvoiceService::class)->generateFromCompletedTasks($s['project'], [$tasks[0]->id, $tasks[1]->id]);
+
+    expect($invoice->items)->toHaveCount(1);
+
+    $before = Invoice::count();
+
+    expect(fn () => app(InvoiceService::class)->generateFromCompletedTasks($s['project'], [$tasks[1]->id, $tasks[0]->id]))
+        ->toThrow(NoBillableTasksException::class)
+        ->and(Invoice::count())->toBe($before);
+});
+
+it('generates an invoice for the tasks picked in the action modal', function () {
+    ['scenario' => $s, 'tasks' => $tasks] = acceptedProject();
+    Task::query()->update(['status' => 'completed']);
+    bindFilamentTenant($s['owner'], $s['account']);
+
+    Livewire\Livewire::test(ListProjects::class)
+        ->mountAction(TestAction::make('generateInvoice')->table($s['project']))
+        // fillForm() merges into the preselected default by index; setting the state replaces it, like unticking boxes in the UI.
+        ->set('mountedActions.0.data.task_ids', [$tasks[1]->id])
+        ->callMountedAction()
+        ->assertHasNoActionErrors();
+
+    expect(Invoice::query()->firstOrFail()->items()->pluck('task_id')->all())->toEqual([$tasks[1]->id])
+        ->and($tasks[0]->fresh()->billing_status->value)->toBe('billable');
+});
+
+it('requires at least one task to be selected', function () {
+    ['scenario' => $s] = acceptedProject();
+    Task::query()->update(['status' => 'completed']);
+    bindFilamentTenant($s['owner'], $s['account']);
+
+    Livewire\Livewire::test(ListProjects::class)
+        ->callAction(TestAction::make('generateInvoice')->table($s['project']), ['task_ids' => []])
+        ->assertHasActionErrors(['task_ids' => 'required']);
+
+    expect(Invoice::count())->toBe(0);
 });
