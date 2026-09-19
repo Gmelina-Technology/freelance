@@ -18,7 +18,7 @@ class TasksByTeamChart extends ChartWidget
 
     public static function canView(): bool
     {
-        return Auth::user()->isOwner(Filament::getTenant());;
+        return Auth::user()->isOwner(Filament::getTenant());
     }
 
     protected function getData(): array

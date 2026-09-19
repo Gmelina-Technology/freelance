@@ -2,18 +2,11 @@
 
 namespace App\Filament\App\Resources\Sales;
 
-use App\Filament\App\Resources\Sales\Pages\CreateSale;
-use App\Filament\App\Resources\Sales\Pages\EditSale;
 use App\Filament\App\Resources\Sales\Pages\ListSales;
-use App\Filament\App\Resources\Sales\Schemas\SaleForm;
-use App\Filament\App\Resources\Sales\Tables\SalesTable;
-use App\Models\Invoice;
 use App\Models\Sale;
 use BackedEnum;
-use Filament\Actions\Action;
 use Filament\Facades\Filament;
 use Filament\Resources\Resource;
-use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
@@ -46,9 +39,9 @@ class SaleResource extends Resource
                     ->sortable(),
                 TextColumn::make('reference_key')
                     ->url(
-                        fn(Sale $record) => route('filament.app.resources.invoices.view', [
+                        fn (Sale $record) => route('filament.app.resources.invoices.view', [
                             'tenant' => Filament::getTenant(),
-                            'record' => $record->invoice
+                            'record' => $record->invoice,
                         ])
                     )
                     ->searchable(),
@@ -65,7 +58,7 @@ class SaleResource extends Resource
     public static function getPages(): array
     {
         return [
-            'index' => ListSales::route('/')
+            'index' => ListSales::route('/'),
         ];
     }
 }

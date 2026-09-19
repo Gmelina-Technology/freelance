@@ -29,13 +29,14 @@ class MemberResource extends Resource
     protected static ?string $cluster = SettingsCluster::class;
 
     protected static ?string $recordTitleAttribute = 'name';
+
     protected static ?string $tenantOwnershipRelationshipName = 'accounts';
 
     public static function table(Table $table): Table
     {
         return $table
             ->recordTitleAttribute('name')
-            ->modifyQueryUsing(fn($query) => $query->with('accounts'))
+            ->modifyQueryUsing(fn ($query) => $query->with('accounts'))
             ->columns([
                 TextColumn::make('name')
                     ->searchable(),
@@ -43,13 +44,13 @@ class MemberResource extends Resource
                     ->searchable(),
                 TextColumn::make('role')
                     ->badge()
-                    ->getStateUsing(fn(User $record) =>  $record->getAccountRole(Filament::getTenant())),
+                    ->getStateUsing(fn (User $record) => $record->getAccountRole(Filament::getTenant())),
             ])
             ->recordActions([
                 Action::make('changeRole')
                     ->label('Change Role')
-                    ->visible(fn(User $record) => $record->role !== AccountRole::Owner->value)
-                    ->fillForm(fn(User $record) => [
+                    ->visible(fn (User $record) => $record->role !== AccountRole::Owner->value)
+                    ->fillForm(fn (User $record) => [
                         'role' => $record->getAccountRole(Filament::getTenant()),
                     ])
                     ->schema([

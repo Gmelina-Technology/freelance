@@ -15,13 +15,11 @@ class Sale extends Model
         'category',
         'transaction_date',
         'amount',
-        'reference_key'
+        'reference_key',
     ];
 
     /**
      * Get the invoice that owns the Sale
-     *
-     * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
      */
     public function invoice(): BelongsTo
     {

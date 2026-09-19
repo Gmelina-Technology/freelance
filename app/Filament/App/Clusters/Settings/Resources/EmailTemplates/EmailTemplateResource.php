@@ -2,7 +2,6 @@
 
 namespace App\Filament\App\Clusters\Settings\Resources\EmailTemplates;
 
-use App\Enums\EmailTemplateType;
 use App\Filament\App\Clusters\Settings\Resources\EmailTemplates\Pages\ManageEmailTemplates;
 use App\Filament\App\Clusters\Settings\SettingsCluster;
 use App\Models\EmailTemplate;

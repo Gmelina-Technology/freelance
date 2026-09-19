@@ -24,6 +24,6 @@ class EmailTemplate extends Model
     ];
 
     protected $casts = [
-        'type' => EmailTemplateType::class
+        'type' => EmailTemplateType::class,
     ];
 }

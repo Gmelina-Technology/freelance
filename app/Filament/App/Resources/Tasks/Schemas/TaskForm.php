@@ -41,19 +41,19 @@ class TaskForm
                         ->hiddenLabel(),
                     Action::make('saveYow')
                         ->label('Save Task')
-                        ->visible(fn(string $operation) => 'edit' == $operation)
+                        ->visible(fn (string $operation) => $operation == 'edit')
                         ->action(function (EditTask $livewire) {
                             $livewire->save(false, true);
                         }),
 
                     Tabs::make()
-                        ->visible(fn(string $operation) => 'edit' == $operation)
+                        ->visible(fn (string $operation) => $operation == 'edit')
                         ->schema([
                             Tab::make('Comments')
                                 ->schema([
                                     Livewire::make(CommentThread::class)
-                                        ->key(fn($record): string => 'task-comments-' . $record?->getKey())
-                                        ->hidden(fn($record): bool => ! $record?->exists),
+                                        ->key(fn ($record): string => 'task-comments-'.$record?->getKey())
+                                        ->hidden(fn ($record): bool => ! $record?->exists),
                                 ]),
                             Tab::make('Work Logs')
                                 ->schema([
@@ -86,7 +86,7 @@ class TaskForm
                         ->belowContent([
                             Action::make('assignToMe')
                                 ->label('Assign to me')
-                                ->hidden(fn($record) => $record?->assigned_user_id == Auth::id())
+                                ->hidden(fn ($record) => $record?->assigned_user_id == Auth::id())
                                 ->action(function (Set $set) {
                                     $set('assigned_user_id', Auth::id());
                                 }),
@@ -100,7 +100,7 @@ class TaskForm
                         ->live(),
                     Select::make('project_id')
                         ->live()
-                        ->hidden(fn(Get $get) => empty($get('client_id')))
+                        ->hidden(fn (Get $get) => empty($get('client_id')))
                         ->relationship('project', 'name', function ($query, Get $get) {
                             $query->when($get('client_id'), function ($query, $clientId) {
                                 $query->where('client_id', $clientId);

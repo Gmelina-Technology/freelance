@@ -12,6 +12,7 @@ use Illuminate\Support\Facades\Auth;
 class SettingsCluster extends Cluster
 {
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedSquares2x2;
+
     protected static ?SubNavigationPosition $subNavigationPosition = SubNavigationPosition::End;
 
     protected static ?int $navigationSort = 4;

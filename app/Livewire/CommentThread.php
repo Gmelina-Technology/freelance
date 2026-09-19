@@ -164,7 +164,7 @@ class CommentThread extends Component implements HasForms
 
         $this->sendMentionNotifications(
             $body,
-            'You are being mentioned in a comment on task by ' . Auth::user()->name,
+            'You are being mentioned in a comment on task by '.Auth::user()->name,
             $commentable,
         );
 
@@ -207,7 +207,7 @@ class CommentThread extends Component implements HasForms
 
         $this->sendMentionNotifications(
             $body,
-            Auth::user()->name . ' reply on a comment and mentioned you in it.',
+            Auth::user()->name.' reply on a comment and mentioned you in it.',
             $commentable,
         );
 
@@ -249,7 +249,7 @@ class CommentThread extends Component implements HasForms
 
         $this->sendMentionNotifications(
             $body,
-            Auth::user()->name . ' updated a comment and mentioned you in it.',
+            Auth::user()->name.' updated a comment and mentioned you in it.',
             $comment->commentable,
         );
 
@@ -306,7 +306,7 @@ class CommentThread extends Component implements HasForms
     private function validateCommentInput(mixed $body): void
     {
         $this->validate([
-            'attachments.*' => ['file', 'max:' . config('comments.attachments.max_size')],
+            'attachments.*' => ['file', 'max:'.config('comments.attachments.max_size')],
         ]);
 
         if ($this->richContentIsBlank($body) && empty($this->attachments)) {
@@ -319,7 +319,7 @@ class CommentThread extends Component implements HasForms
     private function validateReplyInput(mixed $body): void
     {
         $this->validate([
-            'replyAttachments.*' => ['file', 'max:' . config('comments.attachments.max_size')],
+            'replyAttachments.*' => ['file', 'max:'.config('comments.attachments.max_size')],
         ]);
 
         if ($this->richContentIsBlank($body) && empty($this->replyAttachments)) {
@@ -375,11 +375,11 @@ class CommentThread extends Component implements HasForms
         }
 
         if (isset($content['text']) && is_string($content['text'])) {
-            $text .= $content['text'] . ' ';
+            $text .= $content['text'].' ';
         }
 
         if (($content['type'] ?? null) === 'mention') {
-            $text .= ($content['attrs']['label'] ?? $content['attrs']['id'] ?? '') . ' ';
+            $text .= ($content['attrs']['label'] ?? $content['attrs']['id'] ?? '').' ';
         }
 
         return trim($text);
@@ -391,7 +391,7 @@ class CommentThread extends Component implements HasForms
     private function storeAttachments(Comment $comment, array $attachments): void
     {
         $disk = config('comments.attachments.disk');
-        $directory = trim(config('comments.attachments.directory'), '/') . '/' . $comment->account_id;
+        $directory = trim(config('comments.attachments.directory'), '/').'/'.$comment->account_id;
 
         foreach ($attachments as $attachment) {
             $path = $attachment->store($directory, $disk);
@@ -474,8 +474,8 @@ class CommentThread extends Component implements HasForms
     {
         return [
             MentionProvider::make('@')
-                ->getSearchResultsUsing(fn(string $search): array => $this->searchMentionableUsers($search))
-                ->getLabelsUsing(fn(array $ids): array => User::query()
+                ->getSearchResultsUsing(fn (string $search): array => $this->searchMentionableUsers($search))
+                ->getLabelsUsing(fn (array $ids): array => User::query()
                     ->whereIn('id', $ids)
                     ->pluck('name', 'id')
                     ->all()),
@@ -489,7 +489,7 @@ class CommentThread extends Component implements HasForms
     {
         return [
             MentionProvider::make('@')
-                ->getLabelsUsing(fn(array $ids): array => User::query()
+                ->getLabelsUsing(fn (array $ids): array => User::query()
                     ->whereIn('id', $ids)
                     ->pluck('name', 'id')
                     ->all()),
@@ -520,8 +520,8 @@ class CommentThread extends Component implements HasForms
         return User::query()
             ->where(function ($query) use ($commentable) {
                 $query
-                    ->whereHas('accounts', fn($q) => $q->whereKey($commentable->getCommentAccountId()))
-                    ->orWhereHas('ownedAccounts', fn($q) => $q->whereKey($commentable->getCommentAccountId()));
+                    ->whereHas('accounts', fn ($q) => $q->whereKey($commentable->getCommentAccountId()))
+                    ->orWhereHas('ownedAccounts', fn ($q) => $q->whereKey($commentable->getCommentAccountId()));
             });
     }
 
@@ -537,7 +537,7 @@ class CommentThread extends Component implements HasForms
         }
 
         return $this->usersInAccountQuery($commentable)
-            ->when($search !== '', fn($query) => $query->where('name', 'like', "%{$search}%"))
+            ->when($search !== '', fn ($query) => $query->where('name', 'like', "%{$search}%"))
             ->orderBy('name')
             ->limit(10)
             ->pluck('name', 'id')
