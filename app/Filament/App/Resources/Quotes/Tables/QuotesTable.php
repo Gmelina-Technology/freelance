@@ -2,6 +2,13 @@
 
 namespace App\Filament\App\Resources\Quotes\Tables;
 
+use App\Enums\QuoteStatus;
+use App\Filament\App\Common\Tables\Columns\ClientInvoiceAmountColumn;
+use App\Filament\App\Resources\Quotes\Actions\AcceptQuoteAction;
+use App\Filament\App\Resources\Quotes\Actions\DeclineQuoteAction;
+use App\Filament\App\Resources\Quotes\Actions\SendQuoteAction;
+use App\Filament\App\Resources\Quotes\Actions\VoidQuoteAction;
+use Filament\Actions\ActionGroup;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
@@ -24,8 +31,7 @@ class QuotesTable
                     ->searchable(),
                 TextColumn::make('project.name')
                     ->searchable(),
-                TextColumn::make('amount')
-                    ->money(fn ($record) => $record->client->currency_code)
+                ClientInvoiceAmountColumn::make()
                     ->sortable(),
                 TextColumn::make('status')
                     ->badge()
@@ -39,11 +45,23 @@ class QuotesTable
                     ->dateTime()
                     ->sortable(),
             ])
+            ->modifyQueryUsing(fn ($query) => $query->with('client'))
             ->filters([
+                SelectFilter::make('status')
+                    ->options(QuoteStatus::class),
                 SelectFilter::make('client_id')
                     ->relationship('client', 'name'),
                 SelectFilter::make('project_id')
                     ->relationship('project', 'name'),
+            ])
+            ->recordActions([
+                ActionGroup::make([
+                    SendQuoteAction::handle(),
+                    AcceptQuoteAction::handle(),
+                    DeclineQuoteAction::handle(),
+                    VoidQuoteAction::handle(),
+                ])
+                    ->label('Actions'),
             ]);
     }
 }

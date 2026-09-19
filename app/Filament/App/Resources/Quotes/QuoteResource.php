@@ -2,7 +2,6 @@
 
 namespace App\Filament\App\Resources\Quotes;
 
-use App\Enums\QuoteStatus;
 use App\Filament\App\Resources\Quotes\Pages\CreateQuote;
 use App\Filament\App\Resources\Quotes\Pages\EditQuote;
 use App\Filament\App\Resources\Quotes\Pages\ListQuotes;
@@ -28,7 +27,7 @@ class QuoteResource extends Resource
 
     protected static ?string $recordTitleAttribute = 'number';
 
-    protected static ?int $navigationSort = 3;
+    protected static ?int $navigationSort = 4;
 
     protected static ?string $navigationLabel = 'Quotes';
 
@@ -39,7 +38,7 @@ class QuoteResource extends Resource
 
     public static function canEdit(Model $record): bool
     {
-        return $record->status === QuoteStatus::Draft;
+        return $record->status->isEditable();
     }
 
     public static function form(Schema $schema): Schema

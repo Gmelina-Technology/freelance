@@ -4,28 +4,29 @@ namespace App\Filament\App\Resources\Quotes\Actions;
 
 use App\Enums\QuoteStatus;
 use App\Models\Quote;
-use App\Services\QuoteService;
 use Filament\Actions\Action;
 use Filament\Notifications\Notification;
+use Filament\Support\Colors\Color;
 use Filament\Support\Enums\IconPosition;
 use Filament\Support\Icons\Heroicon;
 
-class ConvertToInvoiceAction
+class VoidQuoteAction
 {
     public static function handle()
     {
-        return Action::make('convertToInvoice')
-            ->label('Convert to Invoice')
-            ->icon(Heroicon::ArrowRightCircle)
+        return Action::make('voidQuote')
+            ->label('Void')
+            ->icon(Heroicon::ArchiveBox)
+            ->color(Color::Red)
             ->iconPosition(IconPosition::After)
             ->requiresConfirmation()
-            ->visible(fn (Quote $record): bool => $record->status === QuoteStatus::Accepted)
+            ->visible(fn (Quote $record): bool => $record->status->canTransitionTo(QuoteStatus::Void))
             ->action(function (Quote $record) {
-                $invoice = app(QuoteService::class)->convertToInvoice($record);
+                $record->update(['status' => QuoteStatus::Void]);
 
                 Notification::make()
-                    ->title('Quote Converted')
-                    ->body('The quote has been converted to invoice #'.$invoice->number.'.')
+                    ->title('Quote Voided')
+                    ->body('The quote has been voided.')
                     ->success()
                     ->send();
             });

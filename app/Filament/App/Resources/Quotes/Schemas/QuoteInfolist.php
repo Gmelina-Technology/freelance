@@ -25,21 +25,31 @@ class QuoteInfolist
 
                     RepeatableEntry::make('items')
                         ->hiddenLabel()
+                        ->state(fn ($record) => $record->items()->with(['category', 'unit', 'tasks'])->get())
                         ->table([
-                            TableColumn::make('Task'),
+                            TableColumn::make('Item'),
                             TableColumn::make('Unit'),
                             TableColumn::make('Quantity'),
                             TableColumn::make('Unit Price'),
                             TableColumn::make('Sub Total'),
+                            TableColumn::make('Task Status'),
+                            TableColumn::make('Billing Status'),
                         ])
                         ->schema([
-                            TextEntry::make('task.title')
-                                ->aboveContent(fn ($record) => $record->task->category?->name),
+                            TextEntry::make('title')
+                                ->aboveContent(fn ($record) => $record->category?->name),
                             TextEntry::make('unit.name'),
                             TextEntry::make('quantity'),
                             TextEntry::make('unit_price'),
-                            TextEntry::make('sub_total')
-                                ->state(fn ($record) => $record->quantity * $record->unit_price),
+                            TextEntry::make('amount'),
+                            TextEntry::make('task_status')
+                                ->state(fn ($record) => $record->tasks->first()?->status)
+                                ->badge()
+                                ->placeholder('-'),
+                            TextEntry::make('billing_status')
+                                ->state(fn ($record) => $record->tasks->first()?->billing_status)
+                                ->badge()
+                                ->placeholder('-'),
                         ]),
                     Section::make('Total Payment Summary')
                         ->schema([

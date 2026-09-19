@@ -2,11 +2,10 @@
 
 namespace App\Filament\App\Resources\Quotes\Pages;
 
-use App\Enums\QuoteStatus;
 use App\Filament\App\Resources\Quotes\Actions\AcceptQuoteAction;
-use App\Filament\App\Resources\Quotes\Actions\ConvertToInvoiceAction;
 use App\Filament\App\Resources\Quotes\Actions\DeclineQuoteAction;
 use App\Filament\App\Resources\Quotes\Actions\SendQuoteAction;
+use App\Filament\App\Resources\Quotes\Actions\VoidQuoteAction;
 use App\Filament\App\Resources\Quotes\QuoteResource;
 use App\Models\Quote;
 use Filament\Actions\EditAction;
@@ -22,9 +21,9 @@ class ViewQuote extends ViewRecord
             SendQuoteAction::handle(),
             AcceptQuoteAction::handle(),
             DeclineQuoteAction::handle(),
-            ConvertToInvoiceAction::handle(),
+            VoidQuoteAction::handle(),
             EditAction::make()
-                ->visible(fn (Quote $record): bool => $record->status === QuoteStatus::Draft),
+                ->visible(fn (Quote $record): bool => QuoteResource::canEdit($record)),
         ];
     }
 }

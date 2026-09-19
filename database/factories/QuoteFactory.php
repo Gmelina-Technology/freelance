@@ -5,6 +5,7 @@ namespace Database\Factories;
 use App\Enums\QuoteStatus;
 use App\Models\Account;
 use App\Models\Client;
+use App\Models\Project;
 use App\Models\Quote;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
@@ -42,6 +43,23 @@ class QuoteFactory extends Factory
     {
         return $this->state(fn (): array => [
             'status' => QuoteStatus::Sent,
+        ]);
+    }
+
+    public function accepted(): static
+    {
+        return $this->state(fn (): array => [
+            'status' => QuoteStatus::Accepted,
+            'accepted_at' => now(),
+        ]);
+    }
+
+    public function forProject(Project $project): static
+    {
+        return $this->state(fn (): array => [
+            'account_id' => $project->account_id,
+            'client_id' => $project->client_id,
+            'project_id' => $project->getKey(),
         ]);
     }
 

@@ -25,8 +25,10 @@ class InvoiceInfolist
 
                     RepeatableEntry::make('items')
                         ->hiddenLabel()
+                        ->state(fn ($record) => $record->items()->with(['task.category', 'unit', 'quoteItem.quote'])->get())
                         ->table([
                             TableColumn::make('Task'),
+                            TableColumn::make('Quote'),
                             TableColumn::make('Unit'),
                             TableColumn::make('Quantity'),
                             TableColumn::make('Unit Price'),
@@ -34,7 +36,9 @@ class InvoiceInfolist
                         ])
                         ->schema([
                             TextEntry::make('task.title')
-                                ->aboveContent(fn ($record) => $record->task->category?->name),
+                                ->aboveContent(fn ($record) => $record->task?->category?->name),
+                            TextEntry::make('quoteItem.quote.number')
+                                ->placeholder('-'),
                             TextEntry::make('unit.name'),
                             TextEntry::make('quantity'),
                             TextEntry::make('unit_price'),

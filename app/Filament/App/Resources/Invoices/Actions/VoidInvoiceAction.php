@@ -4,11 +4,13 @@ namespace App\Filament\App\Resources\Invoices\Actions;
 
 use App\Enums\InvoiceStatus;
 use App\Models\Invoice;
+use App\Services\InvoiceService;
 use Filament\Actions\Action;
 use Filament\Notifications\Notification;
 use Filament\Support\Colors\Color;
 use Filament\Support\Enums\IconPosition;
 use Filament\Support\Icons\Heroicon;
+use Illuminate\Support\Facades\DB;
 
 class VoidInvoiceAction
 {
@@ -22,9 +24,13 @@ class VoidInvoiceAction
             ->requiresConfirmation()
             ->visible(fn ($record) => self::isVisible($record))
             ->action(function (Invoice $record) {
-                $record->update([
-                    'status' => InvoiceStatus::Void,
-                ]);
+                DB::transaction(function () use ($record) {
+                    $record->update([
+                        'status' => InvoiceStatus::Void,
+                    ]);
+
+                    app(InvoiceService::class)->releaseTasks($record);
+                });
 
                 Notification::make()
                     ->title('Invoice Voided')

@@ -2,11 +2,10 @@
 
 namespace Database\Factories;
 
+use App\Enums\InvoiceStatus;
 use App\Models\Account;
 use App\Models\Client;
 use App\Models\Invoice;
-use App\Models\Project;
-use App\Models\Task;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
@@ -23,12 +22,12 @@ class InvoiceFactory extends Factory
     {
         return [
             'account_id' => Account::factory(),
-            'project_id' => Project::factory(),
-            'task_id' => Task::factory(),
+            'project_id' => null,
+            'task_id' => null,
             'client_id' => Client::factory(),
-            'invoice_number' => 'INV-'.str_pad($this->faker->unique()->numberBetween(1000, 9999), 4, '0', STR_PAD_LEFT),
+            'number' => 'INV-'.str_pad((string) $this->faker->unique()->numberBetween(1000, 9999), 4, '0', STR_PAD_LEFT),
             'amount' => $this->faker->numberBetween(100, 50000),
-            'status' => $this->faker->randomElement(['draft', 'sent', 'paid', 'overdue', 'cancelled']),
+            'status' => InvoiceStatus::Draft,
             'issued_at' => $this->faker->dateTimeThisMonth(),
             'due_date' => $this->faker->dateTimeBetween('now', '+1 month'),
             'notes' => $this->faker->optional()->text(200),

@@ -43,6 +43,16 @@ class Project extends Model
         return $this->belongsToMany(User::class)->withTimestamps();
     }
 
+    public function quotes(): HasMany
+    {
+        return $this->hasMany(Quote::class);
+    }
+
+    public function invoices(): HasMany
+    {
+        return $this->hasMany(Invoice::class);
+    }
+
     public function tasks(): HasMany
     {
         return $this->hasMany(Task::class);

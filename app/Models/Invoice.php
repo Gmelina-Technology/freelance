@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Enums\InvoiceStatus;
+use App\Services\InvoiceService;
 use App\Traits\HasAccount;
 use Database\Factories\InvoiceFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -26,8 +27,15 @@ class Invoice extends Model
         'issued_at',
         'due_date',
         'notes',
-        'email_content',
     ];
+
+    protected static function booted(): void
+    {
+        // Invoice items cascade away with the invoice, so tasks must be released while they still exist.
+        static::deleting(function (Invoice $invoice): void {
+            app(InvoiceService::class)->releaseTasks($invoice);
+        });
+    }
 
     protected function casts(): array
     {

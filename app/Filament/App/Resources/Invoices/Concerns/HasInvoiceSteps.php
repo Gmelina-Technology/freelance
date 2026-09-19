@@ -1,8 +1,9 @@
 <?php
 
-namespace App\Filament\App\Resources\Quotes\Schemas;
+namespace App\Filament\App\Resources\Invoices\Concerns;
 
-use App\Enums\QuoteStatus;
+use App\Enums\InvoiceStatus;
+use App\Enums\TaskBillingStatus;
 use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\Hidden;
 use Filament\Forms\Components\Repeater;
@@ -12,27 +13,23 @@ use Filament\Forms\Components\TextInput;
 use Filament\Schemas\Components\Group;
 use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Components\Utilities\Set;
-use Filament\Schemas\Schema;
+use Filament\Schemas\Components\Wizard\Step;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Number;
 
-class QuoteForm
+trait HasInvoiceSteps
 {
-    public static function configure(Schema $schema): Schema
-    {
-        return $schema
-            ->components([
-                ...self::detailsComponents(),
-                ...self::itemComponents(),
-            ]);
-    }
-
-    /**
-     * @return array<int, mixed>
-     */
-    public static function detailsComponents(): array
+    protected function getSteps(): array
     {
         return [
+            $this->detailsStep(),
+            $this->invoiceItemsStep(),
+        ];
+    }
+
+    private function detailsStep(): Step
+    {
+        return Step::make('Details')->schema([
             Group::make([
                 TextInput::make('number')
                     ->readOnly(),
@@ -52,60 +49,69 @@ class QuoteForm
                     ->columnSpanFull(),
             ])->columnSpan(5),
             Group::make([
-                // Status only changes through the quote actions, so accepting always generates tasks.
                 Select::make('status')
-                    ->options(QuoteStatus::class)
-                    ->default(QuoteStatus::Draft->value)
-                    ->disabled()
-                    ->dehydrated(),
+                    ->required()
+                    ->options(InvoiceStatus::class)
+                    ->default(InvoiceStatus::Draft->value),
                 DateTimePicker::make('issued_at')
                     ->default(now()),
-                DateTimePicker::make('valid_until')
-                    ->default(now()->addDays(30)),
+                DateTimePicker::make('due_date')
+                    ->default(now()->addWeekdays(7)),
             ])->columnSpan(2),
-        ];
+        ])->columns(7);
     }
 
-    /**
-     * @return array<int, mixed>
-     */
-    public static function itemComponents(): array
+    private function invoiceItemsStep(): Step
     {
-        return [
+        return Step::make('Invoice Items')->schema([
             Repeater::make('items')
                 ->relationship('items')
-                ->orderColumn('sort_order')
-                ->required(fn (string $operation): bool => $operation === 'create')
-                ->minItems(fn (string $operation): int => $operation === 'create' ? 1 : 0)
                 ->schema([
-                    TextInput::make('title')
-                        ->required()
-                        ->columnSpan(2),
-                    Select::make('category_id')
-                        ->relationship('category', 'name'),
+                    Select::make('task_id')
+                        ->live()
+                        ->helperText('Only billable tasks are listed; tasks already invoiced or paid are hidden.')
+                        ->afterStateUpdated(function (Get $get, callable $set) {
+                            $taskId = $get('task_id');
+                            if ($taskId) {
+                                $set('unit_id', null);
+                                $set('quantity', 0);
+                                $set('unit_price', 0);
+                                $set('amount', 0);
+                            }
+                        })
+                        ->relationship('task', 'title', function (Builder $query, Get $get) {
+                            $query->when($get('../../project_id'), function (Builder $subQuery, $projectId) {
+                                $subQuery->where('project_id', $projectId);
+                            });
+
+                            // Tasks already on the invoice being edited stay selectable.
+                            $ownTaskIds = $this->record?->items()->pluck('task_id')->filter()->all() ?? [];
+
+                            $query->where(function (Builder $subQuery) use ($ownTaskIds) {
+                                $subQuery->where('billing_status', TaskBillingStatus::Billable)
+                                    ->orWhereIn('id', $ownTaskIds);
+                            });
+                        })
+                        ->required(),
                     Select::make('unit_id')
                         ->relationship('unit', 'name')
                         ->required(),
-                    TextInput::make('quantity')
-                        ->required()
-                        ->default(1)
+                    TextInput::make('quantity')->required()
                         ->live(onBlur: true)
-                        ->afterStateUpdated(fn (Get $get, Set $set) => self::updateSubTotal($get, $set))
+                        ->afterStateUpdated(fn (Get $get, Set $set) => $this->updateSubTotal($get, $set))
                         ->minValue(0)
                         ->numeric(),
                     TextInput::make('unit_price')
-                        ->required()
                         ->live(onBlur: true)
-                        ->afterStateUpdated(fn (Get $get, Set $set) => self::updateSubTotal($get, $set))
+                        ->afterStateUpdated(fn (Get $get, Set $set) => $this->updateSubTotal($get, $set))
                         ->minValue(0)
+                        ->required()
                         ->numeric(),
                     TextInput::make('amount')
                         ->label('Sub Total')
                         ->readOnly()
                         ->dehydrated(false)
                         ->numeric(),
-                    Textarea::make('description')
-                        ->columnSpanFull(),
                 ])
                 ->live()
                 ->afterStateUpdated(function (?array $state, Set $set) {
@@ -113,14 +119,15 @@ class QuoteForm
                         fn ($item) => Number::parseFloat($item['unit_price'] ?? 0) * Number::parseFloat($item['quantity'] ?? 0)
                     ));
                 })
-                ->columns(6)
+                ->columns(5)
                 ->columnSpanFull(),
             Hidden::make('amount')
+                ->required()
                 ->default(0),
-        ];
+        ]);
     }
 
-    private static function updateSubTotal(Get $get, Set $set): void
+    private function updateSubTotal(Get $get, Set $set): void
     {
         $quantity = $get('quantity');
         $unitPrice = $get('unit_price');

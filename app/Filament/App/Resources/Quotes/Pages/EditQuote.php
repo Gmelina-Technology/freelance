@@ -37,4 +37,9 @@ class EditQuote extends EditRecord
 
         return $data;
     }
+
+    protected function afterSave(): void
+    {
+        $this->record->recalculateAmount();
+    }
 }

@@ -1,7 +1,6 @@
 <?php
 
 use App\Enums\AccountRole;
-use App\Enums\InvoiceStatus;
 use App\Enums\QuoteStatus;
 use App\Filament\App\Resources\Quotes\Pages\EditQuote;
 use App\Filament\App\Resources\Quotes\Pages\ViewQuote;
@@ -9,14 +8,12 @@ use App\Filament\App\Resources\Quotes\QuoteResource;
 use App\Mail\QuoteMailSent;
 use App\Models\Account;
 use App\Models\Client;
-use App\Models\Invoice;
 use App\Models\Project;
 use App\Models\Quote;
 use App\Models\QuoteItem;
 use App\Models\Task;
 use App\Models\Unit;
 use App\Models\User;
-use App\Services\InvoiceService;
 use App\Services\QuoteService;
 use Filament\Facades\Filament;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -67,8 +64,8 @@ it('generates a unique sequential quote number per account and month', function 
 
     $number = QuoteService::generateQuoteNumber($account->id);
 
-    expect($number)->toMatch('/^QTE-\d{6}-\d{3}$/')
-        ->and($number)->toBe(sprintf('QTE-%s-%03d', now()->format('Ym'), 2));
+    expect($number)->toMatch('/^Q\d{3}-\d{6}-\d{3}$/')
+        ->and($number)->toBe(sprintf('Q%03d-%s-%03d', $account->id, now()->format('Ym'), 2));
 });
 
 it('sends a quote email to the client and marks the quote as sent', function () {
@@ -139,87 +136,6 @@ it('restricts the quotes resource from tenant members', function () {
 
     setQuotePanelTenant($member, $account);
     expect(QuoteResource::canAccess())->toBeFalse();
-});
-
-it('converts an accepted quote into a draft invoice with its line items', function () {
-    [$account, $owner] = quoteAccountWithOwner();
-    $client = Client::factory()->for($account)->create();
-    $unit = Unit::factory()->for($account)->create(['name' => 'Hour']);
-    $quote = quoteForAccount($account, [
-        'client_id' => $client->id,
-        'status' => QuoteStatus::Accepted,
-        'amount' => 300,
-    ]);
-    QuoteItem::factory()->for($quote)->create([
-        'unit_id' => $unit->id,
-        'quantity' => 3,
-        'unit_price' => 100,
-    ]);
-
-    $invoice = app(QuoteService::class)->convertToInvoice($quote);
-
-    expect($invoice)->toBeInstanceOf(Invoice::class)
-        ->and($invoice->account_id)->toBe($account->id)
-        ->and($invoice->client_id)->toBe($client->id)
-        ->and($invoice->status)->toBe(InvoiceStatus::Draft)
-        ->and((float) $invoice->amount)->toBe(300.0)
-        ->and($invoice->items()->count())->toBe(1)
-        ->and($invoice->items()->first()->unit_id)->toBe($unit->id)
-        ->and($invoice->items()->first()->quantity)->toBe(3)
-        ->and((float) $invoice->items()->first()->unit_price)->toBe(100.0)
-        ->and($quote->fresh()->status)->toBe(QuoteStatus::Converted)
-        ->and($quote->fresh()->invoice_ref)->toBe($invoice->number);
-
-    expect($invoice->number)->toMatch('/^\d{3}-/');
-});
-
-it('uses the invoice service to generate the converted invoice number', function () {
-    [$account] = quoteAccountWithOwner();
-    $client = Client::factory()->for($account)->create();
-    $quote = quoteForAccount($account, [
-        'client_id' => $client->id,
-        'status' => QuoteStatus::Accepted,
-    ]);
-    QuoteItem::factory()->for($quote)->create();
-
-    $expectedNumber = InvoiceService::generateInvoiceNumber($account->id);
-
-    $invoice = app(QuoteService::class)->convertToInvoice($quote);
-
-    expect($invoice->number)->toBe($expectedNumber);
-});
-
-it('rejects converting a quote that is not accepted', function () {
-    [$account] = quoteAccountWithOwner();
-    $quote = quoteForAccount($account, ['status' => QuoteStatus::Sent]);
-
-    app(QuoteService::class)->convertToInvoice($quote);
-})->throws(InvalidArgumentException::class, 'Only accepted quotes can be converted to invoices.');
-
-it('rejects converting a quote without line items', function () {
-    [$account] = quoteAccountWithOwner();
-    $quote = quoteForAccount($account, ['status' => QuoteStatus::Accepted]);
-
-    app(QuoteService::class)->convertToInvoice($quote);
-})->throws(InvalidArgumentException::class, 'Cannot convert a quote without line items.');
-
-it('shows the convert action only for accepted quotes', function () {
-    [$account, $owner] = quoteAccountWithOwner();
-
-    $accepted = quoteForAccount($account, ['status' => QuoteStatus::Accepted]);
-    $draft = quoteForAccount($account, ['status' => QuoteStatus::Draft]);
-    $converted = quoteForAccount($account, ['status' => QuoteStatus::Converted]);
-
-    setQuotePanelTenant($owner, $account);
-
-    Livewire::test(ViewQuote::class, ['record' => $accepted->id])
-        ->assertActionVisible('convertToInvoice');
-
-    Livewire::test(ViewQuote::class, ['record' => $draft->id])
-        ->assertActionHidden('convertToInvoice');
-
-    Livewire::test(ViewQuote::class, ['record' => $converted->id])
-        ->assertActionHidden('convertToInvoice');
 });
 
 it('accepts a sent quote and marks it as accepted', function () {

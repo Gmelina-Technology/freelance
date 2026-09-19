@@ -8,6 +8,7 @@ use App\Services\QuoteService;
 use Filament\Facades\Filament;
 use Filament\Resources\Pages\CreateRecord;
 use Filament\Resources\Pages\CreateRecord\Concerns\HasWizard;
+use Illuminate\Database\Eloquent\Model;
 
 class CreateQuote extends CreateRecord
 {
@@ -28,5 +29,17 @@ class CreateQuote extends CreateRecord
             ...$this->data,
             'number' => QuoteService::generateQuoteNumber(Filament::getTenant()->id),
         ]);
+    }
+
+    protected function handleRecordCreation(array $data): Model
+    {
+        $data['account_id'] = Filament::getTenant()->getKey();
+
+        return app(QuoteService::class)->createWithNumber($data);
+    }
+
+    protected function afterCreate(): void
+    {
+        $this->record->recalculateAmount();
     }
 }

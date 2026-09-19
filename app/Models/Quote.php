@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasManyThrough;
 
 class Quote extends Model
 {
@@ -26,6 +27,7 @@ class Quote extends Model
         'status',
         'issued_at',
         'valid_until',
+        'accepted_at',
         'notes',
         'email_content',
     ];
@@ -37,6 +39,7 @@ class Quote extends Model
             'status' => QuoteStatus::class,
             'issued_at' => 'datetime',
             'valid_until' => 'datetime',
+            'accepted_at' => 'datetime',
         ];
     }
 
@@ -62,6 +65,23 @@ class Quote extends Model
 
     public function items(): HasMany
     {
-        return $this->hasMany(QuoteItem::class);
+        return $this->hasMany(QuoteItem::class)->orderBy('sort_order')->orderBy('id');
+    }
+
+    public function tasks(): HasManyThrough
+    {
+        return $this->hasManyThrough(Task::class, QuoteItem::class);
+    }
+
+    public function isAccepted(): bool
+    {
+        return $this->status === QuoteStatus::Accepted;
+    }
+
+    public function recalculateAmount(): void
+    {
+        $this->update([
+            'amount' => $this->items()->get()->sum(fn (QuoteItem $item): float => (float) $item->quantity * (float) $item->unit_price),
+        ]);
     }
 }

@@ -2,7 +2,9 @@
 
 namespace App\Filament\App\Resources\Invoices;
 
+use App\Enums\InvoiceStatus;
 use App\Filament\App\Resources\Invoices\Pages\CreateInvoice;
+use App\Filament\App\Resources\Invoices\Pages\EditInvoice;
 use App\Filament\App\Resources\Invoices\Pages\ListInvoices;
 use App\Filament\App\Resources\Invoices\Pages\ViewInvoice;
 use App\Filament\App\Resources\Invoices\Schemas\InvoiceForm;
@@ -15,6 +17,7 @@ use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Auth;
 
 class InvoiceResource extends Resource
@@ -25,9 +28,21 @@ class InvoiceResource extends Resource
 
     protected static ?string $recordTitleAttribute = 'number';
 
+    protected static ?int $navigationSort = 5;
+
     public static function canAccess(): bool
     {
         return ! Auth::user()->isMember(Filament::getTenant());
+    }
+
+    public static function canEdit(Model $record): bool
+    {
+        return $record->status === InvoiceStatus::Draft;
+    }
+
+    public static function canDelete(Model $record): bool
+    {
+        return $record->status === InvoiceStatus::Draft;
     }
 
     public static function form(Schema $schema): Schema
@@ -58,6 +73,7 @@ class InvoiceResource extends Resource
             'index' => ListInvoices::route('/'),
             'create' => CreateInvoice::route('/create'),
             'view' => ViewInvoice::route('/{record}'),
+            'edit' => EditInvoice::route('/{record}/edit'),
         ];
     }
 }

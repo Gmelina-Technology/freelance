@@ -2,6 +2,7 @@
 
 namespace App\Filament\App\Common\Schemas;
 
+use App\Enums\TaskBillingStatus;
 use App\Filament\App\Common\Forms\Components\StatusField;
 use App\Models\Project;
 use Filament\Forms\Components\Hidden;
@@ -22,6 +23,11 @@ class TaskForm
                 ])->columnSpan(5),
                 Group::make([
                     StatusField::make('status'),
+                    Select::make('billing_status')
+                        ->options(TaskBillingStatus::class)
+                        ->disabled()
+                        ->dehydrated(false)
+                        ->visibleOn('edit'),
                     Select::make('assigned_user_id')
                         ->options(fn () => $record->assignees->pluck('name', 'id'))
                         ->searchable()

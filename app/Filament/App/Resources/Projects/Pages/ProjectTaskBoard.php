@@ -2,11 +2,12 @@
 
 namespace App\Filament\App\Resources\Projects\Pages;
 
+use App\Enums\TaskBillingStatus;
 use App\Filament\App\Common\Actions\NotifyTaskAssignee;
 use App\Filament\App\Common\Forms\Components\StatusField;
 use App\Filament\App\Common\Schemas\TaskForm;
+use App\Filament\App\Resources\Projects\Actions\GenerateInvoiceAction;
 use App\Filament\App\Resources\Projects\ProjectResource;
-use App\Filament\App\Resources\Tasks\Pages\EditTask;
 use App\Models\Task;
 use Filament\Actions\Action;
 use Filament\Actions\CreateAction;
@@ -66,12 +67,14 @@ class ProjectTaskBoard extends BoardResourcePage
 
                     return $data;
                 })
-                ->after(fn(Task $record) => NotifyTaskAssignee::handle($record)),
+                ->after(fn (Task $record) => NotifyTaskAssignee::handle($record)),
+            GenerateInvoiceAction::handle()
+                ->record($this->getRecord()),
             Action::make('editProject')
                 ->hiddenLabel()
                 ->icon(Heroicon::Cog6Tooth)
                 ->outlined()
-                ->url(fn() => route('filament.app.resources.projects.edit', [
+                ->url(fn () => route('filament.app.resources.projects.edit', [
                     'tenant' => Filament::getTenant(),
                     'record' => $this->getRecord(),
                 ])),
@@ -81,7 +84,7 @@ class ProjectTaskBoard extends BoardResourcePage
     public function board(Board $board): Board
     {
         return $board
-            ->query(fn() => $this->getRecord()->tasks()->with(['category', 'assignee', 'project'])->orderBy('position')->getQuery())
+            ->query(fn () => $this->getRecord()->tasks()->with(['category', 'assignee', 'project', 'quoteItem.quote'])->orderBy('position')->getQuery())
             ->columnIdentifier('status')
             ->positionIdentifier('position')
             ->searchable(['title', 'description'])
@@ -90,8 +93,17 @@ class ProjectTaskBoard extends BoardResourcePage
                     ->relationship('assignee', 'name'),
                 SelectFilter::make('category')
                     ->relationship('category', 'name'),
+                SelectFilter::make('quote')
+                    ->label('Quote')
+                    ->options(fn () => $this->getRecord()->quotes()->pluck('number', 'id'))
+                    ->query(fn ($query, array $data) => $query->when(
+                        $data['value'] ?? null,
+                        fn ($query, $quoteId) => $query->whereHas('quoteItem', fn ($q) => $q->where('quote_id', $quoteId))
+                    )),
+                SelectFilter::make('billing_status')
+                    ->options(TaskBillingStatus::class),
                 Filter::make('overdue')->query(
-                    fn($query) => $query->where('due_date', '<', now())
+                    fn ($query) => $query->where('due_date', '<', now())
                 ),
             ])
             ->columns([
@@ -100,7 +112,7 @@ class ProjectTaskBoard extends BoardResourcePage
                 Column::make('review')->label('Review')->color('amber'),
                 Column::make('completed')->label('Completed')->color('green'),
             ])
-            ->cardSchema(fn(Schema $schema) => $schema->components([
+            ->cardSchema(fn (Schema $schema) => $schema->components([
                 TextEntry::make('description')
                     ->html()
                     ->hiddenLabel()
@@ -113,8 +125,16 @@ class ProjectTaskBoard extends BoardResourcePage
                         ->icon('heroicon-o-user'),
                     TextEntry::make('category.name')
                         ->hiddenLabel()
-                        ->badge(fn($state) => $state?->color ?? 'secondary')
+                        ->badge(fn ($state) => $state?->color ?? 'secondary')
                         ->icon('heroicon-o-tag'),
+                    TextEntry::make('quoteItem.quote.number')
+                        ->hiddenLabel()
+                        ->badge()
+                        ->color('info')
+                        ->icon('heroicon-o-document-text'),
+                    TextEntry::make('billing_status')
+                        ->hiddenLabel()
+                        ->badge(),
                 ])->wrap()->justify('start'),
             ]))
             ->cardActions([
@@ -127,7 +147,8 @@ class ProjectTaskBoard extends BoardResourcePage
                         }
                     }),
 
-                DeleteAction::make()->model(Task::class),
+                DeleteAction::make()->model(Task::class)
+                    ->visible(fn (Task $record): bool => $record->billing_status->isBillable()),
             ])
             ->cardAction('edit');
     }
@@ -160,7 +181,7 @@ class ProjectTaskBoard extends BoardResourcePage
                     StatusField::make('status'),
                     Select::make('assigned_user_id')
                         ->label('Assignee')
-                        ->options(fn() => $this->getRecord()->assignees->pluck('name', 'id'))
+                        ->options(fn () => $this->getRecord()->assignees->pluck('name', 'id'))
                         ->searchable()
                         ->preload(),
                     Select::make('category_id')
