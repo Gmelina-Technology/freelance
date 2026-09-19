@@ -108,7 +108,7 @@ class QuoteMailSent extends Mailable implements ShouldQueue
      */
     public function buildPdf(): InvoicePdf
     {
-        $this->quote->loadMissing(['account', 'client.currency', 'items.unit', 'items.category', 'items.task.category']);
+        $this->quote->loadMissing(['account', 'client.currency', 'items.unit', 'items.category', 'items.task.category', 'project']);
 
         $seller = new Party([
             'name' => $this->quote->account->name,
@@ -146,12 +146,15 @@ class QuoteMailSent extends Mailable implements ShouldQueue
             ->buyer($buyer)
             ->date($this->quote->issued_at)
             ->series($this->quote->number)
-            ->payUntilDays($this->quote->issued_at?->diffInDays($this->quote->valid_until) ?? 0)
+            ->template('quote')
+            ->setCustomData([
+                'valid_until' => $this->quote->valid_until?->format('M d, Y'),
+                'project_name' => $this->quote->project?->name,
+            ])
             ->dateFormat('M d, Y')
             ->currencySymbol($currency?->symbol ?? '$')
             ->currencyCode($currency?->code ?? 'USD')
-            ->filename($filename)
-            ->status(QuoteStatus::Sent->value);
+            ->filename($filename);
 
         // Add items from the quote
         foreach ($this->quote->items as $item) {
