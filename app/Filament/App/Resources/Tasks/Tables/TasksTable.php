@@ -13,6 +13,7 @@ use Filament\Notifications\Notification;
 use Filament\Support\Enums\IconSize;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
+use Filament\Tables\Filters\TernaryFilter;
 use Filament\Tables\Grouping\Group;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
@@ -63,6 +64,17 @@ class TasksTable
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
+                TernaryFilter::make('completed')
+                    ->label('Completed tasks')
+                    ->placeholder('All tasks')
+                    ->trueLabel('Completed only')
+                    ->falseLabel('Hide completed')
+                    ->default(false)
+                    ->queries(
+                        true: fn (Builder $query) => $query->where('status', TaskStatus::COMPLETED),
+                        false: fn (Builder $query) => $query->whereNot('status', TaskStatus::COMPLETED),
+                        blank: fn (Builder $query) => $query,
+                    ),
                 SelectFilter::make('client_id')
                     ->label('Client')
                     ->relationship('client', 'name')
