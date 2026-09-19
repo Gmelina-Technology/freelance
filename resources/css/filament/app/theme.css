@@ -5,6 +5,43 @@
 @source '../../../../resources/views/livewire/**/*.blade.php';
 @source "../../../../vendor/relaticle/flowforge/resources/views/**/*.blade.php";
 
+@theme {
+    --color-brand-ink: #10231a;
+    --color-brand-soft: #f6f9f7;
+    --color-brand-line: #e7ece9;
+}
+
+/* Gmelina-style look: soft tinted canvas, airy white surfaces, rounded-2xl cards. */
+.fi-body {
+    @apply bg-brand-soft dark:bg-gray-950;
+}
+
+.fi-topbar > nav,
+.fi-sidebar-header,
+.fi-sidebar-nav {
+    @apply bg-white/90 backdrop-blur dark:bg-gray-900/90;
+}
+
+.fi-sidebar,
+.fi-topbar > nav {
+    @apply border-brand-line ring-0 dark:border-white/10;
+}
+
+.fi-section,
+.fi-ta-ctn,
+.fi-wi-stats-overview-stat,
+.fi-in-table-repeatable {
+    @apply rounded-2xl border border-brand-line bg-white shadow-[0_24px_50px_-30px_rgba(16,35,26,0.35)] ring-0 dark:border-white/10 dark:bg-gray-900 dark:shadow-none;
+}
+
+.fi-btn {
+    @apply rounded-lg font-semibold;
+}
+
+.fi-header-heading {
+    @apply font-extrabold tracking-tight text-brand-ink dark:text-white;
+}
+
 .fi-commentable-content span[data-type="mention"],
 .fi-commentable-content a[data-type="mention"] {
     @apply my-0 inline-block rounded bg-primary-50 px-1 font-medium text-primary-600 no-underline whitespace-nowrap dark:bg-primary-400/10 dark:text-primary-400;
@@ -17,7 +54,7 @@
     }
 
     .fi-fo-rich-editor {
-        @apply rounded-lg border border-gray-200 bg-white shadow-sm dark:border-white/1 dark:bg-gray-500;
+        @apply rounded-lg border border-gray-200 bg-white shadow-sm dark:border-white/10 dark:bg-gray-900;
     }
 
     .fi-fo-rich-editor-toolbar {

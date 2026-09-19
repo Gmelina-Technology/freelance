@@ -36,8 +36,10 @@ class AppPanelProvider extends PanelProvider
             ->registration()
             ->passwordReset()
             ->colors([
-                'primary' => Color::Blue,
+                'primary' => Color::Green,
             ])
+            ->font('Inter')
+            ->brandName('Freelance Manager')
             ->tenant(Account::class, 'id', 'account')
             ->tenantRegistration(RegisterAccount::class)
             ->discoverClusters(in: app_path('Filament/App/Clusters'), for: 'App\Filament\App\Clusters')

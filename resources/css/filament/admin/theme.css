@@ -1,0 +1,3 @@
+@import "../app/theme.css";
+
+@source '../../../../app/Filament/Admin/**/*';

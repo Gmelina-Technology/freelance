@@ -9,7 +9,7 @@
 
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.bunny.net">
-    <link href="https://fonts.bunny.net/css?family=instrument-sans:400,500,600" rel="stylesheet" />
+    <link href="https://fonts.bunny.net/css?family=inter:400,500,600,700,800" rel="stylesheet" />
 
 
     @vite(['resources/css/app.css', 'resources/js/app.js'])
@@ -18,15 +18,15 @@
 
 <body class="bg-white dark:bg-[#0a0a0a] text-gray-900 dark:text-gray-100">
     <!-- Navigation Header -->
-    <header class="sticky top-0 z-50 bg-white dark:bg-[#0a0a0a] border-b border-gray-200 dark:border-gray-800">
+    <header class="sticky top-0 z-50 bg-white dark:bg-[#0a0a0a] border-b border-brand-line dark:border-gray-800">
         <nav class="max-w-7xl mx-auto px-6 lg:px-8 py-4 flex items-center justify-between">
             <div class="flex items-center gap-2">
-                <svg class="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg class="w-8 h-8 text-brand-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                         d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2">
                     </path>
                 </svg>
-                <span class="font-bold text-xl text-gray-900 dark:text-white">Freelance Manager</span>
+                <span class="font-bold text-xl text-brand-ink dark:text-white">Freelance Manager</span>
             </div>
 
             <div class="hidden md:flex items-center gap-8">
@@ -46,7 +46,7 @@
                         in</a>
                     @if (Route::has('register'))
                         <a href="{{ route('register') }}"
-                            class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">Sign up</a>
+                            class="px-4 py-2 bg-brand-700 text-white rounded-lg hover:bg-brand-800">Sign up</a>
                     @endif
                 @endauth
             </div>
@@ -55,17 +55,17 @@
 
     <!-- Hero Section -->
     <section
-        class="relative min-h-screen flex items-center justify-center bg-gradient-to-b from-white to-gray-50 dark:from-[#0a0a0a] dark:to-[#1a1a1a] overflow-hidden">
+        class="relative min-h-screen flex items-center justify-center bg-gradient-to-b from-white to-brand-soft dark:from-[#0a0a0a] dark:to-[#1a1a1a] overflow-hidden">
         <div class="absolute inset-0 opacity-10 dark:opacity-5">
-            <div class="absolute top-10 right-10 w-72 h-72 bg-blue-300 rounded-full mix-blend-multiply filter blur-3xl">
+            <div class="absolute top-10 right-10 w-72 h-72 bg-green-300 rounded-full mix-blend-multiply filter blur-3xl">
             </div>
             <div
-                class="absolute bottom-10 left-10 w-72 h-72 bg-purple-300 rounded-full mix-blend-multiply filter blur-3xl">
+                class="absolute bottom-10 left-10 w-72 h-72 bg-green-200 rounded-full mix-blend-multiply filter blur-3xl">
             </div>
         </div>
 
         <div class="relative max-w-7xl mx-auto px-6 lg:px-8 py-20 text-center">
-            <h1 class="text-5xl md:text-6xl lg:text-7xl font-bold text-gray-900 dark:text-white mb-6 leading-tight">
+            <h1 class="text-5xl md:text-6xl lg:text-7xl font-extrabold tracking-tight text-brand-ink dark:text-white mb-6 leading-[1.1]">
                 Manage Your Freelance Projects with Ease
             </h1>
             <p class="text-xl text-gray-600 dark:text-gray-300 max-w-3xl mx-auto mb-10">
@@ -75,17 +75,17 @@
             <div class="flex flex-col sm:flex-row gap-4 justify-center">
                 @auth
                     <a href="{{ url('/app') }}"
-                        class="px-8 py-4 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition">
+                        class="px-8 py-4 bg-brand-700 text-white font-semibold rounded-lg hover:bg-brand-800 transition">
                         Go to Dashboard
                     </a>
                 @else
                     <a href="{{ route('filament.app.auth.login') }}"
-                        class="px-8 py-4 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition">
+                        class="px-8 py-4 bg-brand-700 text-white font-semibold rounded-lg hover:bg-brand-800 transition">
                         Get Started Free
                     </a>
                     @if (Route::has('register'))
                         <a href="{{ route('filament.app.auth.register') }}"
-                            class="px-8 py-4 border-2 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white font-medium rounded-lg hover:bg-gray-50 dark:hover:bg-gray-900 transition">
+                            class="px-8 py-4 border-2 border-gray-300 dark:border-gray-600 text-brand-ink dark:text-white font-semibold rounded-lg hover:bg-gray-50 dark:hover:bg-gray-900 transition">
                             Learn More
                         </a>
                     @endif
@@ -95,10 +95,10 @@
     </section>
 
     <!-- Features Section -->
-    <section id="features" class="py-20 bg-white dark:bg-[#0a0a0a] border-t border-gray-200 dark:border-gray-800">
+    <section id="features" class="py-20 bg-white dark:bg-[#0a0a0a] border-t border-brand-line dark:border-gray-800">
         <div class="max-w-7xl mx-auto px-6 lg:px-8">
             <div class="text-center mb-16">
-                <h2 class="text-4xl font-bold text-gray-900 dark:text-white mb-4">Powerful Features</h2>
+                <h2 class="text-4xl font-extrabold tracking-tight text-brand-ink dark:text-white mb-4">Powerful Features</h2>
                 <p class="text-lg text-gray-600 dark:text-gray-400">Everything you need to manage your freelance
                     business effectively</p>
             </div>
@@ -106,75 +106,75 @@
             <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
                 <!-- Feature 1 -->
                 <div
-                    class="p-8 bg-gray-50 dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-800 hover:border-blue-500 dark:hover:border-blue-500 transition">
-                    <svg class="w-12 h-12 text-blue-600 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    class="p-8 bg-white dark:bg-gray-900 rounded-2xl shadow-[0_24px_50px_-30px_rgba(16,35,26,0.35)] border border-brand-line dark:border-gray-800 hover:border-brand-600 dark:hover:border-brand-600 transition">
+                    <svg class="w-12 h-12 text-brand-700 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                             d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2">
                         </path>
                     </svg>
-                    <h3 class="text-xl font-semibold text-gray-900 dark:text-white mb-2">Project Management</h3>
+                    <h3 class="text-xl font-semibold text-brand-ink dark:text-white mb-2">Project Management</h3>
                     <p class="text-gray-600 dark:text-gray-400">Organize and track all your projects with clear
                         deadlines, status updates, and client information</p>
                 </div>
 
                 <!-- Feature 2 -->
                 <div
-                    class="p-8 bg-gray-50 dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-800 hover:border-blue-500 dark:hover:border-blue-500 transition">
-                    <svg class="w-12 h-12 text-blue-600 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    class="p-8 bg-white dark:bg-gray-900 rounded-2xl shadow-[0_24px_50px_-30px_rgba(16,35,26,0.35)] border border-brand-line dark:border-gray-800 hover:border-brand-600 dark:hover:border-brand-600 transition">
+                    <svg class="w-12 h-12 text-brand-700 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                             d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                     </svg>
-                    <h3 class="text-xl font-semibold text-gray-900 dark:text-white mb-2">Task Tracking</h3>
+                    <h3 class="text-xl font-semibold text-brand-ink dark:text-white mb-2">Task Tracking</h3>
                     <p class="text-gray-600 dark:text-gray-400">Create, assign, and monitor tasks with priority levels,
                         due dates, and progress indicators</p>
                 </div>
 
                 <!-- Feature 3 -->
                 <div
-                    class="p-8 bg-gray-50 dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-800 hover:border-blue-500 dark:hover:border-blue-500 transition">
-                    <svg class="w-12 h-12 text-blue-600 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    class="p-8 bg-white dark:bg-gray-900 rounded-2xl shadow-[0_24px_50px_-30px_rgba(16,35,26,0.35)] border border-brand-line dark:border-gray-800 hover:border-brand-600 dark:hover:border-brand-600 transition">
+                    <svg class="w-12 h-12 text-brand-700 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                             d="M12 4.354a4 4 0 110 5.292M15 12H9m6 0a6 6 0 11-12 0 6 6 0 0112 0z"></path>
                     </svg>
-                    <h3 class="text-xl font-semibold text-gray-900 dark:text-white mb-2">Team Collaboration</h3>
+                    <h3 class="text-xl font-semibold text-brand-ink dark:text-white mb-2">Team Collaboration</h3>
                     <p class="text-gray-600 dark:text-gray-400">Invite team members, assign responsibilities, and
                         collaborate in real-time on projects</p>
                 </div>
 
                 <!-- Feature 4 -->
                 <div
-                    class="p-8 bg-gray-50 dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-800 hover:border-blue-500 dark:hover:border-blue-500 transition">
-                    <svg class="w-12 h-12 text-blue-600 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    class="p-8 bg-white dark:bg-gray-900 rounded-2xl shadow-[0_24px_50px_-30px_rgba(16,35,26,0.35)] border border-brand-line dark:border-gray-800 hover:border-brand-600 dark:hover:border-brand-600 transition">
+                    <svg class="w-12 h-12 text-brand-700 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                             d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
                     </svg>
-                    <h3 class="text-xl font-semibold text-gray-900 dark:text-white mb-2">Client Management</h3>
+                    <h3 class="text-xl font-semibold text-brand-ink dark:text-white mb-2">Client Management</h3>
                     <p class="text-gray-600 dark:text-gray-400">Store client details, communication history, and project
                         references all in one place</p>
                 </div>
 
                 <!-- Feature 5 -->
                 <div
-                    class="p-8 bg-gray-50 dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-800 hover:border-blue-500 dark:hover:border-blue-500 transition">
-                    <svg class="w-12 h-12 text-blue-600 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    class="p-8 bg-white dark:bg-gray-900 rounded-2xl shadow-[0_24px_50px_-30px_rgba(16,35,26,0.35)] border border-brand-line dark:border-gray-800 hover:border-brand-600 dark:hover:border-brand-600 transition">
+                    <svg class="w-12 h-12 text-brand-700 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                             d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z">
                         </path>
                     </svg>
-                    <h3 class="text-xl font-semibold text-gray-900 dark:text-white mb-2">Analytics & Reports</h3>
+                    <h3 class="text-xl font-semibold text-brand-ink dark:text-white mb-2">Analytics & Reports</h3>
                     <p class="text-gray-600 dark:text-gray-400">Get insights into project progress, team productivity,
                         and business metrics</p>
                 </div>
 
                 <!-- Feature 6 -->
                 <div
-                    class="p-8 bg-gray-50 dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-800 hover:border-blue-500 dark:hover:border-blue-500 transition">
-                    <svg class="w-12 h-12 text-blue-600 mb-4" fill="none" stroke="currentColor"
+                    class="p-8 bg-white dark:bg-gray-900 rounded-2xl shadow-[0_24px_50px_-30px_rgba(16,35,26,0.35)] border border-brand-line dark:border-gray-800 hover:border-brand-600 dark:hover:border-brand-600 transition">
+                    <svg class="w-12 h-12 text-brand-700 mb-4" fill="none" stroke="currentColor"
                         viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                             d="M13 10V3L4 14h7v7l9-11h-7z"></path>
                     </svg>
-                    <h3 class="text-xl font-semibold text-gray-900 dark:text-white mb-2">Fast & Reliable</h3>
+                    <h3 class="text-xl font-semibold text-brand-ink dark:text-white mb-2">Fast & Reliable</h3>
                     <p class="text-gray-600 dark:text-gray-400">Lightning-fast performance with 99.9% uptime to keep
                         your business running smoothly</p>
                 </div>
@@ -183,37 +183,37 @@
     </section>
 
     <!-- How It Works -->
-    <section id="how-it-works" class="py-20 bg-gray-50 dark:bg-gray-900">
+    <section id="how-it-works" class="py-20 bg-brand-soft dark:bg-gray-900">
         <div class="max-w-7xl mx-auto px-6 lg:px-8">
             <div class="text-center mb-16">
-                <h2 class="text-4xl font-bold text-gray-900 dark:text-white mb-4">How It Works</h2>
+                <h2 class="text-4xl font-extrabold tracking-tight text-brand-ink dark:text-white mb-4">How It Works</h2>
                 <p class="text-lg text-gray-600 dark:text-gray-400">Get started in three simple steps</p>
             </div>
 
             <div class="grid md:grid-cols-3 gap-8">
                 <div class="text-center">
                     <div
-                        class="flex items-center justify-center w-16 h-16 bg-blue-600 text-white rounded-full mx-auto mb-6 text-2xl font-bold">
+                        class="flex items-center justify-center w-16 h-16 bg-brand-700 text-white rounded-full mx-auto mb-6 text-2xl font-bold">
                         1</div>
-                    <h3 class="text-2xl font-semibold text-gray-900 dark:text-white mb-2">Create Your Account</h3>
+                    <h3 class="text-2xl font-semibold text-brand-ink dark:text-white mb-2">Create Your Account</h3>
                     <p class="text-gray-600 dark:text-gray-400">Sign up quickly and set up your workspace in minutes
                     </p>
                 </div>
 
                 <div class="text-center">
                     <div
-                        class="flex items-center justify-center w-16 h-16 bg-blue-600 text-white rounded-full mx-auto mb-6 text-2xl font-bold">
+                        class="flex items-center justify-center w-16 h-16 bg-brand-700 text-white rounded-full mx-auto mb-6 text-2xl font-bold">
                         2</div>
-                    <h3 class="text-2xl font-semibold text-gray-900 dark:text-white mb-2">Add Your Projects</h3>
+                    <h3 class="text-2xl font-semibold text-brand-ink dark:text-white mb-2">Add Your Projects</h3>
                     <p class="text-gray-600 dark:text-gray-400">Create projects, add clients, and organize your work
                     </p>
                 </div>
 
                 <div class="text-center">
                     <div
-                        class="flex items-center justify-center w-16 h-16 bg-blue-600 text-white rounded-full mx-auto mb-6 text-2xl font-bold">
+                        class="flex items-center justify-center w-16 h-16 bg-brand-700 text-white rounded-full mx-auto mb-6 text-2xl font-bold">
                         3</div>
-                    <h3 class="text-2xl font-semibold text-gray-900 dark:text-white mb-2">Collaborate & Deliver</h3>
+                    <h3 class="text-2xl font-semibold text-brand-ink dark:text-white mb-2">Collaborate & Deliver</h3>
                     <p class="text-gray-600 dark:text-gray-400">Manage tasks, track progress, and deliver excellence
                     </p>
                 </div>
@@ -222,25 +222,25 @@
     </section>
 
     <!-- CTA Section -->
-    <section class="py-20 bg-blue-600 dark:bg-blue-950">
+    <section class="py-20 bg-brand-700 dark:bg-brand-800">
         <div class="max-w-4xl mx-auto px-6 lg:px-8 text-center">
-            <h2 class="text-4xl font-bold text-white mb-6">Ready to transform how you work?</h2>
-            <p class="text-xl text-blue-100 mb-10">Join thousands of freelancers and teams already using Freelance
+            <h2 class="text-4xl font-extrabold tracking-tight text-white mb-6">Ready to transform how you work?</h2>
+            <p class="text-xl text-green-100 mb-10">Join thousands of freelancers and teams already using Freelance
                 Manager</p>
             <div class="flex flex-col sm:flex-row gap-4 justify-center">
                 @auth
                     <a href="{{ url('/dashboard') }}"
-                        class="px-8 py-4 bg-white text-blue-600 font-medium rounded-lg hover:bg-gray-100 transition">
+                        class="px-8 py-4 bg-white text-brand-700 font-semibold rounded-lg hover:bg-gray-100 transition">
                         Go to Dashboard
                     </a>
                 @else
                     <a href="{{ route('filament.app.auth.login') }}"
-                        class="px-8 py-4 bg-white text-blue-600 font-medium rounded-lg hover:bg-gray-100 transition">
+                        class="px-8 py-4 bg-white text-brand-700 font-semibold rounded-lg hover:bg-gray-100 transition">
                         Start Free Trial
                     </a>
                     @if (Route::has('register'))
                         <a href="{{ route('register') }}"
-                            class="px-8 py-4 border-2 border-white text-white font-medium rounded-lg hover:bg-blue-700 transition">
+                            class="px-8 py-4 border-2 border-white text-white font-semibold rounded-lg hover:bg-brand-800 transition">
                             Create Account
                         </a>
                     @endif
@@ -250,13 +250,13 @@
     </section>
 
     <!-- Footer -->
-    <footer class="bg-gray-900 dark:bg-black text-gray-300 py-16">
+    <footer class="bg-brand-ink dark:bg-black text-gray-300 py-16">
         <div class="max-w-7xl mx-auto px-6 lg:px-8">
             <div class="grid md:grid-cols-4 gap-8 mb-12">
                 <!-- Brand -->
                 <div>
                     <div class="flex items-center gap-2 mb-4">
-                        <svg class="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <svg class="w-8 h-8 text-brand-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                 d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2">
                             </path>
