@@ -68,11 +68,19 @@ class QuoteMailSent extends Mailable implements ShouldQueue
     public function attachments(): array
     {
         try {
+            if ($this->usesCustomAttachment()) {
+                return [
+                    Attachment::fromStorageDisk(Quote::ATTACHMENT_DISK, $this->quote->attachment_path)
+                        ->as($this->attachmentName())
+                        ->withMime('application/pdf'),
+                ];
+            }
+
             $pdfPath = $this->generateAndSaveQuotePdf();
 
             return [
                 Attachment::fromStorageDisk('local', $pdfPath)
-                    ->as("Quote-{$this->quote->number}.pdf")
+                    ->as($this->attachmentName())
                     ->withMime('application/pdf'),
             ];
         } catch (\Exception $e) {
@@ -81,6 +89,24 @@ class QuoteMailSent extends Mailable implements ShouldQueue
 
             return [];
         }
+    }
+
+    /**
+     * Whether the uploaded quote PDF is attached instead of the generated one:
+     * the template must allow it and a file must actually be stored for the quote.
+     */
+    public function usesCustomAttachment(): bool
+    {
+        return $this->emailTemplate?->featureEnabled('custom_attachment') === true
+            && $this->quote->hasStoredAttachment();
+    }
+
+    /**
+     * The file name the client sees for the attached PDF.
+     */
+    public function attachmentName(): string
+    {
+        return "Quote-{$this->quote->number}.pdf";
     }
 
     /**
