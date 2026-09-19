@@ -3,6 +3,7 @@
 use App\Enums\TaskPriority;
 use App\Http\Controllers\CommentAttachmentDownloadController;
 use App\Http\Controllers\InvitationAcceptanceController;
+use App\Http\Controllers\QuotePreviewController;
 use App\Http\Controllers\TemporaryInvoicePreviewController;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Route;
@@ -19,6 +20,10 @@ Route::middleware(['signed'])
 Route::middleware(['auth'])
     ->get('/comments/attachments/{commentAttachment}/download', CommentAttachmentDownloadController::class)
     ->name('comments.attachments.download');
+
+Route::middleware(['auth'])
+    ->get('/quotes/{quote}/preview.pdf', QuotePreviewController::class)
+    ->name('quotes.preview');
 
 // Temporary Invoice Preview Routes (for testing/debugging)
 // Remove these routes in production
