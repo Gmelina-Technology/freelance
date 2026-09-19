@@ -9,6 +9,7 @@ use App\Models\Task;
 use App\Services\InvoiceService;
 use Filament\Actions\Action;
 use Filament\Facades\Filament;
+use Filament\Forms\Components\CheckboxList;
 use Filament\Notifications\Notification;
 use Filament\Support\Icons\Heroicon;
 use Illuminate\Support\Facades\Auth;
@@ -29,13 +30,23 @@ class GenerateInvoiceAction
         return Action::make('generateInvoice')
             ->label('Generate Invoice')
             ->icon(Heroicon::DocumentCurrencyDollar)
-            ->requiresConfirmation()
             ->visible(fn (): bool => self::canGenerate())
             ->modalHeading('Generate invoice from completed tasks')
-            ->modalDescription(fn (Project $record): string => self::describe($record))
-            ->action(function (Project $record) {
+            ->modalDescription('Choose the tasks to bill at their quoted prices. Tasks added ad hoc (not from a quote) are not listed; invoice those with Create Invoice.')
+            ->modalSubmitActionLabel('Generate invoice')
+            ->schema([
+                CheckboxList::make('task_ids')
+                    ->label('Billable tasks')
+                    ->options(fn (Project $record): array => self::options($record))
+                    ->default(fn (Project $record): array => array_keys(self::options($record)))
+                    ->bulkToggleable()
+                    ->required()
+                    ->validationMessages(['required' => 'Select at least one task to bill.'])
+                    ->columns(1),
+            ])
+            ->action(function (array $data, Project $record) {
                 try {
-                    $invoice = app(InvoiceService::class)->generateFromCompletedTasks($record);
+                    $invoice = app(InvoiceService::class)->generateFromCompletedTasks($record, array_map('intval', $data['task_ids']));
                 } catch (NoBillableTasksException) {
                     Notification::make()
                         ->title('Nothing to bill')
@@ -59,21 +70,22 @@ class GenerateInvoiceAction
             });
     }
 
-    private static function describe(Project $project): string
+    /**
+     * @return array<int, string>
+     */
+    private static function options(Project $project): array
     {
-        $tasks = app(InvoiceService::class)->billableTasksFor($project);
+        $currency = $project->client?->currency_code ?: 'USD';
 
-        if ($tasks->isEmpty()) {
-            return 'There are no completed, billable tasks from accepted quotes to invoice yet.';
-        }
-
-        $total = $tasks->sum(fn (Task $task): float => (float) $task->quoteItem->quantity * (float) $task->quoteItem->unit_price);
-
-        return sprintf(
-            '%d completed %s will be billed at the quoted prices, %s in total. Tasks added ad hoc (not from a quote) are not included; invoice those with Create Invoice.',
-            $tasks->count(),
-            str('task')->plural($tasks->count()),
-            Number::currency($total, $project->client?->currency_code ?: 'USD'),
-        );
+        return app(InvoiceService::class)->billableTasksFor($project)
+            ->mapWithKeys(fn (Task $task): array => [
+                $task->getKey() => sprintf(
+                    '%s (%s) — %s',
+                    $task->title,
+                    $task->quoteItem->quote->number,
+                    Number::currency((float) $task->quoteItem->quantity * (float) $task->quoteItem->unit_price, $currency),
+                ),
+            ])
+            ->all();
     }
 }
