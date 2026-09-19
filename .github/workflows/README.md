@@ -21,6 +21,19 @@ Runs automatically on:
 
 **Required:** No manual setup needed—this runs automatically.
 
+### security.yml - Dependency Vulnerability Checks
+
+Runs automatically on:
+- Every push and pull request to `main` and `develop`
+- Weekly (Mondays 06:00 UTC) and via manual trigger
+
+**What it does:**
+- ✅ `composer audit --locked` for PHP advisories
+- ✅ `npm audit --audit-level=high` for npm packages
+- ✅ Dependency review on pull requests (fails on high severity)
+
+Dependabot (`.github/dependabot.yml`) opens weekly update PRs for Composer, npm and GitHub Actions.
+
 ### deploy.yml - Deployment Pipeline
 
 Runs automatically on:
