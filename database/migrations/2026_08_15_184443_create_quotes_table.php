@@ -18,9 +18,9 @@ return new class extends Migration
             $table->foreignId('client_id')->constrained('clients')->cascadeOnDelete();
             $table->foreignId('task_id')->nullable()->constrained('tasks')->cascadeOnDelete();
             $table->string('number')->unique();
+            $table->string('invoice_ref')->nullable();
             $table->decimal('amount', 12, 2);
             $table->string('status')->default('draft'); // draft, sent, accepted, declined, expired
-            $table->string('invoice_ref')->nullable()->after('number');
             $table->dateTime('issued_at')->nullable();
             $table->dateTime('valid_until')->nullable();
             $table->text('notes')->nullable();
