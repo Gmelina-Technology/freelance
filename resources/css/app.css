@@ -5,6 +5,8 @@
 @source '../**/*.blade.php';
 @source '../**/*.js';
 
+@custom-variant dark (&:where(.dark, .dark *));
+
 @theme {
     --color-brand-ink: #10231a;
     --color-brand-soft: #f6f9f7;
@@ -14,6 +16,10 @@
     --color-brand-800: #12562f;
     --font-sans: 'Inter Variable', 'Inter', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
         'Segoe UI Symbol', 'Noto Color Emoji';
+}
+
+html.dark {
+    color-scheme: dark;
 }
 
 .legal {
