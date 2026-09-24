@@ -1,5 +1,6 @@
 <?php
 
+use App\Enums\AccountRole;
 use App\Enums\QuoteStatus;
 use App\Models\Account;
 use App\Models\Client;
@@ -100,4 +101,15 @@ function bindFilamentTenant(User $user, Account $account): void
     // Tenant scoping and ownership are registered when the panel boots, which Livewire tests skip.
     Filament\Facades\Filament::getPanel('app')->boot();
     Filament\Facades\Filament::setTenant($account);
+}
+
+/**
+ * Attach a new user to the account with the given role.
+ */
+function makeAccountUser(Account $account, AccountRole $role): User
+{
+    $user = User::factory()->create();
+    $account->users()->syncWithoutDetaching([$user->id => ['role' => $role->value]]);
+
+    return $user;
 }
