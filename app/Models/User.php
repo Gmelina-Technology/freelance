@@ -20,6 +20,7 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Collection;
 use Laravel\Sanctum\HasApiTokens;
+use Laravel\Sanctum\NewAccessToken;
 
 class User extends Authenticatable implements FilamentUser, HasDefaultTenant, HasEmailAuthentication, HasTenants, MustVerifyEmail
 {
@@ -80,6 +81,20 @@ class User extends Authenticatable implements FilamentUser, HasDefaultTenant, Ha
     public function getTenants(Panel $panel): Collection
     {
         return $this->accounts;
+    }
+
+    /**
+     * Issue a personal access token that only works on the given account.
+     *
+     * @param  array<int, string>  $abilities
+     */
+    public function createAccountToken(Account $account, string $name, array $abilities = ['*']): NewAccessToken
+    {
+        $token = $this->createToken($name, $abilities);
+
+        $token->accessToken->forceFill(['account_id' => $account->getKey()])->save();
+
+        return $token;
     }
 
     public function canAccessTenant(Model $tenant): bool

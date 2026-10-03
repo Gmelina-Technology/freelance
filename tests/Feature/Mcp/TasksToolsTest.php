@@ -14,7 +14,6 @@ use App\Models\Project;
 use App\Models\Task;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Laravel\Sanctum\Sanctum;
 
 uses(RefreshDatabase::class);
 
@@ -25,7 +24,7 @@ beforeEach(function () {
     $this->otherAccount = Account::factory()->for(User::factory(), 'owner')->create();
     $this->foreignTask = Task::factory()->for($this->otherAccount)->create(['title' => 'Foreign task', 'status' => TaskStatus::OPEN]);
 
-    Sanctum::actingAs($this->owner, ['*']);
+    actingAsToken($this->owner, ['*']);
 });
 
 it('lists only the account tasks and applies filters', function () {
@@ -206,7 +205,7 @@ it('cannot delete another accounts task', function () {
 
 it('requires the tasks:write ability for writes but not reads', function () {
     $task = Task::factory()->for($this->account)->create();
-    Sanctum::actingAs($this->owner, ['quotes:write']);
+    actingAsToken($this->owner, ['quotes:write']);
 
     BillingServer::tool(CreateTask::class, ['title' => 'x'])->assertHasErrors(['tasks:write']);
     BillingServer::tool(UpdateTask::class, ['task_id' => $task->id, 'title' => 'x'])->assertHasErrors(['tasks:write']);
@@ -222,9 +221,29 @@ it('requires the tasks:write ability for writes but not reads', function () {
 it('lets a regular member manage tasks of the account they belong to', function () {
     $member = User::factory()->create();
     $this->account->users()->attach($member, ['role' => 'member']);
-    Sanctum::actingAs($member, ['tasks:write']);
+    actingAsToken($member, ['tasks:write']);
 
     BillingServer::tool(CreateTask::class, ['title' => 'From member', 'account_id' => $this->account->id])
         ->assertOk()
         ->assertSee('From member');
+});
+
+it('keeps a token bound to one account away from the users other accounts', function () {
+    $second = Account::factory()->for($this->owner, 'owner')->create();
+    $secondTask = Task::factory()->for($second)->create(['title' => 'Second account task']);
+    Task::factory()->for($this->account)->create(['title' => 'First account task']);
+
+    actingAsToken($this->owner, ['*'], $this->account);
+
+    BillingServer::tool(ListTasks::class)
+        ->assertSee('First account task')
+        ->assertDontSee('Second account task');
+    BillingServer::tool(GetTask::class, ['task_id' => $secondTask->id])->assertHasErrors(['not found']);
+    BillingServer::tool(UpdateTask::class, ['task_id' => $secondTask->id, 'title' => 'Hacked'])->assertHasErrors(['not found']);
+    BillingServer::tool(DeleteTask::class, ['task_id' => $secondTask->id])->assertHasErrors(['not found']);
+    BillingServer::tool(CreateTask::class, ['title' => 'Sneaky', 'account_id' => $second->id])
+        ->assertHasErrors(['bound to a different account']);
+
+    expect($secondTask->fresh()->title)->toBe('Second account task')
+        ->and(Task::where('title', 'Sneaky')->exists())->toBeFalse();
 });

@@ -1,10 +1,10 @@
 <?php
 
+use App\Enums\AccountRole;
 use App\Models\Account;
 use App\Models\Task;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Laravel\Sanctum\Sanctum;
 
 uses(RefreshDatabase::class);
 
@@ -18,7 +18,7 @@ it('rejects unauthenticated requests', function () {
 });
 
 it('creates a task scoped to the account', function () {
-    Sanctum::actingAs($this->owner);
+    actingAsToken($this->owner);
 
     $this->postJson('/api/tasks', [
         'title' => 'Call client about invoice',
@@ -35,14 +35,14 @@ it('creates a task scoped to the account', function () {
 });
 
 it('rejects an invalid status', function () {
-    Sanctum::actingAs($this->owner);
+    actingAsToken($this->owner);
 
     $this->postJson('/api/tasks', ['title' => 'x', 'status' => 'pending'])
         ->assertStatus(422);
 });
 
 it('lists only tasks for the authenticated account', function () {
-    Sanctum::actingAs($this->owner);
+    actingAsToken($this->owner);
 
     Task::factory()->for($this->account)->create(['title' => 'My task']);
     $other = Account::factory()->for(User::factory(), 'owner')->create();
@@ -55,7 +55,7 @@ it('lists only tasks for the authenticated account', function () {
 });
 
 it('filters overdue tasks', function () {
-    Sanctum::actingAs($this->owner);
+    actingAsToken($this->owner);
 
     Task::factory()->for($this->account)->create([
         'title' => 'Overdue', 'status' => 'open', 'due_date' => now()->subDays(2),
@@ -71,7 +71,7 @@ it('filters overdue tasks', function () {
 });
 
 it('updates a task in the account', function () {
-    Sanctum::actingAs($this->owner);
+    actingAsToken($this->owner);
 
     $task = Task::factory()->for($this->account)->create(['status' => 'open']);
 
@@ -81,7 +81,7 @@ it('updates a task in the account', function () {
 });
 
 it('cannot update a task from another account', function () {
-    Sanctum::actingAs($this->owner);
+    actingAsToken($this->owner);
 
     $other = Account::factory()->for(User::factory(), 'owner')->create();
     $task = Task::factory()->for($other)->create();
@@ -91,7 +91,7 @@ it('cannot update a task from another account', function () {
 });
 
 it('creates a task with a valid assigned_user_id in the account', function () {
-    Sanctum::actingAs($this->owner);
+    actingAsToken($this->owner);
 
     $assignee = User::factory()->create();
     $this->account->users()->syncWithoutDetaching([
@@ -110,7 +110,7 @@ it('creates a task with a valid assigned_user_id in the account', function () {
 });
 
 it('updates assigned_user_id on an existing task', function () {
-    Sanctum::actingAs($this->owner);
+    actingAsToken($this->owner);
 
     $task = Task::factory()->for($this->account)->create(['assigned_user_id' => null]);
 
@@ -127,7 +127,7 @@ it('updates assigned_user_id on an existing task', function () {
 });
 
 it('rejects assigned_user_id from another account with 422', function () {
-    Sanctum::actingAs($this->owner);
+    actingAsToken($this->owner);
 
     $outsider = User::factory()->create();
     $otherAccount = Account::factory()->for(User::factory(), 'owner')->create();
@@ -140,4 +140,58 @@ it('rejects assigned_user_id from another account with 422', function () {
         'assigned_user_id' => $outsider->id,
     ])
         ->assertStatus(422);
+});
+
+it('keeps a token bound to one account away from the users other accounts', function () {
+    $second = Account::factory()->for($this->owner, 'owner')->create();
+    Task::factory()->for($this->account)->create(['title' => 'First account task']);
+    Task::factory()->for($second)->create(['title' => 'Second account task']);
+    actingAsToken($this->owner, ['*'], $second);
+
+    $this->getJson('/api/tasks')
+        ->assertOk()
+        ->assertJsonFragment(['title' => 'Second account task'])
+        ->assertJsonMissing(['title' => 'First account task']);
+
+    $this->postJson('/api/tasks', ['title' => 'New one'])->assertCreated();
+
+    expect(Task::where('title', 'New one')->value('account_id'))->toBe($second->id);
+});
+
+it('rejects an account_id that differs from the bound account', function () {
+    $second = Account::factory()->for($this->owner, 'owner')->create();
+    actingAsToken($this->owner, ['*'], $this->account);
+
+    $this->getJson('/api/tasks?account_id='.$second->id)
+        ->assertForbidden()
+        ->assertJsonPath('message', 'This token is bound to a different account.');
+
+    $this->postJson('/api/tasks', ['title' => 'Sneaky', 'account_id' => $second->id])->assertForbidden();
+
+    expect(Task::where('title', 'Sneaky')->exists())->toBeFalse();
+});
+
+it('accepts an account_id equal to the bound account', function () {
+    actingAsToken($this->owner, ['*'], $this->account);
+
+    $this->getJson('/api/tasks?account_id='.$this->account->id)->assertOk();
+});
+
+it('denies legacy tokens without a bound account', function () {
+    actingAsToken($this->owner, ['*'], bound: false);
+
+    $this->getJson('/api/tasks')
+        ->assertForbidden()
+        ->assertJsonPath('message', 'This token is not bound to an account; create a new token on the API Tokens page.');
+});
+
+it('denies a token once the user is removed from its account', function () {
+    $member = makeAccountUser($this->account, AccountRole::Member);
+    actingAsToken($member, ['*'], $this->account);
+
+    $this->getJson('/api/tasks')->assertOk();
+
+    $this->account->users()->detach($member);
+
+    $this->getJson('/api/tasks')->assertForbidden();
 });

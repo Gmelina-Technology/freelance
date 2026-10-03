@@ -8,7 +8,6 @@ use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Laravel\Mcp\Request;
 use Laravel\Mcp\Response;
-use Laravel\Sanctum\Sanctum;
 
 uses(RefreshDatabase::class);
 
@@ -49,7 +48,7 @@ it('rejects unauthenticated requests', function () {
 });
 
 it('initializes and lists tools for an authenticated token', function () {
-    Sanctum::actingAs($this->owner, ['*']);
+    actingAsToken($this->owner, ['*']);
 
     $this->postJson('/mcp', [
         'jsonrpc' => '2.0',
@@ -69,51 +68,76 @@ it('initializes and lists tools for an authenticated token', function () {
         ->assertJsonStructure(['result' => ['tools']]);
 });
 
-it('resolves the first owned account by default', function () {
-    Account::factory()->for($this->owner, 'owner')->create();
-    Sanctum::actingAs($this->owner, ['*']);
+it('resolves the account the token is bound to', function () {
+    $second = Account::factory()->for($this->owner, 'owner')->create();
+    actingAsToken($this->owner, ['*'], $second);
 
     ProbeServer::tool(ProbeTool::class)
         ->assertOk()
-        ->assertSee('"account_id":'.$this->account->id);
+        ->assertSee('"account_id":'.$second->id);
 });
 
-it('falls back to a membership when the user owns no account', function () {
-    $member = User::factory()->create();
-    $this->account->users()->attach($member, ['role' => AccountRole::Member->value]);
-    Sanctum::actingAs($member, ['*']);
+it('works for a member bound to the account', function () {
+    $member = makeAccountUser($this->account, AccountRole::Member);
+    actingAsToken($member, ['*'], $this->account);
 
     ProbeServer::tool(ProbeTool::class)
         ->assertSee('"account_id":'.$this->account->id);
 });
 
-it('accepts an explicit account the user owns', function () {
-    $second = Account::factory()->for($this->owner, 'owner')->create();
-    Sanctum::actingAs($this->owner, ['*']);
+it('accepts an account_id equal to the bound account', function () {
+    actingAsToken($this->owner, ['*'], $this->account);
 
-    ProbeServer::tool(ProbeTool::class, ['account_id' => $second->id])
-        ->assertSee('"account_id":'.$second->id);
+    ProbeServer::tool(ProbeTool::class, ['account_id' => $this->account->id])
+        ->assertSee('"account_id":'.$this->account->id);
 });
 
-it('rejects an account the user does not belong to', function () {
-    $foreign = Account::factory()->for(User::factory()->create(), 'owner')->create();
-    Sanctum::actingAs($this->owner, ['*']);
+it('rejects an account_id that differs from the bound account even when the user belongs to it', function () {
+    $second = Account::factory()->for($this->owner, 'owner')->create();
+    actingAsToken($this->owner, ['*'], $this->account);
 
-    ProbeServer::tool(ProbeTool::class, ['account_id' => $foreign->id])
-        ->assertHasErrors(['do not have access']);
+    ProbeServer::tool(ProbeTool::class, ['account_id' => $second->id])
+        ->assertHasErrors(['bound to a different account']);
+});
+
+it('denies legacy tokens that are not bound to an account', function () {
+    actingAsToken($this->owner, ['*'], bound: false);
+
+    ProbeServer::tool(ProbeTool::class)->assertHasErrors(['not bound to an account']);
+    ProbeServer::tool(ProbeTool::class, ['account_id' => $this->account->id])
+        ->assertHasErrors(['not bound to an account']);
+});
+
+it('stops working once the user is removed from the account', function () {
+    $member = makeAccountUser($this->account, AccountRole::Member);
+    actingAsToken($member, ['*'], $this->account);
+
+    ProbeServer::tool(ProbeTool::class)->assertHasNoErrors();
+
+    $this->account->users()->detach($member);
+
+    ProbeServer::tool(ProbeTool::class)->assertHasErrors(['do not have access']);
+});
+
+it('does not advertise an account_id argument', function () {
+    actingAsToken($this->owner);
+
+    $this->postJson('/mcp', ['jsonrpc' => '2.0', 'id' => 1, 'method' => 'tools/list'])
+        ->assertOk()
+        ->assertDontSee('account_id');
 });
 
 it('enforces the required token ability', function () {
-    Sanctum::actingAs($this->owner, ['tasks:write']);
+    actingAsToken($this->owner, ['tasks:write']);
 
     ProbeServer::tool(AbilityProbeTool::class)->assertHasErrors(['quotes:write']);
 
-    Sanctum::actingAs($this->owner, ['quotes:write']);
+    actingAsToken($this->owner, ['quotes:write']);
     ProbeServer::tool(AbilityProbeTool::class)->assertHasNoErrors();
 });
 
 it('lets wildcard tokens pass any ability check', function () {
-    Sanctum::actingAs($this->owner, ['*']);
+    actingAsToken($this->owner, ['*']);
 
     ProbeServer::tool(AbilityProbeTool::class)->assertHasNoErrors();
 });
@@ -124,13 +148,13 @@ it('limits role-restricted tools to owners and managers', function () {
     $this->account->users()->attach($manager, ['role' => AccountRole::Manager->value]);
     $this->account->users()->attach($member, ['role' => AccountRole::Member->value]);
 
-    Sanctum::actingAs($this->owner, ['*']);
+    actingAsToken($this->owner, ['*']);
     ProbeServer::tool(RoleProbeTool::class)->assertHasNoErrors();
 
-    Sanctum::actingAs($manager, ['*']);
+    actingAsToken($manager, ['*']);
     ProbeServer::tool(RoleProbeTool::class, ['account_id' => $this->account->id])->assertHasNoErrors();
 
-    Sanctum::actingAs($member, ['*']);
+    actingAsToken($member, ['*']);
     ProbeServer::tool(RoleProbeTool::class, ['account_id' => $this->account->id])
         ->assertHasErrors(['owner or manager']);
 });

@@ -24,7 +24,6 @@ use App\Services\InvoiceService;
 use App\Services\QuoteService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Mail;
-use Laravel\Sanctum\Sanctum;
 
 uses(RefreshDatabase::class);
 
@@ -38,7 +37,7 @@ function billableScenario(): array
     $scenario = makeQuoteScenario();
     app(QuoteService::class)->accept($scenario['quote']);
     Task::query()->update(['status' => 'completed']);
-    Sanctum::actingAs($scenario['owner'], ['*']);
+    actingAsToken($scenario['owner'], ['*']);
 
     return $scenario;
 }
@@ -328,12 +327,13 @@ it('returns the invoice pdf as base64', function () {
         ->assertSee('JVBERi0');
 });
 
-it('acts only on invoices of the requested account', function () {
+it('acts only on invoices of the account the token is bound to', function () {
     $s = billableScenario();
     $invoice = generatedInvoice($s, InvoiceStatus::Sent);
     $second = Account::factory()->for($s['owner'], 'owner')->create();
+    actingAsToken($s['owner'], ['*'], $second);
 
-    BillingServer::tool(VoidInvoice::class, ['invoice_id' => $invoice->id, 'account_id' => $second->id])
+    BillingServer::tool(VoidInvoice::class, ['invoice_id' => $invoice->id])
         ->assertHasErrors(['not found']);
 
     expect($invoice->fresh()->status)->toBe(InvoiceStatus::Sent);
@@ -342,7 +342,7 @@ it('acts only on invoices of the requested account', function () {
 it('requires the invoices:write ability for writes but not reads', function () {
     $s = billableScenario();
     $invoice = generatedInvoice($s, InvoiceStatus::Sent);
-    Sanctum::actingAs($s['owner'], ['tasks:write', 'quotes:write']);
+    actingAsToken($s['owner'], ['tasks:write', 'quotes:write']);
 
     BillingServer::tool(ListInvoices::class)->assertOk();
     BillingServer::tool(GetInvoice::class, ['invoice_id' => $invoice->id])->assertOk();
@@ -362,7 +362,7 @@ it('limits invoice writes to owners and managers', function () {
     $member = makeAccountUser($s['account'], AccountRole::Member);
     $manager = makeAccountUser($s['account'], AccountRole::Manager);
 
-    Sanctum::actingAs($member, ['*']);
+    actingAsToken($member, ['*']);
     BillingServer::tool(ListInvoices::class, ['account_id' => $s['account']->id])->assertOk();
 
     foreach ([MarkInvoicePaid::class, VoidInvoice::class, SendInvoice::class] as $tool) {
@@ -373,7 +373,7 @@ it('limits invoice writes to owners and managers', function () {
     BillingServer::tool(GenerateInvoice::class, ['project_id' => $s['project']->id, 'account_id' => $s['account']->id])
         ->assertHasErrors(['owner or manager']);
 
-    Sanctum::actingAs($manager, ['*']);
+    actingAsToken($manager, ['*']);
     BillingServer::tool(MarkInvoicePaid::class, ['invoice_id' => $invoice->id, 'account_id' => $s['account']->id])->assertOk();
 
     expect($invoice->fresh()->status)->toBe(InvoiceStatus::Paid);
@@ -384,11 +384,11 @@ it('does not let a user from another account touch an invoice', function () {
     $invoice = generatedInvoice($s, InvoiceStatus::Sent);
     $stranger = User::factory()->create();
     Account::factory()->for($stranger, 'owner')->create();
-    Sanctum::actingAs($stranger, ['*']);
+    actingAsToken($stranger, ['*']);
 
     BillingServer::tool(VoidInvoice::class, ['invoice_id' => $invoice->id])->assertHasErrors(['not found']);
     BillingServer::tool(VoidInvoice::class, ['invoice_id' => $invoice->id, 'account_id' => $s['account']->id])
-        ->assertHasErrors(['do not have access']);
+        ->assertHasErrors(['bound to a different account']);
 
     expect($invoice->fresh()->status)->toBe(InvoiceStatus::Sent);
 });
