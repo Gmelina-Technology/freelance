@@ -43,9 +43,15 @@
 
     <h2>5. Cookies and similar technologies</h2>
     <p>We use only what is necessary to run the site: a session cookie that keeps you signed in, and a security
-        (CSRF) cookie that protects forms. Your light or dark display preference is stored in your browser's local storage.
-        We do not use analytics or advertising cookies, so there is no cookie banner to accept. Fonts are hosted by us, not
-        loaded from a third party.</p>
+        (CSRF) cookie that protects forms. If you tick "Remember me" when logging in, a cookie that keeps you signed in
+        for longer is also set. We also store two items in your browser's local storage: your light or dark display
+        preference (<code>theme</code>), and a record of your cookie choice (<code>cookie-consent</code>), which holds
+        whether you accepted or rejected optional cookies and the date you chose. These stay on your device, are not sent
+        to us, and the cookie choice is asked again after 180 days.</p>
+    <p>We do not currently use analytics, advertising or other optional cookies or third-party scripts, so at present
+        accepting or rejecting changes nothing about what runs. If we add any in future, they will load only after you
+        accept, and we will update this section first. Fonts are hosted by us, not loaded from a third party.</p>
+    <p>You can change your choice at any time with the "Cookie preferences" link at the bottom of every page.</p>
 
     <h2>6. Who we share data with</h2>
     <ul>
