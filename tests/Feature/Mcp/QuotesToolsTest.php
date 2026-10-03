@@ -344,14 +344,14 @@ it('limits send, accept, decline and void to owners and managers', function () {
     actingAsToken($member, ['*']);
 
     foreach ([SendQuote::class, AcceptQuote::class, DeclineQuote::class, VoidQuote::class] as $tool) {
-        BillingServer::tool($tool, ['quote_id' => $quote->id, 'account_id' => $this->account->id])
+        BillingServer::tool($tool, ['quote_id' => $quote->id])
             ->assertHasErrors(['owner or manager']);
     }
 
     expect($quote->fresh()->status)->toBe(QuoteStatus::Sent);
 
     actingAsToken($manager, ['*']);
-    BillingServer::tool(DeclineQuote::class, ['quote_id' => $quote->id, 'account_id' => $this->account->id])
+    BillingServer::tool(DeclineQuote::class, ['quote_id' => $quote->id])
         ->assertHasNoErrors();
 
     expect($quote->fresh()->status)->toBe(QuoteStatus::Declined);

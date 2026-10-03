@@ -85,27 +85,18 @@ it('works for a member bound to the account', function () {
         ->assertSee('"account_id":'.$this->account->id);
 });
 
-it('accepts an account_id equal to the bound account', function () {
-    actingAsToken($this->owner, ['*'], $this->account);
-
-    ProbeServer::tool(ProbeTool::class, ['account_id' => $this->account->id])
-        ->assertSee('"account_id":'.$this->account->id);
-});
-
-it('rejects an account_id that differs from the bound account even when the user belongs to it', function () {
+it('ignores an account_id argument and keeps acting on the bound account', function () {
     $second = Account::factory()->for($this->owner, 'owner')->create();
     actingAsToken($this->owner, ['*'], $this->account);
 
     ProbeServer::tool(ProbeTool::class, ['account_id' => $second->id])
-        ->assertHasErrors(['bound to a different account']);
+        ->assertSee('"account_id":'.$this->account->id);
 });
 
 it('denies legacy tokens that are not bound to an account', function () {
     actingAsToken($this->owner, ['*'], bound: false);
 
     ProbeServer::tool(ProbeTool::class)->assertHasErrors(['not bound to an account']);
-    ProbeServer::tool(ProbeTool::class, ['account_id' => $this->account->id])
-        ->assertHasErrors(['not bound to an account']);
 });
 
 it('stops working once the user is removed from the account', function () {
@@ -119,12 +110,18 @@ it('stops working once the user is removed from the account', function () {
     ProbeServer::tool(ProbeTool::class)->assertHasErrors(['do not have access']);
 });
 
-it('does not advertise an account_id argument', function () {
+it('advertises no account_id property on any tool', function () {
     actingAsToken($this->owner);
 
-    $this->postJson('/mcp', ['jsonrpc' => '2.0', 'id' => 1, 'method' => 'tools/list'])
-        ->assertOk()
-        ->assertDontSee('account_id');
+    $response = $this->postJson('/mcp', ['jsonrpc' => '2.0', 'id' => 1, 'method' => 'tools/list'])->assertOk();
+
+    $tools = $response->json('result.tools');
+
+    expect($tools)->not->toBeEmpty();
+
+    foreach ($tools as $tool) {
+        expect($tool['inputSchema']['properties'] ?? [])->not->toHaveKey('account_id');
+    }
 });
 
 it('enforces the required token ability', function () {
@@ -152,9 +149,9 @@ it('limits role-restricted tools to owners and managers', function () {
     ProbeServer::tool(RoleProbeTool::class)->assertHasNoErrors();
 
     actingAsToken($manager, ['*']);
-    ProbeServer::tool(RoleProbeTool::class, ['account_id' => $this->account->id])->assertHasNoErrors();
+    ProbeServer::tool(RoleProbeTool::class)->assertHasNoErrors();
 
     actingAsToken($member, ['*']);
-    ProbeServer::tool(RoleProbeTool::class, ['account_id' => $this->account->id])
+    ProbeServer::tool(RoleProbeTool::class)
         ->assertHasErrors(['owner or manager']);
 });

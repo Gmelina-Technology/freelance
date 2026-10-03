@@ -18,14 +18,14 @@ class CreateQuote extends QuoteTool
 
     public function schema(JsonSchema $schema): array
     {
-        return $this->withAccountSchema($schema, [
+        return [
             'client_id' => $schema->integer()->description('Client id (see list-clients).')->required(),
             'project_id' => $schema->integer()->description('Project id; it must belong to the client.')->required(),
             'items' => $this->itemsSchema($schema)->description('At least one line item.')->required(),
             'notes' => $schema->string()->description('Optional notes shown on the quote.'),
             'issued_at' => $schema->string()->description('Issue date (ISO 8601). Defaults to now.'),
             'valid_until' => $schema->string()->description('Expiry date (ISO 8601). Defaults to 30 days from now.'),
-        ]);
+        ];
     }
 
     protected function execute(Request $request, Account $account, User $user): Response

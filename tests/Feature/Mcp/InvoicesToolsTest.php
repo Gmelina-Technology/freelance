@@ -363,18 +363,18 @@ it('limits invoice writes to owners and managers', function () {
     $manager = makeAccountUser($s['account'], AccountRole::Manager);
 
     actingAsToken($member, ['*']);
-    BillingServer::tool(ListInvoices::class, ['account_id' => $s['account']->id])->assertOk();
+    BillingServer::tool(ListInvoices::class)->assertOk();
 
     foreach ([MarkInvoicePaid::class, VoidInvoice::class, SendInvoice::class] as $tool) {
-        BillingServer::tool($tool, ['invoice_id' => $invoice->id, 'account_id' => $s['account']->id])
+        BillingServer::tool($tool, ['invoice_id' => $invoice->id])
             ->assertHasErrors(['owner or manager']);
     }
 
-    BillingServer::tool(GenerateInvoice::class, ['project_id' => $s['project']->id, 'account_id' => $s['account']->id])
+    BillingServer::tool(GenerateInvoice::class, ['project_id' => $s['project']->id])
         ->assertHasErrors(['owner or manager']);
 
     actingAsToken($manager, ['*']);
-    BillingServer::tool(MarkInvoicePaid::class, ['invoice_id' => $invoice->id, 'account_id' => $s['account']->id])->assertOk();
+    BillingServer::tool(MarkInvoicePaid::class, ['invoice_id' => $invoice->id])->assertOk();
 
     expect($invoice->fresh()->status)->toBe(InvoiceStatus::Paid);
 });
@@ -387,8 +387,6 @@ it('does not let a user from another account touch an invoice', function () {
     actingAsToken($stranger, ['*']);
 
     BillingServer::tool(VoidInvoice::class, ['invoice_id' => $invoice->id])->assertHasErrors(['not found']);
-    BillingServer::tool(VoidInvoice::class, ['invoice_id' => $invoice->id, 'account_id' => $s['account']->id])
-        ->assertHasErrors(['bound to a different account']);
 
     expect($invoice->fresh()->status)->toBe(InvoiceStatus::Sent);
 });

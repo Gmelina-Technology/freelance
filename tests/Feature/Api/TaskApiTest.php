@@ -158,25 +158,6 @@ it('keeps a token bound to one account away from the users other accounts', func
     expect(Task::where('title', 'New one')->value('account_id'))->toBe($second->id);
 });
 
-it('rejects an account_id that differs from the bound account', function () {
-    $second = Account::factory()->for($this->owner, 'owner')->create();
-    actingAsToken($this->owner, ['*'], $this->account);
-
-    $this->getJson('/api/tasks?account_id='.$second->id)
-        ->assertForbidden()
-        ->assertJsonPath('message', 'This token is bound to a different account.');
-
-    $this->postJson('/api/tasks', ['title' => 'Sneaky', 'account_id' => $second->id])->assertForbidden();
-
-    expect(Task::where('title', 'Sneaky')->exists())->toBeFalse();
-});
-
-it('accepts an account_id equal to the bound account', function () {
-    actingAsToken($this->owner, ['*'], $this->account);
-
-    $this->getJson('/api/tasks?account_id='.$this->account->id)->assertOk();
-});
-
 it('denies legacy tokens without a bound account', function () {
     actingAsToken($this->owner, ['*'], bound: false);
 

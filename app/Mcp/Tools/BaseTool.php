@@ -8,9 +8,7 @@ use App\Models\Account;
 use App\Models\User;
 use App\Services\TokenAccountResolver;
 use Illuminate\Auth\Access\AuthorizationException;
-use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
-use Illuminate\JsonSchema\Types\Type;
 use Illuminate\Validation\ValidationException;
 use Laravel\Mcp\Request;
 use Laravel\Mcp\Response;
@@ -29,7 +27,7 @@ use Laravel\Mcp\Server\Tool;
  *
  *         public function schema(JsonSchema $schema): array
  *         {
- *             return $this->withAccountSchema($schema, ['task_id' => $schema->integer()->required()]);
+ *             return ['task_id' => $schema->integer()->required()];
  *         }
  *
  *         protected function execute(Request $request, Account $account, User $user): Response
@@ -44,7 +42,7 @@ use Laravel\Mcp\Server\Tool;
  *  - $requiredAbility (e.g. 'tasks:write'): the token must carry it, or '*'. Null means read-only.
  *  - $requiredRoles: roles allowed on the account (the owner always passes); [] means any member.
  *    Use [AccountRole::Owner, AccountRole::Manager] for send/accept/void/mark-paid.
- *  - the account is the one the token is bound to (see resolveAccount()); no account argument is needed.
+ *  - the account is the one the token is bound to (see resolveAccount()); tools take no account argument.
  *  - ToolFailedException, ValidationException and ModelNotFoundException thrown anywhere in
  *    execute() are turned into Response::error(...).
  *
@@ -52,7 +50,6 @@ use Laravel\Mcp\Server\Tool;
  *  - success(mixed $data): Response       JSON payload
  *  - failure(string $message): Response   error response (return it)
  *  - fail(string $message): never         throw to abort from nested code
- *  - withAccountSchema($schema, $props): array   returns the tool's input properties
  *  - resolveAccount(Request, User): Account, requireAbility(User, string): void,
  *    requireRole(Account, User, array): void   (all throw ToolFailedException)
  *
@@ -109,25 +106,13 @@ abstract class BaseTool extends Tool
     }
 
     /**
-     * Build a tool's input schema. The token fixes the account, so no account argument
-     * is advertised (an `account_id` equal to the bound account is still accepted).
-     *
-     * @param  array<string, Type>  $properties
-     * @return array<string, Type>
-     */
-    protected function withAccountSchema(JsonSchema $schema, array $properties = []): array
-    {
-        return $properties;
-    }
-
-    /**
      * The account the request acts on: the one the current token is bound to. See
      * TokenAccountResolver for the legacy-token and mismatch rules.
      */
     protected function resolveAccount(Request $request, User $user): Account
     {
         try {
-            return app(TokenAccountResolver::class)->resolve($user, $request->get('account_id'));
+            return app(TokenAccountResolver::class)->resolve($user);
         } catch (AuthorizationException $exception) {
             $this->fail($exception->getMessage());
         }

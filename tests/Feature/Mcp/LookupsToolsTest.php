@@ -73,8 +73,3 @@ it('lists only the accounts categories', function () {
         ->assertSee('Design')
         ->assertDontSee('Secret');
 });
-
-it('rejects an account other than the one the token is bound to', function () {
-    BillingServer::tool(ListClients::class, ['account_id' => $this->otherAccount->id])
-        ->assertHasErrors(['bound to a different account']);
-});

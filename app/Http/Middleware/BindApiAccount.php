@@ -15,12 +15,12 @@ class BindApiAccount
     /**
      * Bind the account the authenticated (Sanctum) token is tied to for downstream
      * controllers/requests. Runs after `auth:sanctum`. Tokens without a bound account
-     * are refused, and an `account_id` (query or body) must match the bound one.
+     * are refused.
      */
     public function handle(Request $request, Closure $next): Response
     {
         try {
-            $account = $this->resolver->resolve($request->user(), $request->input('account_id'));
+            $account = $this->resolver->resolve($request->user());
         } catch (AuthorizationException $exception) {
             abort(403, $exception->getMessage());
         }

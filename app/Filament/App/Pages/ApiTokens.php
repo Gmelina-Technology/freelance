@@ -70,8 +70,6 @@ class ApiTokens extends Page implements HasActions, HasSchemas, HasTable
             ->columns([
                 TextColumn::make('name')
                     ->searchable(),
-                TextColumn::make('account')
-                    ->state(fn () => Filament::getTenant()->name),
                 TextColumn::make('abilities')
                     ->badge()
                     ->placeholder('Read-only'),

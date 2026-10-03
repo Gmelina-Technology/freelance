@@ -223,7 +223,7 @@ it('lets a regular member manage tasks of the account they belong to', function 
     $this->account->users()->attach($member, ['role' => 'member']);
     actingAsToken($member, ['tasks:write']);
 
-    BillingServer::tool(CreateTask::class, ['title' => 'From member', 'account_id' => $this->account->id])
+    BillingServer::tool(CreateTask::class, ['title' => 'From member'])
         ->assertOk()
         ->assertSee('From member');
 });
@@ -241,9 +241,6 @@ it('keeps a token bound to one account away from the users other accounts', func
     BillingServer::tool(GetTask::class, ['task_id' => $secondTask->id])->assertHasErrors(['not found']);
     BillingServer::tool(UpdateTask::class, ['task_id' => $secondTask->id, 'title' => 'Hacked'])->assertHasErrors(['not found']);
     BillingServer::tool(DeleteTask::class, ['task_id' => $secondTask->id])->assertHasErrors(['not found']);
-    BillingServer::tool(CreateTask::class, ['title' => 'Sneaky', 'account_id' => $second->id])
-        ->assertHasErrors(['bound to a different account']);
 
-    expect($secondTask->fresh()->title)->toBe('Second account task')
-        ->and(Task::where('title', 'Sneaky')->exists())->toBeFalse();
+    expect($secondTask->fresh()->title)->toBe('Second account task');
 });

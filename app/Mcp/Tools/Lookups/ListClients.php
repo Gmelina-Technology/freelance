@@ -17,7 +17,7 @@ class ListClients extends BaseTool
 {
     public function schema(JsonSchema $schema): array
     {
-        return $this->withAccountSchema($schema);
+        return [];
     }
 
     protected function execute(Request $request, Account $account, User $user): Response

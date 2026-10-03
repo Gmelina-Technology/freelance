@@ -14,13 +14,12 @@ use Laravel\Sanctum\PersonalAccessToken;
 class TokenAccountResolver
 {
     /**
-     * Return the account the user's current token is bound to. An `account_id` in the
-     * request is only accepted when it equals the bound account, and the user must still
-     * own or belong to that account.
+     * Return the account the user's current token is bound to. The user must still own
+     * or belong to that account.
      *
      * @throws AuthorizationException
      */
-    public function resolve(User $user, mixed $requestedAccountId = null): Account
+    public function resolve(User $user): Account
     {
         $token = $user->currentAccessToken();
 
@@ -28,10 +27,6 @@ class TokenAccountResolver
 
         if ($boundAccountId === null) {
             throw new AuthorizationException('This token is not bound to an account; create a new token on the API Tokens page.');
-        }
-
-        if ($requestedAccountId !== null && (string) $requestedAccountId !== (string) $boundAccountId) {
-            throw new AuthorizationException('This token is bound to a different account.');
         }
 
         $account = $user->accounts()->whereKey($boundAccountId)->first()
