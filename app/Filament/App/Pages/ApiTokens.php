@@ -141,9 +141,15 @@ class ApiTokens extends Page implements HasActions, HasSchemas, HasTable
         return Action::make('revealToken')
             ->modalHeading('Your new API token')
             ->modalWidth('2xl')
-            ->modalContent(fn (array $arguments) => view('filament.pages.api-token-reveal', [
-                'token' => $arguments['token'] ?? '',
-            ]))
+            ->fillForm(fn (array $arguments): array => ['token' => $arguments['token'] ?? ''])
+            ->schema([
+                TextInput::make('token')
+                    ->label('API token')
+                    ->helperText("Copy this token now. You won't see it again.")
+                    ->readOnly()
+                    ->dehydrated(false)
+                    ->copyable(copyMessage: 'Copied!', copyMessageDuration: 1500),
+            ])
             ->modalSubmitAction(false)
             ->modalCancelActionLabel('Done')
             ->closeModalByClickingAway(false);
