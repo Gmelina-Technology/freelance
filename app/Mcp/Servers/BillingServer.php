@@ -27,6 +27,11 @@ use Symfony\Component\Finder\Finder;
 class BillingServer extends Server
 {
     /**
+     * List every tool in a single `tools/list` page for clients that don't follow cursors.
+     */
+    public int $defaultPaginationLength = 50;
+
+    /**
      * Register every concrete tool found under app/Mcp/Tools so new tools never
      * require editing this file.
      */
