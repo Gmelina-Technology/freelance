@@ -95,8 +95,25 @@ class InvoiceMailSent extends Mailable implements ShouldQueue
         Log::info('Failed to send email for invoice: '.$this->invoice->number);
     }
 
+    /**
+     * Render the invoice PDF and return its raw bytes.
+     */
+    public function buildPdf(): string
+    {
+        return $this->makePdf()->render()->output;
+    }
+
     private function generateAndSaveInvoicePdf(): string
     {
+        $this->makePdf()->save('local');
+
+        return "Invoice-{$this->invoice->number}.pdf";
+    }
+
+    private function makePdf(): InvoicePdf
+    {
+        $this->invoice->loadMissing('account', 'client.currency', 'items.task.category', 'items.unit');
+
         $seller = new Party([
             'name' => $this->invoice->account->name,
             'address' => $this->invoice->account->address ?? '',
@@ -156,11 +173,7 @@ class InvoiceMailSent extends Mailable implements ShouldQueue
             $invoicePdf->notes($this->invoice->notes);
         }
 
-        // Save the PDF to storage and return the path
-        $invoicePdf->save('local');
-
-        // Return the full path to the saved PDF file
-        return $filename.'.pdf';
+        return $invoicePdf;
     }
 
     private function renderEmailContent(): string

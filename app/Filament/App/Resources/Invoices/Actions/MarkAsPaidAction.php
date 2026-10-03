@@ -6,6 +6,7 @@ use App\Enums\InvoiceStatus;
 use App\Models\Invoice;
 use App\Services\InvoiceService;
 use Filament\Actions\Action;
+use Filament\Notifications\Notification;
 use Filament\Support\Enums\IconPosition;
 use Filament\Support\Icons\Heroicon;
 
@@ -23,6 +24,12 @@ class MarkAsPaidAction
             ->visible(fn ($record) => self::isVisible($record))
             ->action(function (Invoice $invoice, InvoiceService $invoiceService) {
                 $invoiceService->markAsPaid($invoice);
+
+                Notification::make('markAsPaid')
+                    ->success()
+                    ->title('Invoice mark as paid')
+                    ->body('Invoice #'.$invoice->number.' was marked as paid.')
+                    ->send();
             });
     }
 

@@ -5,13 +5,16 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\StoreTaskRequest;
 use App\Http\Requests\Api\UpdateTaskRequest;
+use App\Http\Resources\TaskResource;
 use App\Models\Account;
-use App\Models\Task;
+use App\Services\TaskService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 class TaskController extends Controller
 {
+    public function __construct(private TaskService $tasks) {}
+
     /**
      * List tasks for the authenticated account.
      *
@@ -19,25 +22,13 @@ class TaskController extends Controller
      */
     public function index(Request $request): JsonResponse
     {
-        $account = $this->account($request);
-
-        $query = $account->tasks()->with('client')->orderByDesc('id');
-
-        if ($request->filled('status')) {
-            $query->where('status', $request->string('status'));
-        }
-
-        if ($request->boolean('overdue')) {
-            $query->whereNotNull('due_date')
-                ->whereDate('due_date', '<', now())
-                ->where('status', '!=', 'completed');
-        }
-
-        $tasks = $query->limit((int) $request->integer('limit', 25))->get();
-
-        return response()->json([
-            'data' => $tasks->map(fn (Task $task) => $this->present($task))->all(),
+        $tasks = $this->tasks->list($this->account($request), [
+            'status' => $request->filled('status') ? $request->string('status')->toString() : null,
+            'overdue' => $request->boolean('overdue'),
+            'limit' => $request->integer('limit', 25),
         ]);
+
+        return TaskResource::collection($tasks)->response();
     }
 
     /**
@@ -45,20 +36,9 @@ class TaskController extends Controller
      */
     public function store(StoreTaskRequest $request): JsonResponse
     {
-        $account = $this->account($request);
+        $task = $this->tasks->create($this->account($request), $request->validated());
 
-        $task = $account->tasks()->create([
-            'title' => $request->string('title'),
-            'description' => $request->input('description'),
-            'status' => $request->input('status', 'open'),
-            'priority' => $request->input('priority', 'Medium'),
-            'due_date' => $request->input('due_date'),
-            'client_id' => $request->input('client_id'),
-            'project_id' => $request->input('project_id'),
-            'assigned_user_id' => $request->input('assigned_user_id'),
-        ]);
-
-        return response()->json(['data' => $this->present($task)], 201);
+        return (new TaskResource($task))->response()->setStatusCode(201);
     }
 
     /**
@@ -66,35 +46,13 @@ class TaskController extends Controller
      */
     public function update(UpdateTaskRequest $request, int $task): JsonResponse
     {
-        $account = $this->account($request);
+        $model = $this->tasks->update($this->account($request), $task, $request->validated());
 
-        $model = $account->tasks()->findOrFail($task);
-
-        $model->fill($request->only([
-            'title', 'description', 'status', 'priority', 'due_date', 'client_id', 'project_id', 'assigned_user_id',
-        ]));
-        $model->save();
-
-        return response()->json(['data' => $this->present($model->fresh('client'))]);
+        return (new TaskResource($model))->response();
     }
 
     private function account(Request $request): Account
     {
         return $request->attributes->get('account');
-    }
-
-    private function present(Task $task): array
-    {
-        return [
-            'id' => $task->id,
-            'title' => $task->title,
-            'description' => $task->description,
-            'status' => $task->status?->value,
-            'priority' => $task->priority?->value,
-            'due_date' => $task->due_date?->toDateString(),
-            'client' => $task->client?->name,
-            'project_id' => $task->project_id,
-            'assigned_user_id' => $task->assigned_user_id,
-        ];
     }
 }

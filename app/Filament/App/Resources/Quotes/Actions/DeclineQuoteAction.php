@@ -4,6 +4,7 @@ namespace App\Filament\App\Resources\Quotes\Actions;
 
 use App\Enums\QuoteStatus;
 use App\Models\Quote;
+use App\Services\QuoteService;
 use Filament\Actions\Action;
 use Filament\Notifications\Notification;
 use Filament\Support\Enums\IconPosition;
@@ -21,7 +22,7 @@ class DeclineQuoteAction
             ->color('danger')
             ->visible(fn (Quote $record): bool => $record->status === QuoteStatus::Sent)
             ->action(function (Quote $record) {
-                $record->update(['status' => QuoteStatus::Declined]);
+                app(QuoteService::class)->decline($record);
 
                 Notification::make()
                     ->title('Quote Declined')

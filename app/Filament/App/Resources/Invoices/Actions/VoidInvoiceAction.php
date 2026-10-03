@@ -10,7 +10,6 @@ use Filament\Notifications\Notification;
 use Filament\Support\Colors\Color;
 use Filament\Support\Enums\IconPosition;
 use Filament\Support\Icons\Heroicon;
-use Illuminate\Support\Facades\DB;
 
 class VoidInvoiceAction
 {
@@ -23,14 +22,8 @@ class VoidInvoiceAction
             ->iconPosition(IconPosition::After)
             ->requiresConfirmation()
             ->visible(fn ($record) => self::isVisible($record))
-            ->action(function (Invoice $record) {
-                DB::transaction(function () use ($record) {
-                    $record->update([
-                        'status' => InvoiceStatus::Void,
-                    ]);
-
-                    app(InvoiceService::class)->releaseTasks($record);
-                });
+            ->action(function (Invoice $record, InvoiceService $invoiceService) {
+                $invoiceService->void($record);
 
                 Notification::make()
                     ->title('Invoice Voided')

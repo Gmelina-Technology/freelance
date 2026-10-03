@@ -4,6 +4,7 @@ namespace App\Filament\App\Resources\Quotes\Actions;
 
 use App\Enums\QuoteStatus;
 use App\Models\Quote;
+use App\Services\QuoteService;
 use Filament\Actions\Action;
 use Filament\Notifications\Notification;
 use Filament\Support\Colors\Color;
@@ -22,7 +23,7 @@ class VoidQuoteAction
             ->requiresConfirmation()
             ->visible(fn (Quote $record): bool => $record->status->canTransitionTo(QuoteStatus::Void))
             ->action(function (Quote $record) {
-                $record->update(['status' => QuoteStatus::Void]);
+                app(QuoteService::class)->void($record);
 
                 Notification::make()
                     ->title('Quote Voided')
