@@ -21,11 +21,11 @@ class GenerateInvoice extends InvoiceTool
 
     public function schema(JsonSchema $schema): array
     {
-        return $this->withAccountSchema($schema, [
+        return [
             'project_id' => $schema->integer()->required(),
             'task_ids' => $schema->array()->items($schema->integer())
                 ->description('Optional subset of the billable task ids; defaults to all of them.'),
-        ]);
+        ];
     }
 
     protected function execute(Request $request, Account $account, User $user): Response

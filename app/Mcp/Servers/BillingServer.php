@@ -20,9 +20,8 @@ use Symfony\Component\Finder\Finder;
     - Quotes: draft with line items, send, accept (creates tasks), decline, void and fetch the PDF.
     - Invoices: generate from completed tasks or create manually, send, mark as paid, void and fetch the PDF.
 
-    Every tool works on one account. Pass the optional `account_id` argument to pick among the
-    accounts you belong to; by default your first owned account is used. Write tools need a token
-    with the matching ability (tasks:write, quotes:write, invoices:write).
+    Every tool works on the one account your token is bound to. Tokens are created per account on the API Tokens page. Write tools need a token with the
+    matching ability (tasks:write, quotes:write, invoices:write).
     MARKDOWN)]
 class BillingServer extends Server
 {

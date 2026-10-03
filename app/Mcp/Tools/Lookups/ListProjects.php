@@ -18,9 +18,9 @@ class ListProjects extends BaseTool
 {
     public function schema(JsonSchema $schema): array
     {
-        return $this->withAccountSchema($schema, [
+        return [
             'client_id' => $schema->integer()->description('Only projects of this client.'),
-        ]);
+        ];
     }
 
     protected function execute(Request $request, Account $account, User $user): Response

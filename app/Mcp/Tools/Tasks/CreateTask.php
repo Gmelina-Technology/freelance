@@ -21,7 +21,7 @@ class CreateTask extends TaskTool
         $properties = $this->taskProperties($schema);
         $properties['title'] = $properties['title']->required();
 
-        return $this->withAccountSchema($schema, $properties);
+        return $properties;
     }
 
     protected function execute(Request $request, Account $account, User $user): Response

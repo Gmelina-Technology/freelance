@@ -6,9 +6,9 @@ use App\Enums\AccountRole;
 use App\Mcp\Exceptions\ToolFailedException;
 use App\Models\Account;
 use App\Models\User;
-use Illuminate\Contracts\JsonSchema\JsonSchema;
+use App\Services\TokenAccountResolver;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
-use Illuminate\JsonSchema\Types\Type;
 use Illuminate\Validation\ValidationException;
 use Laravel\Mcp\Request;
 use Laravel\Mcp\Response;
@@ -27,7 +27,7 @@ use Laravel\Mcp\Server\Tool;
  *
  *         public function schema(JsonSchema $schema): array
  *         {
- *             return $this->withAccountSchema($schema, ['task_id' => $schema->integer()->required()]);
+ *             return ['task_id' => $schema->integer()->required()];
  *         }
  *
  *         protected function execute(Request $request, Account $account, User $user): Response
@@ -42,7 +42,7 @@ use Laravel\Mcp\Server\Tool;
  *  - $requiredAbility (e.g. 'tasks:write'): the token must carry it, or '*'. Null means read-only.
  *  - $requiredRoles: roles allowed on the account (the owner always passes); [] means any member.
  *    Use [AccountRole::Owner, AccountRole::Manager] for send/accept/void/mark-paid.
- *  - the account is resolved from the optional `account_id` argument (see resolveAccount()).
+ *  - the account is the one the token is bound to (see resolveAccount()); tools take no account argument.
  *  - ToolFailedException, ValidationException and ModelNotFoundException thrown anywhere in
  *    execute() are turned into Response::error(...).
  *
@@ -50,11 +50,10 @@ use Laravel\Mcp\Server\Tool;
  *  - success(mixed $data): Response       JSON payload
  *  - failure(string $message): Response   error response (return it)
  *  - fail(string $message): never         throw to abort from nested code
- *  - withAccountSchema($schema, $props): array   adds the optional `account_id` property
  *  - resolveAccount(Request, User): Account, requireAbility(User, string): void,
  *    requireRole(Account, User, array): void   (all throw ToolFailedException)
  *
- * Testing: Sanctum::actingAs($user, ['tasks:write']); then
+ * Testing: actingAsToken($user, ['tasks:write']) (tests/Pest.php, binds a real token to the account); then
  *     BillingServer::tool(CompleteTaskTool::class, ['task_id' => 1])->assertOk()->assertSee('...');
  *     ->assertHasErrors(['message']) for failures.
  */
@@ -107,38 +106,16 @@ abstract class BaseTool extends Tool
     }
 
     /**
-     * Merge the optional `account_id` property into a tool's input schema.
-     *
-     * @param  array<string, Type>  $properties
-     * @return array<string, Type>
-     */
-    protected function withAccountSchema(JsonSchema $schema, array $properties = []): array
-    {
-        return $properties + [
-            'account_id' => $schema->integer()
-                ->description('Account to act on. Defaults to your first owned account.'),
-        ];
-    }
-
-    /**
-     * Pick the account the request acts on: the `account_id` argument when given
-     * (it must be one the user owns or belongs to), otherwise the first owned
-     * account, then the first membership. Mirrors BindApiAccount.
+     * The account the request acts on: the one the current token is bound to. See
+     * TokenAccountResolver for the legacy-token and mismatch rules.
      */
     protected function resolveAccount(Request $request, User $user): Account
     {
-        $requested = $request->get('account_id');
-
-        if ($requested !== null) {
-            $account = $user->accounts()->whereKey($requested)->first()
-                ?? $user->ownedAccounts()->whereKey($requested)->first();
-
-            return $account ?? $this->fail('You do not have access to that account.');
+        try {
+            return app(TokenAccountResolver::class)->resolve($user);
+        } catch (AuthorizationException $exception) {
+            $this->fail($exception->getMessage());
         }
-
-        return $user->ownedAccounts()->first()
-            ?? $user->accounts()->first()
-            ?? $this->fail('This user is not attached to any account.');
     }
 
     /**

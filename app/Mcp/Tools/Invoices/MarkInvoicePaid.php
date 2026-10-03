@@ -21,9 +21,9 @@ class MarkInvoicePaid extends InvoiceTool
 
     public function schema(JsonSchema $schema): array
     {
-        return $this->withAccountSchema($schema, [
+        return [
             'invoice_id' => $schema->integer()->required(),
-        ]);
+        ];
     }
 
     protected function execute(Request $request, Account $account, User $user): Response

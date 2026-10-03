@@ -24,7 +24,6 @@ use App\Models\User;
 use App\Services\QuoteService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Mail;
-use Laravel\Sanctum\Sanctum;
 
 uses(RefreshDatabase::class);
 
@@ -36,7 +35,7 @@ beforeEach(function () {
     $this->unit = Unit::factory()->for($this->account)->create();
     $this->category = Category::factory()->for($this->account)->create();
 
-    Sanctum::actingAs($this->owner, ['*']);
+    actingAsToken($this->owner, ['*']);
 });
 
 function quoteItems(Unit $unit, array $overrides = []): array
@@ -151,7 +150,7 @@ it('lists quotes filtered by status, client and project', function () {
 
 it('shows a quote and its line items', function () {
     $scenario = makeQuoteScenario();
-    Sanctum::actingAs($scenario['owner'], ['*']);
+    actingAsToken($scenario['owner'], ['*']);
 
     BillingServer::tool(GetQuote::class, ['quote_id' => $scenario['quote']->id])
         ->assertOk()
@@ -266,7 +265,7 @@ it('does not send a quote whose client has no email', function () {
 
 it('accepts a sent quote and creates one task per item', function () {
     ['quote' => $quote, 'owner' => $owner] = makeQuoteScenario();
-    Sanctum::actingAs($owner, ['*']);
+    actingAsToken($owner, ['*']);
 
     BillingServer::tool(AcceptQuote::class, ['quote_id' => $quote->id])
         ->assertOk()
@@ -282,7 +281,7 @@ it('accepts a sent quote and creates one task per item', function () {
 
 it('does not accept declined or void quotes', function (QuoteStatus $status) {
     ['quote' => $quote, 'owner' => $owner] = makeQuoteScenario(status: $status);
-    Sanctum::actingAs($owner, ['*']);
+    actingAsToken($owner, ['*']);
 
     BillingServer::tool(AcceptQuote::class, ['quote_id' => $quote->id])
         ->assertHasErrors(['cannot be accepted']);
@@ -316,7 +315,7 @@ it('voids draft and sent quotes but not accepted ones', function () {
 
 it('returns the quote pdf as base64', function () {
     ['quote' => $quote, 'owner' => $owner] = makeQuoteScenario();
-    Sanctum::actingAs($owner, ['*']);
+    actingAsToken($owner, ['*']);
 
     $response = BillingServer::tool(GetQuotePdf::class, ['quote_id' => $quote->id])->assertOk()->assertHasNoErrors();
 
@@ -325,7 +324,7 @@ it('returns the quote pdf as base64', function () {
 
 it('requires the quotes:write ability for writes only', function () {
     $quote = Quote::factory()->forProject($this->project)->create();
-    Sanctum::actingAs($this->owner, ['tasks:write']);
+    actingAsToken($this->owner, ['tasks:write']);
 
     foreach ([CreateQuote::class, UpdateQuote::class, SendQuote::class, AcceptQuote::class, DeclineQuote::class, VoidQuote::class] as $tool) {
         BillingServer::tool($tool, ['quote_id' => $quote->id])->assertHasErrors(['quotes:write']);
@@ -342,17 +341,17 @@ it('limits send, accept, decline and void to owners and managers', function () {
     $this->account->users()->attach($manager, ['role' => AccountRole::Manager->value]);
     $quote = Quote::factory()->forProject($this->project)->sent()->create();
 
-    Sanctum::actingAs($member, ['*']);
+    actingAsToken($member, ['*']);
 
     foreach ([SendQuote::class, AcceptQuote::class, DeclineQuote::class, VoidQuote::class] as $tool) {
-        BillingServer::tool($tool, ['quote_id' => $quote->id, 'account_id' => $this->account->id])
+        BillingServer::tool($tool, ['quote_id' => $quote->id])
             ->assertHasErrors(['owner or manager']);
     }
 
     expect($quote->fresh()->status)->toBe(QuoteStatus::Sent);
 
-    Sanctum::actingAs($manager, ['*']);
-    BillingServer::tool(DeclineQuote::class, ['quote_id' => $quote->id, 'account_id' => $this->account->id])
+    actingAsToken($manager, ['*']);
+    BillingServer::tool(DeclineQuote::class, ['quote_id' => $quote->id])
         ->assertHasNoErrors();
 
     expect($quote->fresh()->status)->toBe(QuoteStatus::Declined);

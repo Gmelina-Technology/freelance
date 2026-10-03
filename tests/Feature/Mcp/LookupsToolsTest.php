@@ -12,7 +12,6 @@ use App\Models\Project;
 use App\Models\Unit;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Laravel\Sanctum\Sanctum;
 
 uses(RefreshDatabase::class);
 
@@ -21,7 +20,7 @@ beforeEach(function () {
     $this->account = Account::factory()->for($this->owner, 'owner')->create();
     $this->otherAccount = Account::factory()->for(User::factory(), 'owner')->create();
 
-    Sanctum::actingAs($this->owner, ['tasks:write']);
+    actingAsToken($this->owner, ['tasks:write']);
 });
 
 it('lists only the accounts clients', function () {
@@ -73,9 +72,4 @@ it('lists only the accounts categories', function () {
     BillingServer::tool(ListCategories::class)
         ->assertSee('Design')
         ->assertDontSee('Secret');
-});
-
-it('rejects an account the user does not belong to', function () {
-    BillingServer::tool(ListClients::class, ['account_id' => $this->otherAccount->id])
-        ->assertHasErrors(['do not have access']);
 });

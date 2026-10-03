@@ -17,8 +17,8 @@ beforeEach(function () {
 });
 
 it('lists only the current user tokens', function () {
-    $mine = $this->user->createToken('My laptop', ['tasks:write'])->accessToken;
-    $theirs = User::factory()->create()->createToken('Their secret', ['*'])->accessToken;
+    $mine = $this->user->createAccountToken($this->account, 'My laptop', ['tasks:write'])->accessToken;
+    $theirs = User::factory()->create()->createAccountToken($this->account, 'Their secret', ['*'])->accessToken;
 
     Livewire::test(ApiTokens::class)
         ->assertOk()
@@ -58,7 +58,7 @@ it('creates a read-only token when no abilities are selected', function () {
 });
 
 it('validates the token name', function (array $data, string $error) {
-    $this->user->createToken('Existing');
+    $this->user->createAccountToken($this->account, 'Existing');
 
     Livewire::test(ApiTokens::class)
         ->callAction('createToken', $data)
@@ -81,7 +81,7 @@ it('allows the same token name for different users', function () {
 });
 
 it('revokes an own token', function () {
-    $token = $this->user->createToken('Old')->accessToken;
+    $token = $this->user->createAccountToken($this->account, 'Old')->accessToken;
 
     Livewire::test(ApiTokens::class)
         ->callAction(TestAction::make('revoke')->table($token));
@@ -91,7 +91,7 @@ it('revokes an own token', function () {
 
 it('cannot revoke another user token', function () {
     $other = User::factory()->create();
-    $token = $other->createToken('Theirs')->accessToken;
+    $token = $other->createAccountToken($this->account, 'Theirs')->accessToken;
 
     try {
         Livewire::test(ApiTokens::class)
@@ -113,4 +113,47 @@ it('redirects guests away from the page', function () {
     auth()->logout();
 
     $this->get(ApiTokens::getUrl(tenant: $this->account))->assertRedirect();
+});
+
+it('binds a new token to the current tenant account', function () {
+    Livewire::test(ApiTokens::class)
+        ->callAction('createToken', ['name' => 'Bound', 'abilities' => []]);
+
+    expect($this->user->tokens()->sole()->account_id)->toBe($this->account->id);
+});
+
+it('lists only tokens of the current account', function () {
+    $other = Account::factory()->for($this->user, 'owner')->create();
+    $here = $this->user->createAccountToken($this->account, 'Here')->accessToken;
+    $there = $this->user->createAccountToken($other, 'There')->accessToken;
+    $legacy = $this->user->createToken('Legacy')->accessToken;
+
+    Livewire::test(ApiTokens::class)
+        ->assertCanSeeTableRecords([$here])
+        ->assertCanNotSeeTableRecords([$there, $legacy]);
+});
+
+it('allows the same token name on different accounts', function () {
+    $other = Account::factory()->for($this->user, 'owner')->create();
+    $this->user->createAccountToken($other, 'Shared');
+
+    Livewire::test(ApiTokens::class)
+        ->callAction('createToken', ['name' => 'Shared', 'abilities' => []])
+        ->assertHasNoActionErrors();
+
+    expect($this->user->tokens()->count())->toBe(2);
+});
+
+it('cannot revoke a token bound to another account', function () {
+    $other = Account::factory()->for($this->user, 'owner')->create();
+    $token = $this->user->createAccountToken($other, 'Elsewhere')->accessToken;
+
+    try {
+        Livewire::test(ApiTokens::class)
+            ->callAction(TestAction::make('revoke')->table($token));
+    } catch (Throwable) {
+        // Filament refuses records outside the current account's token query.
+    }
+
+    expect($this->user->tokens()->count())->toBe(1);
 });

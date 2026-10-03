@@ -19,13 +19,13 @@ class ListQuotes extends QuoteTool
 {
     public function schema(JsonSchema $schema): array
     {
-        return $this->withAccountSchema($schema, [
+        return [
             'status' => $schema->string()
                 ->enum(array_column(QuoteStatus::cases(), 'value'))
                 ->description('Only quotes with this status.'),
             'client_id' => $schema->integer()->description('Only quotes for this client.'),
             'project_id' => $schema->integer()->description('Only quotes for this project.'),
-        ]);
+        ];
     }
 
     protected function execute(Request $request, Account $account, User $user): Response

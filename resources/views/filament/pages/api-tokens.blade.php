@@ -4,7 +4,8 @@
 
         <div class="space-y-3 text-sm">
             <p>
-                Tokens belong to you, not to the current account, and act on the accounts you can access.
+                Tokens are per account: a token created here is bound to {{ filament()->getTenant()->name }} and can
+                only access that account, even if you belong to others. Switch accounts to create tokens for them.
                 A token without any ability can only read.
             </p>
 
