@@ -178,6 +178,9 @@ class InvoiceMailSent extends Mailable implements ShouldQueue
 
     private function renderEmailContent(): string
     {
+        if (blank($this->emailTemplate?->body)) {
+            return '';
+        }
 
         // Use Filament's RichContentRenderer to process merge tags
         // Merge tags use {{ tag }} format and are replaced with dynamic values
