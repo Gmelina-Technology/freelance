@@ -6,20 +6,36 @@ use App\Enums\InvoiceStatus;
 use App\Enums\QuoteStatus;
 use App\Enums\TaskBillingStatus;
 use App\Enums\TaskStatus;
+use App\Exceptions\InvalidInvoiceTransitionException;
 use App\Exceptions\NoBillableTasksException;
 use App\Filament\App\Common\Actions\Sales\CreateSaleAction;
+use App\Mail\InvoiceMailSent;
+use App\Models\Account;
 use App\Models\Invoice;
 use App\Models\Project;
 use App\Models\Task;
-use Filament\Notifications\Notification;
+use App\Models\Unit;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Mail;
+use Illuminate\Validation\ValidationException;
 
 class InvoiceService
 {
-    public function markAsPaid(Invoice $invoice)
+    /**
+     * Mark the invoice paid, settle its tasks and record the sale.
+     *
+     * @param  bool  $onlyFromSent  reject any invoice that is not currently Sent
+     *
+     * @throws InvalidInvoiceTransitionException
+     */
+    public function markAsPaid(Invoice $invoice, bool $onlyFromSent = false): void
     {
+        if ($onlyFromSent && $invoice->status !== InvoiceStatus::Sent) {
+            throw new InvalidInvoiceTransitionException('Only a sent invoice can be marked as paid.');
+        }
+
         DB::transaction(function () use ($invoice) {
             $invoice->update([
                 'status' => InvoiceStatus::Paid,
@@ -34,13 +50,142 @@ class InvoiceService
                 'amount' => $invoice->amount,
                 'transaction_date' => now(),
             ]);
-
-            Notification::make('markAsPaid')
-                ->success()
-                ->title('Invoice mark as paid')
-                ->body('Invoice #'.$invoice->number.' was marked as paid.')
-                ->send();
         });
+    }
+
+    /**
+     * Email a draft invoice to its client and mark it sent.
+     *
+     * @throws InvalidInvoiceTransitionException
+     */
+    public function send(Invoice $invoice): void
+    {
+        if ($invoice->status !== InvoiceStatus::Draft) {
+            throw new InvalidInvoiceTransitionException('Only a draft invoice can be sent.');
+        }
+
+        DB::transaction(function () use ($invoice) {
+            $client = $invoice->client;
+
+            Mail::to($client->email, $client->name)->send(new InvoiceMailSent($invoice));
+
+            $invoice->update(['status' => InvoiceStatus::Sent]);
+        });
+    }
+
+    /**
+     * Void a draft, sent or overdue invoice and hand its tasks back to billing.
+     *
+     * @throws InvalidInvoiceTransitionException
+     */
+    public function void(Invoice $invoice): void
+    {
+        if (! in_array($invoice->status, [InvoiceStatus::Draft, InvoiceStatus::Sent, InvoiceStatus::Overdue], true)) {
+            throw new InvalidInvoiceTransitionException('Only a draft, sent or overdue invoice can be voided.');
+        }
+
+        DB::transaction(function () use ($invoice) {
+            $invoice->update(['status' => InvoiceStatus::Void]);
+
+            $this->releaseTasks($invoice);
+        });
+    }
+
+    /**
+     * Create a draft invoice by hand from billable tasks of one project.
+     *
+     * @param  array{client_id: int, project_id: int, notes?: ?string, issued_at?: mixed, due_date?: mixed}  $attributes
+     * @param  array<int, array{task_id: int, unit_id: int, quantity: float|int|string, unit_price: float|int|string}>  $items
+     *
+     * @throws ValidationException
+     */
+    public function createManual(Account $account, array $attributes, array $items): Invoice
+    {
+        $project = $account->projects()->whereKey($attributes['project_id'])->first();
+
+        if ($project === null || (int) $project->client_id !== (int) $attributes['client_id']) {
+            throw ValidationException::withMessages(['project_id' => 'The project does not belong to that client in this account.']);
+        }
+
+        if ($items === []) {
+            throw ValidationException::withMessages(['items' => 'An invoice needs at least one item.']);
+        }
+
+        $taskIds = collect($items)->pluck('task_id');
+
+        if ($taskIds->unique()->count() !== $taskIds->count()) {
+            throw ValidationException::withMessages(['items' => 'A task can only appear once on an invoice.']);
+        }
+
+        foreach ($items as $index => $item) {
+            if (! Unit::query()->where('account_id', $account->getKey())->whereKey($item['unit_id'])->exists()) {
+                throw ValidationException::withMessages(["items.{$index}.unit_id" => 'The unit was not found in this account.']);
+            }
+        }
+
+        return $this->retryOnDuplicateNumber(function (int $attempt) use ($account, $project, $attributes, $items, $taskIds): Invoice {
+            return DB::transaction(function () use ($account, $project, $attributes, $items, $taskIds, $attempt): Invoice {
+                $billable = Task::query()
+                    ->where('account_id', $account->getKey())
+                    ->where('project_id', $project->getKey())
+                    ->where('billing_status', TaskBillingStatus::Billable)
+                    ->whereKey($taskIds)
+                    ->lockForUpdate()
+                    ->pluck('id');
+
+                $unavailable = $taskIds->diff($billable);
+
+                if ($unavailable->isNotEmpty()) {
+                    throw ValidationException::withMessages([
+                        'items' => 'Tasks not billable on this project (or already invoiced): '.$unavailable->implode(', ').'.',
+                    ]);
+                }
+
+                $invoice = Invoice::create([
+                    'account_id' => $account->getKey(),
+                    'client_id' => $project->client_id,
+                    'project_id' => $project->getKey(),
+                    'task_id' => null,
+                    'number' => self::generateInvoiceNumber($account->getKey(), $attempt),
+                    'amount' => 0,
+                    'status' => InvoiceStatus::Draft,
+                    'notes' => $attributes['notes'] ?? null,
+                    'issued_at' => $attributes['issued_at'] ?? now(),
+                    'due_date' => $attributes['due_date'] ?? now()->addWeekdays(7),
+                ]);
+
+                foreach ($items as $item) {
+                    $invoice->items()->create([
+                        'task_id' => $item['task_id'],
+                        'unit_id' => $item['unit_id'],
+                        'quantity' => $item['quantity'],
+                        'unit_price' => $item['unit_price'],
+                    ]);
+                }
+
+                $this->finalizeManual($invoice);
+
+                $invoice->update([
+                    'amount' => round($invoice->items()->get()->sum(
+                        fn ($item): float => (float) $item->quantity * (float) $item->unit_price
+                    ), 2),
+                ]);
+
+                return $invoice;
+            });
+        });
+    }
+
+    /**
+     * Claim the tasks of a hand-made invoice, settling them if it was created already paid.
+     */
+    public function finalizeManual(Invoice $invoice): void
+    {
+        $this->claimTasks($invoice);
+
+        if ($invoice->status === InvoiceStatus::Paid) {
+            $this->settleTasks($invoice);
+        }
     }
 
     /**

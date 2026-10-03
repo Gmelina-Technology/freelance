@@ -2,7 +2,6 @@
 
 namespace App\Filament\App\Resources\Invoices\Pages;
 
-use App\Enums\InvoiceStatus;
 use App\Filament\App\Resources\Invoices\Concerns\HasInvoiceSteps;
 use App\Filament\App\Resources\Invoices\InvoiceResource;
 use App\Services\InvoiceService;
@@ -36,12 +35,6 @@ class CreateInvoice extends CreateRecord
      */
     protected function afterCreate(): void
     {
-        $service = app(InvoiceService::class);
-
-        $service->claimTasks($this->record);
-
-        if ($this->record->status === InvoiceStatus::Paid) {
-            $service->settleTasks($this->record);
-        }
+        app(InvoiceService::class)->finalizeManual($this->record);
     }
 }

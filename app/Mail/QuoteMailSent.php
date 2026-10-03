@@ -204,6 +204,17 @@ class QuoteMailSent extends Mailable implements ShouldQueue
         return $quotePdf;
     }
 
+    /**
+     * Render the quote PDF and return the raw bytes.
+     */
+    public function pdfContent(): string
+    {
+        $quotePdf = $this->buildPdf();
+        $quotePdf->render();
+
+        return $quotePdf->output;
+    }
+
     private function generateAndSaveQuotePdf(): string
     {
         $quotePdf = $this->buildPdf();
