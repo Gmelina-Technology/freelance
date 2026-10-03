@@ -20,7 +20,7 @@ class CreateInvoice extends InvoiceTool
 
     public function schema(JsonSchema $schema): array
     {
-        return $this->withAccountSchema($schema, [
+        return [
             'client_id' => $schema->integer()->required(),
             'project_id' => $schema->integer()->required()->description('Must belong to the client.'),
             'items' => $schema->array()->required()->min(1)->items($schema->object([
@@ -32,7 +32,7 @@ class CreateInvoice extends InvoiceTool
             'notes' => $schema->string(),
             'issued_at' => $schema->string()->description('Date; defaults to now.'),
             'due_date' => $schema->string()->description('Date; defaults to 7 weekdays from now.'),
-        ]);
+        ];
     }
 
     protected function execute(Request $request, Account $account, User $user): Response

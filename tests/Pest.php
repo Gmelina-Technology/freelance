@@ -9,6 +9,7 @@ use App\Models\Quote;
 use App\Models\QuoteItem;
 use App\Models\Unit;
 use App\Models\User;
+use Laravel\Sanctum\PersonalAccessToken;
 use Tests\TestCase;
 
 /*
@@ -112,4 +113,26 @@ function makeAccountUser(Account $account, AccountRole $role): User
     $account->users()->syncWithoutDetaching([$user->id => ['role' => $role->value]]);
 
     return $user;
+}
+
+/**
+ * Act as the user with a real personal access token bound to an account. The account
+ * defaults to the user's first owned account, then their first membership; pass
+ * $bound = false for a legacy token without an account.
+ *
+ * @param  array<int, string>  $abilities
+ */
+function actingAsToken(User $user, array $abilities = ['*'], ?Account $account = null, bool $bound = true): PersonalAccessToken
+{
+    $account ??= $user->ownedAccounts()->first() ?? $user->accounts()->first();
+
+    $token = $bound
+        ? $user->createAccountToken($account, 'test', $abilities)->accessToken
+        : $user->createToken('test', $abilities)->accessToken;
+
+    $user->withAccessToken($token);
+    app('auth')->guard('sanctum')->setUser($user);
+    app('auth')->shouldUse('sanctum');
+
+    return $token;
 }

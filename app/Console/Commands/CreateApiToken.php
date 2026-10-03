@@ -7,7 +7,7 @@ use Illuminate\Console\Command;
 
 class CreateApiToken extends Command
 {
-    protected $signature = 'freelance:api-token {email} {--name=dara-aios}';
+    protected $signature = 'freelance:api-token {email} {account : ID of the account the token is bound to} {--name=dara-aios}';
 
     protected $description = 'Create a Sanctum personal access token for a user (for the task API).';
 
@@ -21,9 +21,18 @@ class CreateApiToken extends Command
             return self::FAILURE;
         }
 
-        $token = $user->createToken($this->option('name'));
+        $account = $user->accounts()->whereKey($this->argument('account'))->first()
+            ?? $user->ownedAccounts()->whereKey($this->argument('account'))->first();
 
-        $this->info("Personal access token for {$user->email} (shown once):");
+        if (! $account) {
+            $this->error("{$user->email} does not belong to account {$this->argument('account')}.");
+
+            return self::FAILURE;
+        }
+
+        $token = $user->createAccountToken($account, $this->option('name'));
+
+        $this->info("Personal access token for {$user->email} on account {$account->getKey()} (shown once):");
         $this->newLine();
         $this->line($token->plainTextToken);
         $this->newLine();

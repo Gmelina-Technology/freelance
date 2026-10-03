@@ -26,9 +26,9 @@ abstract class QuoteTool extends BaseTool
      */
     protected function quoteIdSchema(JsonSchema $schema): array
     {
-        return $this->withAccountSchema($schema, [
+        return [
             'quote_id' => $schema->integer()->description('The quote id.')->required(),
-        ]);
+        ];
     }
 
     protected function itemsSchema(JsonSchema $schema): Type

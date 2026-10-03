@@ -7,6 +7,7 @@ use BackedEnum;
 use Filament\Actions\Action;
 use Filament\Actions\Concerns\InteractsWithActions;
 use Filament\Actions\Contracts\HasActions;
+use Filament\Facades\Filament;
 use Filament\Forms\Components\CheckboxList;
 use Filament\Forms\Components\TextInput;
 use Filament\Pages\Page;
@@ -24,8 +25,8 @@ use UnitEnum;
 
 /**
  * Self-service Sanctum personal access tokens for the signed-in user, used by
- * external MCP clients (/mcp) and the REST API (/api). Tokens belong to the user,
- * not to the tenant account.
+ * external MCP clients (/mcp) and the REST API (/api). Each token is bound to the
+ * tenant account it was created in and can only act on that account.
  */
 class ApiTokens extends Page implements HasActions, HasSchemas, HasTable
 {
@@ -64,6 +65,7 @@ class ApiTokens extends Page implements HasActions, HasSchemas, HasTable
         return $table
             ->query(fn () => PersonalAccessToken::query()
                 ->whereMorphedTo('tokenable', Auth::user())
+                ->where('account_id', Filament::getTenant()->getKey())
                 ->latest())
             ->columns([
                 TextColumn::make('name')
@@ -92,7 +94,7 @@ class ApiTokens extends Page implements HasActions, HasSchemas, HasTable
                     ->action(fn (PersonalAccessToken $record) => $record->delete()),
             ])
             ->emptyStateHeading('No API tokens yet')
-            ->emptyStateDescription('Create a token to connect an MCP client or call the REST API.');
+            ->emptyStateDescription('Create a token for this account to connect an MCP client or call the REST API.');
     }
 
     /**
@@ -115,7 +117,8 @@ class ApiTokens extends Page implements HasActions, HasSchemas, HasTable
                             column: 'name',
                             modifyRuleUsing: fn (Unique $rule) => $rule
                                 ->where('tokenable_type', (new User)->getMorphClass())
-                                ->where('tokenable_id', Auth::id()),
+                                ->where('tokenable_id', Auth::id())
+                                ->where('account_id', Filament::getTenant()->getKey()),
                         ),
                     CheckboxList::make('abilities')
                         ->options(self::ABILITIES)
@@ -125,7 +128,12 @@ class ApiTokens extends Page implements HasActions, HasSchemas, HasTable
                 ->action(function (array $data): void {
                     $abilities = array_values(array_intersect(array_keys(self::ABILITIES), $data['abilities'] ?? []));
 
-                    $token = Auth::user()->createToken($data['name'], $abilities);
+                    $user = Auth::user();
+                    $account = Filament::getTenant();
+
+                    abort_unless($user->canAccessTenant($account), 403);
+
+                    $token = $user->createAccountToken($account, $data['name'], $abilities);
 
                     $this->replaceMountedAction('revealToken', ['token' => $token->plainTextToken]);
                 }),

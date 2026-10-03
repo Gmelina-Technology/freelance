@@ -18,9 +18,9 @@ class ListBillableTasks extends InvoiceTool
 {
     public function schema(JsonSchema $schema): array
     {
-        return $this->withAccountSchema($schema, [
+        return [
             'project_id' => $schema->integer()->required(),
-        ]);
+        ];
     }
 
     protected function execute(Request $request, Account $account, User $user): Response

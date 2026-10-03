@@ -21,7 +21,7 @@ class UpdateQuote extends QuoteTool
 
     public function schema(JsonSchema $schema): array
     {
-        return $this->withAccountSchema($schema, [
+        return [
             'quote_id' => $schema->integer()->description('The quote id.')->required(),
             'client_id' => $schema->integer()->description('Move the quote to another client (project_id is then required).'),
             'project_id' => $schema->integer()->description('Move the quote to another project of the client.'),
@@ -29,7 +29,7 @@ class UpdateQuote extends QuoteTool
             'notes' => $schema->string()->description('Notes shown on the quote.'),
             'issued_at' => $schema->string()->description('Issue date (ISO 8601).'),
             'valid_until' => $schema->string()->description('Expiry date (ISO 8601).'),
-        ]);
+        ];
     }
 
     protected function execute(Request $request, Account $account, User $user): Response

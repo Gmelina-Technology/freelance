@@ -19,12 +19,12 @@ class ListInvoices extends InvoiceTool
 {
     public function schema(JsonSchema $schema): array
     {
-        return $this->withAccountSchema($schema, [
+        return [
             'status' => $schema->string()->enum(array_column(InvoiceStatus::cases(), 'value')),
             'client_id' => $schema->integer(),
             'project_id' => $schema->integer(),
             'limit' => $schema->integer()->min(1)->max(100)->description('Maximum invoices to return (default 50).'),
-        ]);
+        ];
     }
 
     protected function execute(Request $request, Account $account, User $user): Response

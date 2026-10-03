@@ -19,13 +19,13 @@ class ListTasks extends TaskTool
 {
     public function schema(JsonSchema $schema): array
     {
-        return $this->withAccountSchema($schema, [
+        return [
             'status' => $schema->string()->enum(array_column(TaskStatus::cases(), 'value')),
             'overdue' => $schema->boolean()->description('Only tasks past their due date and not completed.'),
             'project_id' => $schema->integer(),
             'client_id' => $schema->integer(),
             'limit' => $schema->integer()->description('Maximum number of tasks (default 25, max 100).'),
-        ]);
+        ];
     }
 
     protected function execute(Request $request, Account $account, User $user): Response
