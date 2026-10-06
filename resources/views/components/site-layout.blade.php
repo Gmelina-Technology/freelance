@@ -46,6 +46,8 @@
         })();
     </script>
 
+    <x-cookie-consent-script />
+
     <link rel="stylesheet" href="{{ asset('fonts/filament/filament/inter/index.css') }}">
 
     @vite(['resources/css/app.css', 'resources/js/app.js'])
@@ -104,11 +106,14 @@
             <div class="flex flex-wrap gap-x-6 gap-y-2 font-medium">
                 <a href="{{ route('terms') }}" class="transition hover:text-brand-700">Terms</a>
                 <a href="{{ route('privacy') }}" class="transition hover:text-brand-700">Privacy</a>
+                <button type="button" data-cookie-preferences class="font-medium transition hover:text-brand-700">Cookie preferences</button>
                 <a href="{{ $loginUrl }}" class="transition hover:text-brand-700">Log in</a>
                 <a href="{{ $registerUrl }}" class="transition hover:text-brand-700">Sign up</a>
             </div>
         </div>
     </footer>
+
+    <x-cookie-consent-banner />
 </body>
 
 </html>

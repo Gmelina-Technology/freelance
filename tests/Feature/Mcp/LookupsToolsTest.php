@@ -1,6 +1,7 @@
 <?php
 
 use App\Mcp\Servers\BillingServer;
+use App\Mcp\Tools\Lookups\GetProjectPeople;
 use App\Mcp\Tools\Lookups\ListCategories;
 use App\Mcp\Tools\Lookups\ListClients;
 use App\Mcp\Tools\Lookups\ListProjects;
@@ -72,4 +73,23 @@ it('lists only the accounts categories', function () {
     BillingServer::tool(ListCategories::class)
         ->assertSee('Design')
         ->assertDontSee('Secret');
+});
+
+it('returns the assignees and client of a project', function () {
+    $client = Client::factory()->for($this->account)->create(['name' => 'Acme Ltd', 'email' => 'hello@acme.test']);
+    $project = Project::factory()->for($this->account)->create(['client_id' => $client->id]);
+    $project->assignees()->attach(User::factory()->create(['name' => 'Jane Dev', 'email' => 'jane@team.test']));
+
+    BillingServer::tool(GetProjectPeople::class, ['project_id' => $project->id])
+        ->assertOk()
+        ->assertSee(['Jane Dev', 'jane@team.test', 'Acme Ltd', 'hello@acme.test']);
+});
+
+it('does not return people of another accounts project', function () {
+    $project = Project::factory()->for($this->otherAccount)->create();
+    $project->assignees()->attach(User::factory()->create(['name' => 'Foreign Dev']));
+
+    BillingServer::tool(GetProjectPeople::class, ['project_id' => $project->id])
+        ->assertHasErrors()
+        ->assertDontSee('Foreign Dev');
 });
