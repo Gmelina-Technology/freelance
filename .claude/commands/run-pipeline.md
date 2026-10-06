@@ -10,7 +10,7 @@ You are acting as the **Orchestrator** for this run — see `.claude/reference/o
 ## 0. Set up the build
 
 - Requirement input: `$ARGUMENTS`
-- Build id: `<YYYY-MM-DD>-<short-kebab-slug>`, slug derived from the requirement. Ask the user only if it's genuinely ambiguous — don't stall on this.
+- Build id: `<YYYY-MM-DD>-<short-kebab-slug>`, slug derived from the requirement. Ask the user (via `AskUserQuestion`) only if it's genuinely ambiguous — don't stall on this.
 - Build folder: `.claude/builds/<build-id>/` — create it now. This lives under `.claude/` deliberately, alongside the agents/skills/reference material, so it's never mistaken for application source or migrations.
 - State file: `.claude/builds/<build-id>/state.json` — initialize now:
 
@@ -31,7 +31,7 @@ You are acting as the **Orchestrator** for this run — see `.claude/reference/o
 
 ## 1. Intake
 
-Dispatch to the `intake-clarifier` subagent (Task tool) with the raw requirement (`$ARGUMENTS`, or the file/folder it points to). It writes `intake.md` and `intake-sources/` inside the build folder. If it reports the requirement is too ambiguous to structure at all, stop and ask the user — don't guess on its behalf. Set `stage: "planning"`.
+Dispatch to the `intake-clarifier` subagent (Task tool) with the raw requirement (`$ARGUMENTS`, or the file/folder it points to). It writes `intake.md` and `intake-sources/` inside the build folder. If it reports the requirement is too ambiguous to structure at all, stop and ask the user with `AskUserQuestion` — don't guess on its behalf. Set `stage: "planning"`.
 
 ## 2. Planner
 
@@ -60,7 +60,7 @@ Route strictly by these rules, checking the relevant counter in `state.json` bef
 
 ## 5. Human Approval Gate
 
-**Stop here and wait for the user's explicit approval before doing anything else — every time, no matter how clean the build looks.** Present: the tier, the risk tier, `spec.md`'s acceptance criteria, and (for standard/major tier) a short summary of `design.md`. You do not get to decide on your own judgment that it "looks fine enough" to proceed — that's exactly the decision this gate exists to keep out of your hands.
+**Stop here and wait for the user's explicit approval before doing anything else — every time, no matter how clean the build looks.** Do not write a summary into the chat — the user hates reading long summaries. Instead, prompt directly with the `AskUserQuestion` tool: put the essentials in the question text (tier, risk tier, a one-line gist of the plan) and offer options such as "Approve", "Reject", plus the user's free-form "Other" for feedback. Mention that `spec.md` (and `design.md` for standard/major tier) are in the build folder for anyone who wants detail; do not reproduce their contents. You do not get to decide on your own judgment that it "looks fine enough" to proceed — that's exactly the decision this gate exists to keep out of your hands.
 
 - **Rejected** → route back to §4 with the rejection reason; Assessor re-applies its root-cause logic to decide where that goes next.
 - **Approved** → set `stage: "implementation"`, go to §6.
@@ -81,7 +81,11 @@ Dispatch to `escalation-liaison` with the current `state.json` and whatever find
 
 ## 8. Deploy → Reconciler
 
-If `risk_tier` is `high`, stop for one more explicit human confirmation immediately before deploy, even though the build already passed the gate in §5 — this mirrors the spec's rule that high risk requires sign-off both before implementation and again before deploy. Once the user confirms deploy happened, dispatch to `reconciler` to merge `plan.md` / `design.md` / `spec.md` into the vault or project docs. Set `stage: "reconciliation"`, then mark the build folder's `status.md` as `merged`.
+If `risk_tier` is `high`, stop and prompt via `AskUserQuestion` (short question, no recap) for one more explicit human confirmation immediately before deploy, even though the build already passed the gate in §5 — this mirrors the spec's rule that high risk requires sign-off both before implementation and again before deploy. Once the user confirms deploy happened, dispatch to `reconciler` to merge `plan.md` / `design.md` / `spec.md` into the vault or project docs. Set `stage: "reconciliation"`, then mark the build folder's `status.md` as `merged`.
+
+## Interaction style
+
+Every time this command needs the user — approval, rejection, confirmation, clarification — use `AskUserQuestion` with a short question and concise options, never a long prose summary in the response. Keep any text between stages to a line or two.
 
 ## Known gaps in this run
 
