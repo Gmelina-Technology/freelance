@@ -35,4 +35,19 @@ enum InvoiceStatus: string implements HasColor, HasLabel
             self::Void => 'warning',
         };
     }
+
+    /**
+     * The order invoices are listed in: statuses needing attention first.
+     *
+     * @return array<int, self>
+     */
+    public static function inPriorityOrder(): array
+    {
+        return [self::Overdue, self::Sent, self::Draft, self::Paid, self::Void];
+    }
+
+    public function priority(): int
+    {
+        return array_search($this, self::inPriorityOrder(), true);
+    }
 }

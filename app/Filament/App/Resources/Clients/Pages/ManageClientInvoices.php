@@ -12,6 +12,7 @@ use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Grouping\Group;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
 
 class ManageClientInvoices extends ManageRelatedRecords
 {
@@ -30,11 +31,13 @@ class ManageClientInvoices extends ManageRelatedRecords
                 TextColumn::make('project.name')
                     ->searchable(),
                 TextColumn::make('status')
-                    ->badge(),
+                    ->badge()
+                    ->sortable(query: fn (Builder $query, string $direction) => $query->orderByStatusThenDueDate($direction)),
                 ClientInvoiceAmountColumn::make(),
                 TextColumn::make('due_date')
                     ->dateTime(),
             ])
+            ->defaultSort(fn (Builder $query) => $query->orderByStatusThenDueDate())
             ->groups([
                 Group::make('project.name')
                     ->label('Project')
