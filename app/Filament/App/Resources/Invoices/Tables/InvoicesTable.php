@@ -11,6 +11,7 @@ use Filament\Actions\ActionGroup;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
 
 class InvoicesTable
 {
@@ -28,7 +29,8 @@ class InvoicesTable
                 ClientInvoiceAmountColumn::make(),
                 TextColumn::make('status')
                     ->badge()
-                    ->searchable(),
+                    ->searchable()
+                    ->sortable(query: fn (Builder $query, string $direction) => $query->orderByStatusThenDueDate($direction)),
                 TextColumn::make('due_date')
                     ->toggleable(isToggledHiddenByDefault: true)
                     ->dateTime()
@@ -38,6 +40,7 @@ class InvoicesTable
                     ->dateTime()
                     ->sortable(),
             ])
+            ->defaultSort(fn (Builder $query) => $query->orderByStatusThenDueDate())
             ->filters([
                 SelectFilter::make('status')
                     ->options(InvoiceStatus::class),

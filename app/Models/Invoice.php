@@ -6,6 +6,7 @@ use App\Enums\InvoiceStatus;
 use App\Services\InvoiceService;
 use App\Traits\HasAccount;
 use Database\Factories\InvoiceFactory;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -45,6 +46,34 @@ class Invoice extends Model
             'due_date' => 'datetime',
             'status' => InvoiceStatus::class,
         ];
+    }
+
+    /**
+     * Order by status priority, then soonest due date (undated last), then id.
+     *
+     * @param  Builder<Invoice>  $query
+     * @return Builder<Invoice>
+     */
+    public function scopeOrderByStatusThenDueDate(Builder $query, string $direction = 'asc'): Builder
+    {
+        $direction = strtolower($direction) === 'desc' ? 'desc' : 'asc';
+        $statuses = InvoiceStatus::inPriorityOrder();
+        $status = $query->getModel()->qualifyColumn('status');
+        $dueDate = $query->getModel()->qualifyColumn('due_date');
+
+        $cases = implode(' ', array_fill(0, count($statuses), 'WHEN ? THEN ?'));
+        $bindings = [];
+        foreach ($statuses as $position => $case) {
+            $bindings[] = $case->value;
+            $bindings[] = $position;
+        }
+        $bindings[] = count($statuses);
+
+        return $query
+            ->orderByRaw("CASE {$status} {$cases} ELSE ? END {$direction}", $bindings)
+            ->orderByRaw("{$dueDate} IS NULL ASC")
+            ->orderBy($dueDate)
+            ->orderBy($query->getModel()->getQualifiedKeyName());
     }
 
     public function account(): BelongsTo
