@@ -19,7 +19,7 @@ uses(RefreshDatabase::class);
 beforeEach(function () {
     $this->travelTo(CarbonImmutable::parse('2026-06-15 10:00:00'));
 
-    $this->account = Account::factory()->create();
+    $this->account = Account::factory()->withCurrency('USD')->create();
     $this->service = app(ClientRevenueReportService::class);
 });
 
@@ -38,6 +38,7 @@ function invoicedSale(Account $account, Client $client, ?Project $project, float
 {
     return Sale::factory()
         ->forInvoice(paidInvoice($account, $client, $project, $amount))
+        ->converted($account->currency_code ?? 'USD')
         ->create(['transaction_date' => $at]);
 }
 
@@ -149,7 +150,7 @@ it('reconciles client totals and unattributed sales with the sales total', funct
 
     invoicedSale($this->account, $acme, $website, 500);
     invoicedSale($this->account, $acme, null, 120, '2025-08-01 10:00:00');
-    Sale::factory()->for($this->account)->create(['amount' => 50, 'transaction_date' => '2026-02-01 10:00:00']);
+    Sale::factory()->for($this->account)->converted('USD')->create(['amount' => 50, 'transaction_date' => '2026-02-01 10:00:00']);
     invoicedSale($this->account, $acme, null, 70)->invoice->delete();
     invoicedSale($this->account, $doomed, null, 90, '2025-04-01 10:00:00');
     $doomed->delete();
@@ -158,7 +159,7 @@ it('reconciles client totals and unattributed sales with the sales total', funct
 
     $sales = app(SalesReportService::class);
     $expected = $year === null
-        ? (float) $sales->query($this->account)->sum('sales.amount')
+        ? (float) $sales->query($this->account)->sum('sale_conversions.converted_amount')
         : array_sum($sales->totalsForBuckets($this->account, [[
             CarbonImmutable::create($year, 1, 1),
             CarbonImmutable::create($year + 1, 1, 1),
@@ -175,11 +176,11 @@ it('reconciles client totals and unattributed sales with the sales total', funct
 ]);
 
 it('counts a sale matching another account invoice number as unattributed', function () {
-    $other = Account::factory()->create();
+    $other = Account::factory()->withCurrency('USD')->create();
     $otherClient = Client::factory()->for($other)->create(['name' => 'Rival Corp']);
     $otherInvoice = paidInvoice($other, $otherClient, null, 800);
 
-    Sale::factory()->for($this->account)->create(['reference_key' => $otherInvoice->number, 'amount' => 45]);
+    Sale::factory()->for($this->account)->converted('USD')->create(['reference_key' => $otherInvoice->number, 'amount' => 45]);
 
     $report = $this->service->forAccount($this->account);
 
@@ -190,9 +191,9 @@ it('counts a sale matching another account invoice number as unattributed', func
 
 it('does not attribute through another account invoice even when it points at this account client', function () {
     $acme = Client::factory()->for($this->account)->create(['name' => 'Acme']);
-    $otherInvoice = paidInvoice(Account::factory()->create(), $acme, null, 800);
+    $otherInvoice = paidInvoice(Account::factory()->withCurrency('USD')->create(), $acme, null, 800);
 
-    Sale::factory()->for($this->account)->create(['reference_key' => $otherInvoice->number, 'amount' => 45]);
+    Sale::factory()->for($this->account)->converted('USD')->create(['reference_key' => $otherInvoice->number, 'amount' => 45]);
 
     $report = $this->service->forAccount($this->account);
 
@@ -201,7 +202,7 @@ it('does not attribute through another account invoice even when it points at th
 });
 
 it('shows no project for an invoice pointing at another account project', function () {
-    $other = Account::factory()->create();
+    $other = Account::factory()->withCurrency('USD')->create();
     $otherProject = Project::factory()->for($other)->create(['name' => 'Rival project']);
     $acme = Client::factory()->for($this->account)->create(['name' => 'Acme']);
 
@@ -227,10 +228,10 @@ it('counts a sale on an invoice pointing at another account client as unattribut
 });
 
 it('never counts another account sales', function () {
-    $other = Account::factory()->create();
+    $other = Account::factory()->withCurrency('USD')->create();
     $otherClient = Client::factory()->for($other)->create(['name' => 'Rival Corp']);
     invoicedSale($other, $otherClient, null, 999);
-    Sale::factory()->for($other)->create(['amount' => 555]);
+    Sale::factory()->for($other)->converted('USD')->create(['amount' => 555]);
 
     $report = $this->service->forAccount($this->account);
 
@@ -238,10 +239,10 @@ it('never counts another account sales', function () {
 });
 
 it('runs the same number of queries regardless of volume', function () {
-    $small = Account::factory()->create();
+    $small = Account::factory()->withCurrency('USD')->create();
     invoicedSale($small, Client::factory()->for($small)->create(), Project::factory()->for($small)->create(), 100);
 
-    $large = Account::factory()->create();
+    $large = Account::factory()->withCurrency('USD')->create();
     Client::factory()->for($large)->count(20)->create()->each(function (Client $client) use ($large): void {
         Project::factory()->for($large)->for($client)->count(3)->create()->each(function (Project $project) use ($large, $client): void {
             foreach (['2024-05-01 10:00:00', '2025-05-01 10:00:00', '2026-05-01 10:00:00'] as $at) {
@@ -260,4 +261,19 @@ it('runs the same number of queries regardless of volume', function () {
     };
 
     expect($count($small))->toBe($count($large))->toBe(1);
+});
+
+it('sums net received and leaves out unconverted and other currency sales', function () {
+    $acme = Client::factory()->for($this->account)->create(['name' => 'Acme']);
+
+    Sale::factory()->forInvoice(paidInvoice($this->account, $acme, null, 1000))->converted('USD', 940)->create();
+    Sale::factory()->forInvoice(paidInvoice($this->account, $acme, null, 500))->unconverted('EUR')->create();
+    Sale::factory()->forInvoice(paidInvoice($this->account, $acme, null, 700))->converted('EUR')->create();
+    Sale::factory()->for($this->account)->unconverted()->create(['amount' => 80]);
+
+    $report = $this->service->forAccount($this->account);
+
+    expect(reportClient($report, 'Acme')['total'])->toEqualWithDelta(940, 0.001)
+        ->and(reportClient($report, 'Acme'))->not->toHaveKey('currency_code')
+        ->and($report['unattributed_total'])->toEqual(0.0);
 });

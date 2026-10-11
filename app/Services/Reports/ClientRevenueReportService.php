@@ -19,7 +19,6 @@ class ClientRevenueReportService
      *     clients: list<array{
      *         client_id: int,
      *         client_name: string,
-     *         currency_code: ?string,
      *         total: float,
      *         projects: list<array{
      *             project_id: ?int,
@@ -51,12 +50,11 @@ class ClientRevenueReportService
             ->select([
                 'clients.id as client_id',
                 'clients.name as client_name',
-                'clients.currency_code',
                 'projects.id as project_id',
                 'projects.name as project_name',
             ])
-            ->selectRaw('SUM(sales.amount) as amount')
-            ->groupBy('clients.id', 'clients.name', 'clients.currency_code', 'projects.id', 'projects.name');
+            ->selectRaw('SUM(sale_conversions.converted_amount) as amount')
+            ->groupBy('clients.id', 'clients.name', 'projects.id', 'projects.name');
 
         if ($year !== null) {
             $start = CarbonImmutable::create($year, 1, 1, 0, 0, 0, config('app.timezone'));
@@ -86,7 +84,7 @@ class ClientRevenueReportService
 
     /**
      * @param  Collection<int, object>  $rows
-     * @return array{client_id: int, client_name: string, currency_code: ?string, total: float, projects: list<array{project_id: ?int, project_name: string, amount: float, share: float, top_label: ?string}>}
+     * @return array{client_id: int, client_name: string, total: float, projects: list<array{project_id: ?int, project_name: string, amount: float, share: float, top_label: ?string}>}
      */
     private function clientLine(Collection $rows): array
     {
@@ -120,7 +118,6 @@ class ClientRevenueReportService
         return [
             'client_id' => (int) $first->client_id,
             'client_name' => $first->client_name,
-            'currency_code' => $first->currency_code,
             'total' => $total,
             'projects' => $named->all(),
         ];

@@ -6,6 +6,7 @@ use App\Filament\App\Clusters\Reports\ReportsCluster;
 use App\Filament\App\Clusters\Reports\Widgets\SalesByMonthChart;
 use App\Filament\App\Clusters\Reports\Widgets\SalesByQuarterChart;
 use App\Filament\App\Clusters\Reports\Widgets\SalesByYearChart;
+use Filament\Facades\Filament;
 use Filament\Pages\Page;
 
 class SalesReportPage extends Page
@@ -23,6 +24,15 @@ class SalesReportPage extends Page
     public static function canAccess(): bool
     {
         return ReportsCluster::canAccess();
+    }
+
+    public function getSubheading(): ?string
+    {
+        $currency = Filament::getTenant()->currency_code;
+
+        return $currency === null
+            ? 'Set your account currency in Account Profile to see sales here.'
+            : "Only sales converted into your account currency ({$currency}) are included.";
     }
 
     protected function getHeaderWidgets(): array
