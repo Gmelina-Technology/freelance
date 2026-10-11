@@ -6,6 +6,7 @@ use App\Models\Account;
 use App\Models\Sale;
 use App\Models\SaleConversion;
 use App\Models\User;
+use App\Services\Sales\SaleConversionBatchItem;
 use App\Services\Sales\SaleConversionFigures;
 use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -123,4 +124,61 @@ it('only lets user-entered figures be mass assigned', function () {
     ]);
 
     expect(array_keys($conversion->getAttributes()))->toBe(['converted_amount', 'fee_amount', 'tax_amount', 'conversion_note']);
+});
+
+function batchItems(Account $account, int $count): array
+{
+    return Sale::factory()->for($account)->unconverted('EUR')->count($count)->create()
+        ->map(fn (Sale $sale) => new SaleConversionBatchItem($sale, conversionFigures('10.00')))
+        ->all();
+}
+
+it('saves every conversion of a batch', function () {
+    $items = batchItems($this->account, 3);
+
+    $conversions = SaveSaleConversionAction::handleMany($items, 'PHP', $this->user);
+
+    expect($conversions)->toHaveCount(3)
+        ->and(SaleConversion::count())->toBe(3)
+        ->and(SaleConversion::pluck('converted_by')->unique()->all())->toBe([$this->user->id])
+        ->and(SaleConversion::first()->converted_at->toDateTimeString())->toBe('2026-10-11 09:00:00');
+});
+
+it('writes nothing when a selected sale was converted in the meantime', function () {
+    $items = batchItems($this->account, 2);
+    $existing = SaleConversion::factory()->for($items[1]->sale)->create(['converted_amount' => '77.00', 'converted_currency_code' => 'PHP']);
+
+    expect(fn () => SaveSaleConversionAction::handleMany($items, 'PHP', $this->user))
+        ->toThrow(SaleConversionException::class, '1 selected sale(s) are already converted');
+
+    expect(SaleConversion::count())->toBe(1)
+        ->and($existing->fresh()->converted_amount)->toBe('77.00');
+});
+
+it('writes nothing when a selected sale was deleted in the meantime', function () {
+    $items = batchItems($this->account, 2);
+    $items[1]->sale->delete();
+
+    expect(fn () => SaveSaleConversionAction::handleMany($items, 'PHP', $this->user))
+        ->toThrow(SaleConversionException::class, 'changed while converting');
+
+    expect(SaleConversion::count())->toBe(0);
+});
+
+it('rolls back earlier rows when a later save fails partway through the batch', function () {
+    $items = batchItems($this->account, 3);
+    $inserted = 0;
+
+    SaleConversion::creating(function () use (&$inserted) {
+        if (++$inserted === 3) {
+            throw new RuntimeException('disk full');
+        }
+    });
+
+    expect(fn () => SaveSaleConversionAction::handleMany($items, 'PHP', $this->user))
+        ->toThrow(RuntimeException::class, 'disk full');
+
+    expect($inserted)->toBe(3)
+        ->and(SaleConversion::count())->toBe(0)
+        ->and($items[0]->sale->fresh()->isConverted())->toBeFalse();
 });

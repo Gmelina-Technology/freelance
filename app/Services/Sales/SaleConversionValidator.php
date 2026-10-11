@@ -55,4 +55,22 @@ class SaleConversionValidator
 
         return $validator->validate();
     }
+
+    /**
+     * @param  array<string, mixed>  $data
+     * @return array{exchange_rate: float|int|string, fee_amount?: float|int|string|null, tax_amount?: float|int|string|null, conversion_note?: ?string}
+     *
+     * @throws ValidationException
+     */
+    public function validateBatch(array $data): array
+    {
+        $max = 'max:'.SaleConversion::MAX_AMOUNT;
+
+        return Validator::make($data, [
+            'exchange_rate' => ['required', 'numeric', 'decimal:0,10', 'gt:0', $max],
+            'fee_amount' => ['nullable', 'numeric', 'decimal:0,2', 'min:0', $max],
+            'tax_amount' => ['nullable', 'numeric', 'decimal:0,2', 'min:0', $max],
+            'conversion_note' => ['nullable', 'string', 'max:1000'],
+        ])->validate();
+    }
 }

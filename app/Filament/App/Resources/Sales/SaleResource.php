@@ -3,6 +3,7 @@
 namespace App\Filament\App\Resources\Sales;
 
 use App\Filament\App\Resources\Sales\Actions\ConvertSaleAction;
+use App\Filament\App\Resources\Sales\Actions\ConvertSalesBulkAction;
 use App\Filament\App\Resources\Sales\Actions\EditSaleConversionAction;
 use App\Filament\App\Resources\Sales\Pages\ListSales;
 use App\Models\Sale;
@@ -101,6 +102,9 @@ class SaleResource extends Resource
             ->recordActions([
                 ConvertSaleAction::handle(),
                 EditSaleConversionAction::handle(),
+            ])
+            ->toolbarActions([
+                ConvertSalesBulkAction::handle(),
             ]);
     }
 

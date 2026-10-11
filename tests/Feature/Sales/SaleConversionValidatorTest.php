@@ -83,3 +83,41 @@ it('rejects invalid amounts and notes', function (array $data, string $field) {
     'negative tax' => [['converted_amount' => 10, 'tax_amount' => -1], 'tax_amount'],
     'note too long' => [['converted_amount' => 10, 'conversion_note' => str_repeat('a', 1001)], 'conversion_note'],
 ]);
+
+it('requires a positive batch exchange rate with at most ten decimals', function (mixed $rate, bool $valid) {
+    $call = fn () => $this->validator->validateBatch(['exchange_rate' => $rate]);
+
+    if ($valid) {
+        expect($call())->toBe(['exchange_rate' => $rate]);
+    } else {
+        expect($call)->toThrow(ValidationException::class);
+    }
+})->with([
+    'missing' => [null, false],
+    'zero' => [0, false],
+    'negative' => ['-1', false],
+    'not numeric' => ['abc', false],
+    'ten decimals' => ['0.1234567890', true],
+    'eleven decimals' => ['0.12345678901', false],
+    'too large' => ['10000000000000', false],
+]);
+
+it('applies the same fee and tax rules to a batch', function () {
+    expect(fn () => $this->validator->validateBatch(['exchange_rate' => 1, 'fee_amount' => '-1']))
+        ->toThrow(ValidationException::class)
+        ->and(fn () => $this->validator->validateBatch(['exchange_rate' => 1, 'tax_amount' => '1.005']))
+        ->toThrow(ValidationException::class);
+});
+
+it('returns only the allowed batch keys', function () {
+    $validated = $this->validator->validateBatch([
+        'exchange_rate' => 2,
+        'fee_amount' => '1.50',
+        'conversion_note' => 'Wise',
+        'converted_amount' => 100,
+        'currency_code' => 'EUR',
+        'account_id' => 5,
+    ]);
+
+    expect($validated)->toBe(['exchange_rate' => 2, 'fee_amount' => '1.50', 'conversion_note' => 'Wise']);
+});
