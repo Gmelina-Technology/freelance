@@ -3,6 +3,7 @@
 namespace App\Filament\App\Resources\Invoices;
 
 use App\Enums\InvoiceStatus;
+use App\Filament\App\Common\GlobalSearch\GlobalSearchDetails;
 use App\Filament\App\Resources\Invoices\Pages\CreateInvoice;
 use App\Filament\App\Resources\Invoices\Pages\EditInvoice;
 use App\Filament\App\Resources\Invoices\Pages\ListInvoices;
@@ -17,6 +18,7 @@ use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Auth;
 
@@ -43,6 +45,36 @@ class InvoiceResource extends Resource
     public static function canDelete(Model $record): bool
     {
         return $record->status === InvoiceStatus::Draft;
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    public static function getGloballySearchableAttributes(): array
+    {
+        return ['number', 'client.name'];
+    }
+
+    /**
+     * @return Builder<Invoice>
+     */
+    public static function getGlobalSearchEloquentQuery(): Builder
+    {
+        return parent::getGlobalSearchEloquentQuery()->with(['client']);
+    }
+
+    /**
+     * @param  Invoice  $record
+     * @return array<string, string>
+     */
+    public static function getGlobalSearchResultDetails(Model $record): array
+    {
+        return GlobalSearchDetails::filled([
+            'Client' => $record->client?->name,
+            'Status' => $record->status?->getLabel(),
+            'Amount' => GlobalSearchDetails::money($record->amount, $record->client?->currency_code),
+            'Due' => GlobalSearchDetails::date($record->due_date),
+        ]);
     }
 
     public static function form(Schema $schema): Schema

@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Enums\ProjectStatus;
 use App\Traits\HasAccount;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -56,5 +57,17 @@ class Project extends Model
     public function tasks(): HasMany
     {
         return $this->hasMany(Task::class);
+    }
+
+    /**
+     * Members only see projects they are assigned to, mirroring the projects list.
+     *
+     * @param  Builder<Project>  $query
+     */
+    public function scopeVisibleTo(Builder $query, User $user, Account $account): void
+    {
+        if ($user->isMember($account)) {
+            $query->whereHas('assignees', fn (Builder $assignees) => $assignees->whereKey($user->getKey()));
+        }
     }
 }

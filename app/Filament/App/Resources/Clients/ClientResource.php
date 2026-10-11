@@ -2,6 +2,7 @@
 
 namespace App\Filament\App\Resources\Clients;
 
+use App\Filament\App\Common\GlobalSearch\GlobalSearchDetails;
 use App\Filament\App\Resources\Clients\Pages\CreateClient;
 use App\Filament\App\Resources\Clients\Pages\EditClient;
 use App\Filament\App\Resources\Clients\Pages\ListClients;
@@ -18,6 +19,7 @@ use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Auth;
 
 class ClientResource extends Resource
@@ -29,6 +31,27 @@ class ClientResource extends Resource
     protected static ?int $navigationSort = 3;
 
     protected static ?string $recordTitleAttribute = 'name';
+
+    /**
+     * @return array<int, string>
+     */
+    public static function getGloballySearchableAttributes(): array
+    {
+        return ['name', 'email', 'phone'];
+    }
+
+    /**
+     * @param  Client  $record
+     * @return array<string, string>
+     */
+    public static function getGlobalSearchResultDetails(Model $record): array
+    {
+        return GlobalSearchDetails::filled([
+            'Email' => $record->email,
+            'Phone' => $record->phone,
+            'Currency' => $record->currency_code,
+        ]);
+    }
 
     public static function form(Schema $schema): Schema
     {

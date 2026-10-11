@@ -23,6 +23,8 @@ class InvitationResource extends Resource
 
     protected static ?string $recordTitleAttribute = 'email';
 
+    protected static bool $isGloballySearchable = false;
+
     public static function form(Schema $schema): Schema
     {
         return InvitationForm::configure($schema);

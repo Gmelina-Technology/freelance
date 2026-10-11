@@ -30,6 +30,8 @@ class MemberResource extends Resource
 
     protected static ?string $recordTitleAttribute = 'name';
 
+    protected static bool $isGloballySearchable = false;
+
     protected static ?string $tenantOwnershipRelationshipName = 'accounts';
 
     public static function table(Table $table): Table

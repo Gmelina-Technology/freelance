@@ -27,14 +27,7 @@ class TasksTable
     public static function configure(Table $table): Table
     {
         return $table
-            ->modifyQueryUsing(function (Builder $query) {
-                return $query->when(
-                    Auth::user()->isMember(Filament::getTenant()),
-                    function (Builder $query) {
-                        $query->where('assigned_user_id', Auth::id());
-                    }
-                );
-            })
+            ->modifyQueryUsing(fn (Builder $query) => $query->visibleTo(Auth::user(), Filament::getTenant()))
             ->columns([
                 TextColumn::make('title')
                     ->searchable(),
