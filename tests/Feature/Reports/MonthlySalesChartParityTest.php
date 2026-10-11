@@ -116,7 +116,7 @@ it('keeps the dataset presentation and widget settings', function () {
     ])
         ->and($widget->getHeading())->toBe('Monthly Sales')
         ->and(MonthlySalesChart::getSort())->toBe(2)
-        ->and($widget->getColumns())->toBe(12)
+        ->and($widget->getColumnSpan())->toBe(1)
         ->and((fn (): string => $this->getType())->call($widget))->toBe('bar');
 });
 
