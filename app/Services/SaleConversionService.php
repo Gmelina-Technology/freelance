@@ -8,6 +8,7 @@ use App\Models\Account;
 use App\Models\Sale;
 use App\Models\SaleConversion;
 use App\Models\User;
+use App\Services\Sales\SaleConversionBatchItem;
 use App\Services\Sales\SaleConversionCalculator;
 use App\Services\Sales\SaleConversionValidator;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
@@ -58,6 +59,24 @@ class SaleConversionService
      */
     public function convertBatch(Account $account, EloquentCollection $sales, array $data, User $convertedBy): Collection
     {
+        $accountCurrencyCode = $this->guardBatch($account, $sales);
+
+        $this->guardBatchEligibility($sales, $accountCurrencyCode);
+
+        $batch = $this->validator->validateBatch($data);
+
+        return SaveSaleConversionAction::handleMany($this->batchItems($sales, $batch), $accountCurrencyCode, $convertedBy);
+    }
+
+    /**
+     * Checks that need no sale data beyond ids; returns the account's currency code.
+     *
+     * @param  EloquentCollection<int, Sale>  $sales
+     *
+     * @throws SaleConversionException
+     */
+    private function guardBatch(Account $account, EloquentCollection $sales): string
+    {
         $accountCurrencyCode = $account->currency_code;
 
         if ($accountCurrencyCode === null) {
@@ -76,6 +95,16 @@ class SaleConversionService
             throw SaleConversionException::batchHasForeignSales();
         }
 
+        return $accountCurrencyCode;
+    }
+
+    /**
+     * @param  EloquentCollection<int, Sale>  $sales
+     *
+     * @throws SaleConversionException
+     */
+    private function guardBatchEligibility(EloquentCollection $sales, string $accountCurrencyCode): void
+    {
         $sales->loadMissing('saleConversion');
 
         if (($count = $sales->filter(fn (Sale $sale): bool => $sale->isConverted())->count()) > 0) {
@@ -95,22 +124,36 @@ class SaleConversionService
         if ($currencyCodes->count() > 1) {
             throw SaleConversionException::mixedCurrencies($currencyCodes->all());
         }
+    }
 
-        $batch = $this->validator->validateBatch($data);
+    /**
+     * @param  EloquentCollection<int, Sale>  $sales
+     * @param  array<string, mixed>  $batch  validated batch input
+     * @return list<SaleConversionBatchItem>
+     *
+     * @throws SaleConversionException
+     */
+    private function batchItems(EloquentCollection $sales, array $batch): array
+    {
+        return $sales->map(fn (Sale $sale): SaleConversionBatchItem => $this->batchItem($sale, $batch))->values()->all();
+    }
 
-        $items = $sales->map(function (Sale $sale) use ($batch) {
-            $input = $this->calculator->inputAtRate($sale, $batch);
+    /**
+     * @param  array{exchange_rate: float|int|string, fee_amount?: float|int|string|null, tax_amount?: float|int|string|null, conversion_note?: ?string}  $batch
+     *
+     * @throws SaleConversionException
+     */
+    private function batchItem(Sale $sale, array $batch): SaleConversionBatchItem
+    {
+        $input = $this->calculator->inputAtRate($sale, $batch);
 
-            try {
-                $valid = $this->validator->validate($sale, $input);
-            } catch (ValidationException $exception) {
-                throw SaleConversionException::invalidSaleInBatch($sale, collect($exception->errors())->flatten()->first());
-            }
+        try {
+            $valid = $this->validator->validate($sale, $input->toArray());
+        } catch (ValidationException $exception) {
+            throw SaleConversionException::invalidSaleInBatch($sale, collect($exception->errors())->flatten()->first());
+        }
 
-            return ['sale' => $sale, 'figures' => $this->calculator->fromInput($sale, $valid)];
-        })->values()->all();
-
-        return SaveSaleConversionAction::handleMany($items, $accountCurrencyCode, $convertedBy);
+        return new SaleConversionBatchItem($sale, $this->calculator->fromInput($sale, $valid));
     }
 
     /**

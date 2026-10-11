@@ -87,15 +87,15 @@ it('sums net, fee and tax in cents', function () {
 it('turns a rate into the gross amount for a batch sale', function () {
     $input = $this->calculator->inputAtRate(new Sale(['amount' => 1000]), ['exchange_rate' => '0.92']);
 
-    expect($input['converted_amount'])->toBe('920.00')
-        ->and($input['fee_amount'])->toBeNull()
-        ->and($input['tax_amount'])->toBeNull();
+    expect($input->convertedAmount)->toBe('920.00')
+        ->and($input->feeAmount)->toBeNull()
+        ->and($input->taxAmount)->toBeNull();
 });
 
 it('rounds the gross amount half up to the cent', function () {
     $input = $this->calculator->inputAtRate(new Sale(['amount' => 33.33]), ['exchange_rate' => '0.9']);
 
-    expect($input['converted_amount'])->toBe('30.00');
+    expect($input->convertedAmount)->toBe('30.00');
 });
 
 it('subtracts fee and tax from the gross amount and passes the note through', function () {
@@ -106,7 +106,7 @@ it('subtracts fee and tax from the gross amount and passes the note through', fu
         'conversion_note' => 'Wise',
     ]);
 
-    expect($input)->toBe([
+    expect($input->toArray())->toBe([
         'converted_amount' => '904.50',
         'fee_amount' => '10.50',
         'tax_amount' => '5.00',
@@ -117,7 +117,7 @@ it('subtracts fee and tax from the gross amount and passes the note through', fu
 it('does not reject a net at or below zero, the validator does', function () {
     $input = $this->calculator->inputAtRate(new Sale(['amount' => 10]), ['exchange_rate' => 1, 'fee_amount' => '12.00']);
 
-    expect($input['converted_amount'])->toBe('-2.00');
+    expect($input->convertedAmount)->toBe('-2.00');
 });
 
 it('rejects a batch sale whose converted amount would overflow before casting to cents', function () {

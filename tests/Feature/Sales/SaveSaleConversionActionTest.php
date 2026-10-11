@@ -6,6 +6,7 @@ use App\Models\Account;
 use App\Models\Sale;
 use App\Models\SaleConversion;
 use App\Models\User;
+use App\Services\Sales\SaleConversionBatchItem;
 use App\Services\Sales\SaleConversionFigures;
 use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -128,7 +129,7 @@ it('only lets user-entered figures be mass assigned', function () {
 function batchItems(Account $account, int $count): array
 {
     return Sale::factory()->for($account)->unconverted('EUR')->count($count)->create()
-        ->map(fn (Sale $sale) => ['sale' => $sale, 'figures' => conversionFigures('10.00')])
+        ->map(fn (Sale $sale) => new SaleConversionBatchItem($sale, conversionFigures('10.00')))
         ->all();
 }
 
@@ -145,7 +146,7 @@ it('saves every conversion of a batch', function () {
 
 it('writes nothing when a selected sale was converted in the meantime', function () {
     $items = batchItems($this->account, 2);
-    $existing = SaleConversion::factory()->for($items[1]['sale'])->create(['converted_amount' => '77.00', 'converted_currency_code' => 'PHP']);
+    $existing = SaleConversion::factory()->for($items[1]->sale)->create(['converted_amount' => '77.00', 'converted_currency_code' => 'PHP']);
 
     expect(fn () => SaveSaleConversionAction::handleMany($items, 'PHP', $this->user))
         ->toThrow(SaleConversionException::class, '1 selected sale(s) are already converted');
@@ -156,7 +157,7 @@ it('writes nothing when a selected sale was converted in the meantime', function
 
 it('writes nothing when a selected sale was deleted in the meantime', function () {
     $items = batchItems($this->account, 2);
-    $items[1]['sale']->delete();
+    $items[1]->sale->delete();
 
     expect(fn () => SaveSaleConversionAction::handleMany($items, 'PHP', $this->user))
         ->toThrow(SaleConversionException::class, 'changed while converting');
@@ -179,5 +180,5 @@ it('rolls back earlier rows when a later save fails partway through the batch', 
 
     expect($inserted)->toBe(3)
         ->and(SaleConversion::count())->toBe(0)
-        ->and($items[0]['sale']->fresh()->isConverted())->toBeFalse();
+        ->and($items[0]->sale->fresh()->isConverted())->toBeFalse();
 });

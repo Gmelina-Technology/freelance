@@ -6,7 +6,9 @@ use App\Filament\App\Resources\Sales\Actions\ConvertSalesBulkAction;
 use App\Models\SaleConversion;
 use App\Services\InvoiceService;
 use App\Services\SaleConversionService;
+use App\Services\Sales\SaleConversionBatchItem;
 use App\Services\Sales\SaleConversionFigures;
+use App\Services\Sales\SaleConversionInput;
 
 arch('sales are created without converting them')
     ->expect([CreateSaleAction::class, InvoiceService::class])
@@ -22,5 +24,10 @@ arch('batch conversion goes through the service')
 
 arch('conversion figures are an immutable value object')
     ->expect(SaleConversionFigures::class)
+    ->toBeFinal()
+    ->toBeReadonly();
+
+arch('batch conversion records are immutable value objects')
+    ->expect([SaleConversionInput::class, SaleConversionBatchItem::class])
     ->toBeFinal()
     ->toBeReadonly();

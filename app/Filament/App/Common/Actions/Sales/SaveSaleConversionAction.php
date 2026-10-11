@@ -6,6 +6,7 @@ use App\Exceptions\SaleConversionException;
 use App\Models\Sale;
 use App\Models\SaleConversion;
 use App\Models\User;
+use App\Services\Sales\SaleConversionBatchItem;
 use App\Services\Sales\SaleConversionFigures;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -66,14 +67,14 @@ class SaveSaleConversionAction
      * Save every conversion in one transaction: lock all sales, re-check that none is converted
      * yet, then save each through handle(). Any exception rolls back the whole batch.
      *
-     * @param  list<array{sale: Sale, figures: SaleConversionFigures}>  $items
+     * @param  list<SaleConversionBatchItem>  $items
      * @return Collection<int, SaleConversion>
      *
      * @throws SaleConversionException
      */
     public static function handleMany(array $items, string $convertedCurrencyCode, User $convertedBy): Collection
     {
-        $ids = array_map(fn (array $item) => $item['sale']->getKey(), $items);
+        $ids = array_map(fn (SaleConversionBatchItem $item) => $item->sale->getKey(), $items);
 
         return DB::transaction(function () use ($items, $ids, $convertedCurrencyCode, $convertedBy) {
             $locked = Sale::query()->whereKey($ids)->orderBy('id')->lockForUpdate()->get();
@@ -89,7 +90,7 @@ class SaveSaleConversionAction
             }
 
             return collect($items)->map(
-                fn (array $item) => self::handle($item['sale'], $convertedCurrencyCode, $item['figures'], $convertedBy)
+                fn (SaleConversionBatchItem $item) => self::handle($item->sale, $convertedCurrencyCode, $item->figures, $convertedBy)
             );
         });
     }

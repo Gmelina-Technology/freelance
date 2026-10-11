@@ -50,11 +50,10 @@ class SaleConversionCalculator
      * or below zero; the validator rejects that.
      *
      * @param  array{exchange_rate: float|int|string, fee_amount?: float|int|string|null, tax_amount?: float|int|string|null, conversion_note?: ?string}  $batchInput
-     * @return array{converted_amount: string, fee_amount?: string|null, tax_amount?: string|null, conversion_note?: ?string}
      *
      * @throws SaleConversionException
      */
-    public function inputAtRate(Sale $sale, array $batchInput): array
+    public function inputAtRate(Sale $sale, array $batchInput): SaleConversionInput
     {
         $rate = (float) $batchInput['exchange_rate'];
 
@@ -70,12 +69,12 @@ class SaleConversionCalculator
         $taxCents = $this->optionalCents($batchInput['tax_amount'] ?? null);
         $grossCents = (int) round($this->toCents($sale->amount) * $rate);
 
-        return [
-            'converted_amount' => $this->fromCents($grossCents - ($feeCents ?? 0) - ($taxCents ?? 0)),
-            'fee_amount' => $feeCents === null ? null : $this->fromCents($feeCents),
-            'tax_amount' => $taxCents === null ? null : $this->fromCents($taxCents),
-            'conversion_note' => $batchInput['conversion_note'] ?? null,
-        ];
+        return new SaleConversionInput(
+            convertedAmount: $this->fromCents($grossCents - ($feeCents ?? 0) - ($taxCents ?? 0)),
+            feeAmount: $feeCents === null ? null : $this->fromCents($feeCents),
+            taxAmount: $taxCents === null ? null : $this->fromCents($taxCents),
+            conversionNote: $batchInput['conversion_note'] ?? null,
+        );
     }
 
     private function optionalCents(float|int|string|null $value): ?int
