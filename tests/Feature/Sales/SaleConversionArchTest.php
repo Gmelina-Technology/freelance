@@ -2,6 +2,7 @@
 
 use App\Filament\App\Common\Actions\Sales\CreateSaleAction;
 use App\Filament\App\Common\Actions\Sales\SaveSaleConversionAction;
+use App\Filament\App\Resources\Sales\Actions\ConvertSalesBulkAction;
 use App\Models\SaleConversion;
 use App\Services\InvoiceService;
 use App\Services\SaleConversionService;
@@ -14,6 +15,10 @@ arch('sales are created without converting them')
 arch('the conversion service only orchestrates')
     ->expect(SaleConversionService::class)
     ->not->toUse(['Illuminate\Support\Facades\Validator', 'Illuminate\Support\Facades\DB']);
+
+arch('batch conversion goes through the service')
+    ->expect(ConvertSalesBulkAction::class)
+    ->not->toUse([SaveSaleConversionAction::class, 'Illuminate\Support\Facades\DB']);
 
 arch('conversion figures are an immutable value object')
     ->expect(SaleConversionFigures::class)

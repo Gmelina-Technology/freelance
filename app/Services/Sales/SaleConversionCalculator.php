@@ -2,7 +2,9 @@
 
 namespace App\Services\Sales;
 
+use App\Exceptions\SaleConversionException;
 use App\Models\Sale;
+use App\Models\SaleConversion;
 
 /**
  * Turns validated conversion input into the figures stored on a SaleConversion. All money math is
@@ -40,6 +42,40 @@ class SaleConversionCalculator
         return $this->toCents($input['converted_amount'])
             + ($this->optionalCents($input['fee_amount'] ?? null) ?? 0)
             + ($this->optionalCents($input['tax_amount'] ?? null) ?? 0);
+    }
+
+    /**
+     * Per-sale conversion input for a batch: gross = sale amount x rate (rounded half-up to cents),
+     * net = gross - fee - tax. Fee and tax are applied as-is to each sale. The net may come out at
+     * or below zero; the validator rejects that.
+     *
+     * @param  array{exchange_rate: float|int|string, fee_amount?: float|int|string|null, tax_amount?: float|int|string|null, conversion_note?: ?string}  $batchInput
+     * @return array{converted_amount: string, fee_amount?: string|null, tax_amount?: string|null, conversion_note?: ?string}
+     *
+     * @throws SaleConversionException
+     */
+    public function inputAtRate(Sale $sale, array $batchInput): array
+    {
+        $rate = (float) $batchInput['exchange_rate'];
+
+        // Compared as floats, before the int cast below could wrap.
+        if ((float) $sale->amount * $rate > (float) SaleConversion::MAX_AMOUNT) {
+            throw SaleConversionException::invalidSaleInBatch(
+                $sale,
+                'the converted amount would be above '.number_format((float) SaleConversion::MAX_AMOUNT, 2).'.',
+            );
+        }
+
+        $feeCents = $this->optionalCents($batchInput['fee_amount'] ?? null);
+        $taxCents = $this->optionalCents($batchInput['tax_amount'] ?? null);
+        $grossCents = (int) round($this->toCents($sale->amount) * $rate);
+
+        return [
+            'converted_amount' => $this->fromCents($grossCents - ($feeCents ?? 0) - ($taxCents ?? 0)),
+            'fee_amount' => $feeCents === null ? null : $this->fromCents($feeCents),
+            'tax_amount' => $taxCents === null ? null : $this->fromCents($taxCents),
+            'conversion_note' => $batchInput['conversion_note'] ?? null,
+        ];
     }
 
     private function optionalCents(float|int|string|null $value): ?int

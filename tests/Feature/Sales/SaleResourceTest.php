@@ -2,6 +2,7 @@
 
 use App\Enums\AccountRole;
 use App\Filament\App\Resources\Sales\Actions\ConvertSaleAction;
+use App\Filament\App\Resources\Sales\Actions\ConvertSalesBulkAction;
 use App\Filament\App\Resources\Sales\Actions\EditSaleConversionAction;
 use App\Filament\App\Resources\Sales\Pages\ListSales;
 use App\Models\Account;
@@ -180,6 +181,77 @@ it('keeps members out of the sales list and its actions', function () {
 
     expect(ConvertSaleAction::handle()->record($this->unconverted)->isAuthorized())->toBeFalse()
         ->and(EditSaleConversionAction::handle()->record($this->converted)->isAuthorized())->toBeFalse();
+});
+
+it('lets owners and managers convert selected sales at one rate', function (?AccountRole $role) {
+    $user = $role ? makeAccountUser($this->account, $role) : $this->owner;
+    bindFilamentTenant($user, $this->account);
+    $second = Sale::factory()->for($this->account)->unconverted('USD')->create(['amount' => 800]);
+
+    Livewire::test(ListSales::class)
+        ->selectTableRecords([$this->unconverted, $second])
+        ->callAction(TestAction::make('convertBatch')->table()->bulk(), [
+            'exchange_rate' => '0.9',
+            'fee_amount' => '10',
+        ])
+        ->assertHasNoFormErrors()
+        ->assertNotified('Sales converted');
+
+    expect($this->unconverted->saleConversion()->sole()->converted_amount)->toBe('1070.00')
+        ->and($second->saleConversion()->sole()->converted_amount)->toBe('710.00')
+        ->and($second->saleConversion()->sole()->converted_by)->toBe($user->id);
+})->with([
+    'owner' => [null],
+    'manager' => [AccountRole::Manager],
+]);
+
+it('notifies and converts nothing when the selection cannot be converted together', function () {
+    $euro = Sale::factory()->for($this->account)->unconverted('GBP')->create();
+
+    Livewire::test(ListSales::class)
+        ->selectTableRecords([$this->unconverted, $euro])
+        ->callAction(TestAction::make('convertBatch')->table()->bulk(), ['exchange_rate' => '0.9'])
+        ->assertNotified('Sales not converted');
+
+    expect(SaleConversion::count())->toBe(1);
+});
+
+it('notifies and writes nothing when the selection includes a converted sale', function () {
+    Livewire::test(ListSales::class)
+        ->selectTableRecords([$this->unconverted, $this->converted])
+        ->callAction(TestAction::make('convertBatch')->table()->bulk(), ['exchange_rate' => '0.9'])
+        ->assertNotified('Sales not converted');
+
+    expect(SaleConversion::count())->toBe(1)
+        ->and($this->unconverted->fresh()->isConverted())->toBeFalse();
+});
+
+it('shows a field error for an invalid batch rate', function (mixed $rate) {
+    Livewire::test(ListSales::class)
+        ->selectTableRecords([$this->unconverted])
+        ->callAction(TestAction::make('convertBatch')->table()->bulk(), ['exchange_rate' => $rate])
+        ->assertHasFormErrors(['exchange_rate']);
+
+    expect(SaleConversion::count())->toBe(1);
+})->with(['not a number' => ['abc'], 'zero' => ['0'], 'too many decimals' => ['0.12345678901']]);
+
+it('disables the bulk action when the account has no currency', function () {
+    $this->account->update(['currency_code' => null]);
+
+    Livewire::test(ListSales::class)
+        ->selectTableRecords([$this->unconverted])
+        ->assertActionDisabled(TestAction::make('convertBatch')->table()->bulk());
+});
+
+it('keeps members from the bulk action', function () {
+    $member = makeAccountUser($this->account, AccountRole::Member);
+    bindFilamentTenant($member, $this->account);
+
+    expect(ConvertSalesBulkAction::handle()->isAuthorized())->toBeFalse();
+
+    bindFilamentTenant($this->owner, $this->account);
+
+    expect(ConvertSalesBulkAction::handle()->isAuthorized())->toBeTrue();
 });
 
 it('cannot convert or edit a sale from another account', function () {
