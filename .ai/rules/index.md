@@ -1,0 +1,11 @@
+# Project Rules Index
+
+Before planning or editing, find the row whose globs match the file's path and read that rule file.
+
+| Applies to | Rule file |
+| --- | --- |
+| database/migrations/** | .ai/rules/migrations.md |
+| app/Models/** | .ai/rules/models.md |
+| app/Services/Reports/** | .ai/rules/reports.md |
+| app/Services/** | .ai/rules/services.md |
+| app/Mcp/Tools/** | .ai/rules/tools.md |
