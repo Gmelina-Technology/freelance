@@ -6,6 +6,7 @@ use App\Models\Account;
 use App\Models\Sale;
 use App\Models\SaleConversion;
 use App\Models\User;
+use App\Services\Sales\SaleConversionFigures;
 use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
@@ -18,19 +19,16 @@ beforeEach(function () {
     $this->user = User::factory()->create();
 });
 
-/**
- * @return array{converted_amount: string, fee_amount: ?string, tax_amount: ?string, gross_amount: string, exchange_rate: ?string, conversion_note: ?string}
- */
-function conversionFigures(string $net, ?string $fee = null): array
+function conversionFigures(string $net, ?string $fee = null): SaleConversionFigures
 {
-    return [
-        'converted_amount' => $net,
-        'fee_amount' => $fee,
-        'tax_amount' => null,
-        'gross_amount' => number_format((float) $net + (float) $fee, 2, '.', ''),
-        'exchange_rate' => '1.0000000000',
-        'conversion_note' => null,
-    ];
+    return new SaleConversionFigures(
+        convertedAmount: $net,
+        feeAmount: $fee,
+        taxAmount: null,
+        grossAmount: number_format((float) $net + (float) $fee, 2, '.', ''),
+        exchangeRate: '1.0000000000',
+        conversionNote: null,
+    );
 }
 
 it('creates the conversion and sets it on the given sale', function () {
@@ -47,6 +45,30 @@ it('creates the conversion and sets it on the given sale', function () {
         ->and($conversion->converted_at->toDateTimeString())->toBe('2026-10-11 09:00:00')
         ->and($sale->saleConversion)->toBe($conversion)
         ->and($sale->isConverted())->toBeTrue();
+});
+
+it('stores each figure in its own column', function () {
+    $sale = Sale::factory()->for($this->account)->unconverted('EUR')->create(['amount' => 100]);
+
+    SaveSaleConversionAction::handle($sale, 'PHP', new SaleConversionFigures(
+        convertedAmount: '5600.00',
+        feeAmount: '150.25',
+        taxAmount: '49.75',
+        grossAmount: '5800.00',
+        exchangeRate: '58.0000000000',
+        conversionNote: 'Wise transfer',
+    ), $this->user);
+
+    expect(SaleConversion::query()->sole()->only([
+        'converted_amount', 'fee_amount', 'tax_amount', 'gross_amount', 'exchange_rate', 'conversion_note',
+    ]))->toBe([
+        'converted_amount' => '5600.00',
+        'fee_amount' => '150.25',
+        'tax_amount' => '49.75',
+        'gross_amount' => '5800.00',
+        'exchange_rate' => '58.0000000000',
+        'conversion_note' => 'Wise transfer',
+    ]);
 });
 
 it('updates the same row on edit, keeps the conversion time and records the editor', function () {

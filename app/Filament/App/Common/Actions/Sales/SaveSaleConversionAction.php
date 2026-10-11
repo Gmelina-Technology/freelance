@@ -6,19 +6,19 @@ use App\Exceptions\SaleConversionException;
 use App\Models\Sale;
 use App\Models\SaleConversion;
 use App\Models\User;
+use App\Services\Sales\SaleConversionFigures;
 use Illuminate\Support\Facades\DB;
 
 class SaveSaleConversionAction
 {
     /**
      * Create or update the sale's conversion. The original currency is only stored when the sale
-     * doesn't have one yet; converted_at keeps the time of the first conversion.
-     *
-     * @param  array{converted_amount: string, fee_amount: ?string, tax_amount: ?string, gross_amount: string, exchange_rate: ?string, conversion_note: ?string}  $figures
+     * doesn't have one yet; converted_at keeps the time of the first conversion. Each column is
+     * named here, so a figure only reaches the row if it is mapped explicitly.
      *
      * @throws SaleConversionException
      */
-    public static function handle(Sale $sale, string $convertedCurrencyCode, array $figures, User $convertedBy, ?string $originalCurrencyCode = null): SaleConversion
+    public static function handle(Sale $sale, string $convertedCurrencyCode, SaleConversionFigures $figures, User $convertedBy, ?string $originalCurrencyCode = null): SaleConversion
     {
         [$conversion, $currencyCode] = DB::transaction(function () use ($sale, $convertedCurrencyCode, $figures, $convertedBy, $originalCurrencyCode) {
             $locked = Sale::query()->lockForUpdate()->findOrFail($sale->getKey());
@@ -34,7 +34,13 @@ class SaveSaleConversionAction
 
             $conversion ??= new SaleConversion;
 
-            $conversion->forceFill($figures + [
+            $conversion->forceFill([
+                'converted_amount' => $figures->convertedAmount,
+                'fee_amount' => $figures->feeAmount,
+                'tax_amount' => $figures->taxAmount,
+                'gross_amount' => $figures->grossAmount,
+                'exchange_rate' => $figures->exchangeRate,
+                'conversion_note' => $figures->conversionNote,
                 'converted_currency_code' => $convertedCurrencyCode,
                 'converted_by' => $convertedBy->getKey(),
             ]);

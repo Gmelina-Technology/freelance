@@ -12,23 +12,22 @@ class SaleConversionCalculator
 {
     /**
      * @param  array{converted_amount: float|int|string, fee_amount?: float|int|string|null, tax_amount?: float|int|string|null, conversion_note?: ?string}  $input
-     * @return array{converted_amount: string, fee_amount: ?string, tax_amount: ?string, gross_amount: string, exchange_rate: ?string, conversion_note: ?string}
      */
-    public function fromInput(Sale $sale, array $input): array
+    public function fromInput(Sale $sale, array $input): SaleConversionFigures
     {
         $feeCents = $this->optionalCents($input['fee_amount'] ?? null);
         $taxCents = $this->optionalCents($input['tax_amount'] ?? null);
         $grossCents = $this->grossCents($input);
         $amountCents = $this->toCents($sale->amount);
 
-        return [
-            'converted_amount' => $this->fromCents($this->toCents($input['converted_amount'])),
-            'fee_amount' => $feeCents === null ? null : $this->fromCents($feeCents),
-            'tax_amount' => $taxCents === null ? null : $this->fromCents($taxCents),
-            'gross_amount' => $this->fromCents($grossCents),
-            'exchange_rate' => $amountCents > 0 ? number_format($grossCents / $amountCents, 10, '.', '') : null,
-            'conversion_note' => filled($input['conversion_note'] ?? null) ? $input['conversion_note'] : null,
-        ];
+        return new SaleConversionFigures(
+            convertedAmount: $this->fromCents($this->toCents($input['converted_amount'])),
+            feeAmount: $feeCents === null ? null : $this->fromCents($feeCents),
+            taxAmount: $taxCents === null ? null : $this->fromCents($taxCents),
+            grossAmount: $this->fromCents($grossCents),
+            exchangeRate: $amountCents > 0 ? number_format($grossCents / $amountCents, 10, '.', '') : null,
+            conversionNote: filled($input['conversion_note'] ?? null) ? $input['conversion_note'] : null,
+        );
     }
 
     /**
