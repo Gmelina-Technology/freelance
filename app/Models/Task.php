@@ -71,6 +71,18 @@ class Task extends Model implements Commentable
             ->where('billing_status', TaskBillingStatus::Billable);
     }
 
+    /**
+     * Members only see tasks assigned to them, mirroring the tasks list.
+     *
+     * @param  Builder<Task>  $query
+     */
+    public function scopeVisibleTo(Builder $query, User $user, Account $account): void
+    {
+        if ($user->isMember($account)) {
+            $query->where('assigned_user_id', $user->getKey());
+        }
+    }
+
     public function category()
     {
         return $this->belongsTo(Category::class);

@@ -2,6 +2,7 @@
 
 namespace App\Filament\App\Resources\Quotes;
 
+use App\Filament\App\Common\GlobalSearch\GlobalSearchDetails;
 use App\Filament\App\Resources\Quotes\Pages\CreateQuote;
 use App\Filament\App\Resources\Quotes\Pages\EditQuote;
 use App\Filament\App\Resources\Quotes\Pages\ListQuotes;
@@ -16,6 +17,7 @@ use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Auth;
 
@@ -39,6 +41,36 @@ class QuoteResource extends Resource
     public static function canEdit(Model $record): bool
     {
         return $record->status->isEditable();
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    public static function getGloballySearchableAttributes(): array
+    {
+        return ['number', 'client.name'];
+    }
+
+    /**
+     * @return Builder<Quote>
+     */
+    public static function getGlobalSearchEloquentQuery(): Builder
+    {
+        return parent::getGlobalSearchEloquentQuery()->with(['client']);
+    }
+
+    /**
+     * @param  Quote  $record
+     * @return array<string, string>
+     */
+    public static function getGlobalSearchResultDetails(Model $record): array
+    {
+        return GlobalSearchDetails::filled([
+            'Client' => $record->client?->name,
+            'Status' => $record->status?->getLabel(),
+            'Amount' => GlobalSearchDetails::money($record->amount, $record->client?->currency_code),
+            'Valid until' => GlobalSearchDetails::date($record->valid_until),
+        ]);
     }
 
     public static function form(Schema $schema): Schema

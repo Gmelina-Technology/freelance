@@ -2,6 +2,7 @@
 
 namespace App\Filament\App\Resources\Tasks;
 
+use App\Filament\App\Common\GlobalSearch\GlobalSearchDetails;
 use App\Filament\App\Resources\Tasks\Pages\CreateTask;
 use App\Filament\App\Resources\Tasks\Pages\EditTask;
 use App\Filament\App\Resources\Tasks\Pages\ListTasks;
@@ -15,6 +16,8 @@ use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Auth;
 
 class TaskResource extends Resource
@@ -34,6 +37,41 @@ class TaskResource extends Resource
         return Auth::user()->isMember(Filament::getTenant())
             ? 'My Tasks'
             : 'Tasks';
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    public static function getGloballySearchableAttributes(): array
+    {
+        return ['title', 'project.name'];
+    }
+
+    /**
+     * @return Builder<Task>
+     */
+    public static function getGlobalSearchEloquentQuery(): Builder
+    {
+        return parent::getGlobalSearchEloquentQuery()
+            ->visibleTo(Auth::user(), Filament::getTenant())
+            ->with(['project', 'assignee']);
+    }
+
+    /**
+     * @param  Task  $record
+     * @return array<string, string>
+     */
+    public static function getGlobalSearchResultDetails(Model $record): array
+    {
+        $isMember = Auth::user()->isMember(Filament::getTenant());
+
+        return GlobalSearchDetails::filled([
+            'Project' => $record->project?->name,
+            'Status' => $record->status?->getLabel(),
+            'Priority' => $record->priority?->getLabel(),
+            'Due' => GlobalSearchDetails::date($record->due_date),
+            'Assignee' => $isMember ? null : $record->assignee?->name,
+        ]);
     }
 
     public static function form(Schema $schema): Schema

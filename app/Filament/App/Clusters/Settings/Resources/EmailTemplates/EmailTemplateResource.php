@@ -25,6 +25,8 @@ class EmailTemplateResource extends Resource
 
     protected static ?string $cluster = SettingsCluster::class;
 
+    protected static bool $isGloballySearchable = false;
+
     public static function form(Schema $schema): Schema
     {
         return $schema

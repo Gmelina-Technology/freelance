@@ -25,6 +25,8 @@ class SaleResource extends Resource
 
     protected static ?string $recordTitleAttribute = 'id';
 
+    protected static bool $isGloballySearchable = false;
+
     public static function canAccess(): bool
     {
         return ! Auth::user()->isMember(Filament::getTenant());

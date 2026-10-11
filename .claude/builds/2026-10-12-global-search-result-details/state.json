@@ -1,0 +1,13 @@
+{
+  "stage": "deploy",
+  "tier": "standard",
+  "risk_tier": "high",
+  "architect_tech_lead_count": 0,
+  "product_manager_bounce_count": 0,
+  "developer_qa_count": 1,
+  "steps_spent": 8,
+  "budget_step_cap": 40,
+  "pr": null,
+  "pr_review_rounds": 0,
+  "handled_comment_ids": []
+}
