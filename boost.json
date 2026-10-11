@@ -1,14 +1,19 @@
 {
     "agents": [
         "claude_code",
-        "copilot"
+        "copilot",
+        "opencode"
     ],
     "cloud": false,
     "guidelines": true,
+    "mcp": true,
+    "nightwatch": false,
     "packages": [
         "filament/filament",
-        "relaticle/flowforge"
+        "relaticle/flowforge",
+        "fruitcake/laravel-debugbar"
     ],
+    "sail": false,
     "skills": [
         "infer-conventions",
         "laravel-best-practices",
@@ -16,6 +21,7 @@
         "mcp-development",
         "tailwindcss-development",
         "filament-development",
-        "flowforge-development"
+        "flowforge-development",
+        "debug-using-debugbar"
     ]
 }
