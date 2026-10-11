@@ -18,10 +18,7 @@ class MyTasksTable extends BaseTableWidget
 
     protected static ?int $defaultPaginationPageOption = 5;
 
-    public function getColumnSpan(): int
-    {
-        return Auth::user()->isMember(Filament::getTenant()) ? 3 : 12;
-    }
+    protected int|string|array $columnSpan = 'full';
 
     public function table(Table $table): Table
     {
