@@ -5,6 +5,7 @@ namespace Database\Factories;
 use App\Models\Account;
 use App\Models\Invoice;
 use App\Models\Sale;
+use App\Models\SaleConversion;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
@@ -48,23 +49,20 @@ class SaleFactory extends Factory
     {
         return $this->state(fn (): array => [
             'currency_code' => $currencyCode,
-            'converted_currency_code' => $currencyCode,
-            'converted_amount' => fn (array $attributes) => $net ?? $attributes['amount'],
-            'gross_amount' => fn (array $attributes) => $net ?? $attributes['amount'],
-            'exchange_rate' => 1,
-            'converted_at' => now(),
-        ]);
+        ])->afterCreating(function (Sale $sale) use ($currencyCode, $net) {
+            SaleConversion::factory()->for($sale)->create([
+                'converted_currency_code' => $currencyCode,
+                'converted_amount' => $net ?? $sale->amount,
+                'gross_amount' => $net ?? $sale->amount,
+                'converted_by' => null,
+            ]);
+        });
     }
 
     public function unconverted(?string $currencyCode = null): static
     {
         return $this->state(fn (): array => [
             'currency_code' => $currencyCode,
-            'converted_currency_code' => null,
-            'converted_amount' => null,
-            'gross_amount' => null,
-            'exchange_rate' => null,
-            'converted_at' => null,
         ]);
     }
 }

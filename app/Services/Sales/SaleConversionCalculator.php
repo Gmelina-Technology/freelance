@@ -1,0 +1,60 @@
+<?php
+
+namespace App\Services\Sales;
+
+use App\Models\Sale;
+
+/**
+ * Turns validated conversion input into the figures stored on a SaleConversion. All money math is
+ * done in integer cents so large values stay exact.
+ */
+class SaleConversionCalculator
+{
+    /**
+     * @param  array{converted_amount: float|int|string, fee_amount?: float|int|string|null, tax_amount?: float|int|string|null, conversion_note?: ?string}  $input
+     * @return array{converted_amount: string, fee_amount: ?string, tax_amount: ?string, gross_amount: string, exchange_rate: ?string, conversion_note: ?string}
+     */
+    public function fromInput(Sale $sale, array $input): array
+    {
+        $feeCents = $this->optionalCents($input['fee_amount'] ?? null);
+        $taxCents = $this->optionalCents($input['tax_amount'] ?? null);
+        $grossCents = $this->grossCents($input);
+        $amountCents = $this->toCents($sale->amount);
+
+        return [
+            'converted_amount' => $this->fromCents($this->toCents($input['converted_amount'])),
+            'fee_amount' => $feeCents === null ? null : $this->fromCents($feeCents),
+            'tax_amount' => $taxCents === null ? null : $this->fromCents($taxCents),
+            'gross_amount' => $this->fromCents($grossCents),
+            'exchange_rate' => $amountCents > 0 ? number_format($grossCents / $amountCents, 10, '.', '') : null,
+            'conversion_note' => filled($input['conversion_note'] ?? null) ? $input['conversion_note'] : null,
+        ];
+    }
+
+    /**
+     * Net + fee + tax, in cents.
+     *
+     * @param  array{converted_amount: float|int|string, fee_amount?: float|int|string|null, tax_amount?: float|int|string|null}  $input
+     */
+    public function grossCents(array $input): int
+    {
+        return $this->toCents($input['converted_amount'])
+            + ($this->optionalCents($input['fee_amount'] ?? null) ?? 0)
+            + ($this->optionalCents($input['tax_amount'] ?? null) ?? 0);
+    }
+
+    private function optionalCents(float|int|string|null $value): ?int
+    {
+        return filled($value) ? $this->toCents($value) : null;
+    }
+
+    private function toCents(float|int|string $value): int
+    {
+        return (int) round((float) $value * 100);
+    }
+
+    private function fromCents(int $cents): string
+    {
+        return sprintf('%s%d.%02d', $cents < 0 ? '-' : '', intdiv(abs($cents), 100), abs($cents) % 100);
+    }
+}

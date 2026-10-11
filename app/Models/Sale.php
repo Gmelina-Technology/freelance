@@ -10,12 +10,12 @@ use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 /**
- * A sale is recorded in its original currency (currency_code) and counts in reports once it is
- * converted into the account currency. converted_at, converted_currency_code, converted_amount and
- * gross_amount are either all null (unconverted) or all set (converted). SaleConversionService
- * keeps them that way.
+ * A sale is recorded in its original currency (currency_code) and starts unconverted. It counts in
+ * reports once a user converts it into the account currency, which creates its SaleConversion.
+ * See SaleConversionService.
  */
 class Sale extends Model
 {
@@ -29,28 +29,7 @@ class Sale extends Model
         'amount',
         'reference_key',
         'currency_code',
-        'converted_currency_code',
-        'converted_amount',
-        'fee_amount',
-        'tax_amount',
-        'gross_amount',
-        'exchange_rate',
-        'conversion_note',
-        'converted_at',
-        'converted_by',
     ];
-
-    protected function casts(): array
-    {
-        return [
-            'converted_amount' => 'decimal:2',
-            'fee_amount' => 'decimal:2',
-            'tax_amount' => 'decimal:2',
-            'gross_amount' => 'decimal:2',
-            'exchange_rate' => 'decimal:10',
-            'converted_at' => 'datetime',
-        ];
-    }
 
     /**
      * Get the invoice that owns the Sale
@@ -65,29 +44,24 @@ class Sale extends Model
         return $this->belongsTo(Currency::class, 'currency_code', 'code');
     }
 
-    public function convertedCurrency(): BelongsTo
+    public function saleConversion(): HasOne
     {
-        return $this->belongsTo(Currency::class, 'converted_currency_code', 'code');
-    }
-
-    public function convertedBy(): BelongsTo
-    {
-        return $this->belongsTo(User::class, 'converted_by');
+        return $this->hasOne(SaleConversion::class);
     }
 
     public function scopeConverted(Builder $query): Builder
     {
-        return $query->whereNotNull($query->getModel()->qualifyColumn('converted_at'));
+        return $query->has('saleConversion');
     }
 
     public function scopeUnconverted(Builder $query): Builder
     {
-        return $query->whereNull($query->getModel()->qualifyColumn('converted_at'));
+        return $query->doesntHave('saleConversion');
     }
 
     public function isConverted(): bool
     {
-        return $this->converted_at !== null;
+        return $this->saleConversion !== null;
     }
 
     /**

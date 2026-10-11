@@ -5,6 +5,7 @@ use App\Models\Client;
 use App\Models\Currency;
 use App\Models\Invoice;
 use App\Models\Sale;
+use App\Models\SaleConversion;
 use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
@@ -13,7 +14,7 @@ uses(RefreshDatabase::class);
 
 function runSalesBackfill(): void
 {
-    (require database_path('migrations/2026_10_11_104259_backfill_sales_currency_conversion.php'))->up();
+    (require database_path('migrations/2026_10_11_104259_backfill_sales_currency_code.php'))->up();
 }
 
 /**
@@ -54,25 +55,11 @@ beforeEach(function () {
     DB::table('sales')->update(['updated_at' => '2026-01-01 00:00:00']);
 });
 
-it('records the client currency and converts same currency sales at 1:1', function () {
-    runSalesBackfill();
-
-    $same = $this->sales['same']->fresh();
-
-    expect($same->currency_code)->toBe('EUR')
-        ->and($same->isConverted())->toBeTrue()
-        ->and($same->converted_currency_code)->toBe('EUR')
-        ->and($same->converted_amount)->toBe('250.00')
-        ->and($same->gross_amount)->toBe('250.00')
-        ->and($same->exchange_rate)->toBe('1.0000000000')
-        ->and($same->fee_amount)->toBeNull()
-        ->and($same->converted_by)->toBeNull();
-});
-
-it('leaves foreign, unknown and unmatched sales unconverted', function () {
+it('records the client currency and converts no sale', function () {
     runSalesBackfill();
 
     $expectedCurrencies = [
+        'same' => 'EUR',
         'foreign' => 'PHP',
         'unknown' => null,
         'no invoice' => null,
@@ -86,18 +73,8 @@ it('leaves foreign, unknown and unmatched sales unconverted', function () {
         expect($sale->currency_code)->toBe($currencyCode, $key)
             ->and($sale->isConverted())->toBeFalse($key);
     }
-});
 
-it('keeps the conversion columns all set or all null', function () {
-    runSalesBackfill();
-
-    foreach (Sale::all() as $sale) {
-        $nulls = collect(['converted_at', 'converted_currency_code', 'converted_amount', 'gross_amount'])
-            ->map(fn (string $column): bool => $sale->{$column} === null)
-            ->unique();
-
-        expect($nulls)->toHaveCount(1);
-    }
+    expect(SaleConversion::count())->toBe(0);
 });
 
 it('changes nothing when run again and never touches updated_at', function () {
@@ -108,5 +85,6 @@ it('changes nothing when run again and never touches updated_at', function () {
     runSalesBackfill();
 
     expect(DB::table('sales')->orderBy('id')->get())->toEqual($afterFirstRun)
-        ->and(DB::table('sales')->pluck('updated_at')->unique()->all())->toBe(['2026-01-01 00:00:00']);
+        ->and(DB::table('sales')->pluck('updated_at')->unique()->all())->toBe(['2026-01-01 00:00:00'])
+        ->and(SaleConversion::count())->toBe(0);
 });

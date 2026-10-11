@@ -159,7 +159,7 @@ it('reconciles client totals and unattributed sales with the sales total', funct
 
     $sales = app(SalesReportService::class);
     $expected = $year === null
-        ? (float) $sales->query($this->account)->sum('sales.converted_amount')
+        ? (float) $sales->query($this->account)->sum('sale_conversions.converted_amount')
         : array_sum($sales->totalsForBuckets($this->account, [[
             CarbonImmutable::create($year, 1, 1),
             CarbonImmutable::create($year + 1, 1, 1),

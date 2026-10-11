@@ -53,7 +53,7 @@ class ClientRevenueReportService
                 'projects.id as project_id',
                 'projects.name as project_name',
             ])
-            ->selectRaw('SUM(sales.converted_amount) as amount')
+            ->selectRaw('SUM(sale_conversions.converted_amount) as amount')
             ->groupBy('clients.id', 'clients.name', 'projects.id', 'projects.name');
 
         if ($year !== null) {

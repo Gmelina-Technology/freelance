@@ -7,9 +7,11 @@ use App\Filament\App\Resources\Sales\Pages\ListSales;
 use App\Models\Account;
 use App\Models\Currency;
 use App\Models\Sale;
+use App\Models\SaleConversion;
 use App\Models\User;
 use Carbon\CarbonImmutable;
 use Filament\Actions\Testing\TestAction;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Livewire;
 
@@ -73,8 +75,8 @@ it('lets owners and managers convert and edit a conversion', function (?AccountR
         ->assertHasNoFormErrors()
         ->assertNotified('Conversion updated');
 
-    $converted = $this->unconverted->fresh();
-    $edited = $this->converted->fresh();
+    $converted = $this->unconverted->saleConversion()->sole();
+    $edited = $this->converted->saleConversion()->sole();
 
     expect($converted->converted_amount)->toBe('1100.00')
         ->and($converted->gross_amount)->toBe('1115.50')
@@ -87,6 +89,41 @@ it('lets owners and managers convert and edit a conversion', function (?AccountR
     'owner' => [null],
     'manager' => [AccountRole::Manager],
 ]);
+
+it('converts a same currency sale with a fee', function () {
+    $sameCurrency = Sale::factory()->for($this->account)->unconverted('EUR')->create(['amount' => 100]);
+
+    Livewire::test(ListSales::class)
+        ->callAction(TestAction::make('convert')->table($sameCurrency), [
+            'converted_amount' => '97.00',
+            'fee_amount' => '3.00',
+        ])
+        ->assertHasNoFormErrors()
+        ->assertNotified('Sale converted');
+
+    $conversion = $sameCurrency->saleConversion()->sole();
+
+    expect($conversion->converted_amount)->toBe('97.00')
+        ->and($conversion->gross_amount)->toBe('100.00')
+        ->and($conversion->exchange_rate)->toBe('1.0000000000');
+});
+
+it('lists converted sales without lazy loading their conversions', function () {
+    Model::preventLazyLoading();
+    Sale::factory()->for($this->account)->converted('EUR', 20)->count(3)->create();
+
+    Livewire::test(ListSales::class)
+        ->assertOk()
+        ->assertCanSeeTableRecords(Sale::all());
+});
+
+it('sorts by net received', function () {
+    $small = Sale::factory()->for($this->account)->converted('EUR', 20)->create();
+
+    Livewire::test(ListSales::class)
+        ->sortTable('saleConversion.converted_amount')
+        ->assertCanSeeTableRecords([$small, $this->converted], inOrder: true);
+});
 
 it('asks for the original currency when it is unknown', function () {
     $unknown = Sale::factory()->for($this->account)->unconverted()->create(['amount' => 300]);
@@ -145,19 +182,31 @@ it('keeps members out of the sales list and its actions', function () {
         ->and(EditSaleConversionAction::handle()->record($this->converted)->isAuthorized())->toBeFalse();
 });
 
-it('cannot convert a sale from another account', function () {
+it('cannot convert or edit a sale from another account', function () {
     $otherAccount = Account::factory()->withCurrency('EUR')->create();
 
     // With a tenant bound, Filament would move a newly created sale into the current tenant.
-    $otherSale = Sale::withoutEvents(fn () => Sale::factory()->for($otherAccount)->unconverted('USD')->create());
+    [$otherSale, $otherConverted] = Sale::withoutEvents(fn () => [
+        Sale::factory()->for($otherAccount)->unconverted('USD')->create(),
+        Sale::factory()->for($otherAccount)->converted('EUR', 40)->create(),
+    ]);
 
-    try {
-        Livewire::test(ListSales::class)
-            ->callAction(TestAction::make('convert')->table($otherSale), ['converted_amount' => '10.00']);
-    } catch (Throwable) {
-        // Filament refuses records outside the tenant's sales query.
+    $attempts = [
+        ['convert', $otherSale],
+        ['editConversion', $otherConverted],
+    ];
+
+    foreach ($attempts as [$action, $sale]) {
+        try {
+            Livewire::test(ListSales::class)
+                ->callAction(TestAction::make($action)->table($sale), ['converted_amount' => '10.00']);
+        } catch (Throwable) {
+            // Filament refuses records outside the tenant's sales query.
+        }
     }
 
     expect($otherSale->fresh()->account_id)->toBe($otherAccount->id)
-        ->and($otherSale->fresh()->isConverted())->toBeFalse();
+        ->and($otherSale->fresh()->isConverted())->toBeFalse()
+        ->and($otherConverted->saleConversion()->sole()->converted_amount)->toBe('40.00')
+        ->and(SaleConversion::count())->toBe(2);
 });

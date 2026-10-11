@@ -46,32 +46,32 @@ class SaleResource extends Resource
                 TextColumn::make('conversion_status')
                     ->label('Status')
                     ->badge(),
-                TextColumn::make('converted_amount')
+                TextColumn::make('saleConversion.converted_amount')
                     ->label('Net received')
-                    ->money(fn (Sale $record): ?string => $record->converted_currency_code)
+                    ->money(fn (Sale $record): ?string => $record->saleConversion?->converted_currency_code)
                     ->placeholder('—')
                     ->sortable(),
-                TextColumn::make('fee_amount')
+                TextColumn::make('saleConversion.fee_amount')
                     ->label('Fees')
-                    ->money(fn (Sale $record): ?string => $record->converted_currency_code)
+                    ->money(fn (Sale $record): ?string => $record->saleConversion?->converted_currency_code)
                     ->placeholder('—')
                     ->toggleable(isToggledHiddenByDefault: true),
-                TextColumn::make('tax_amount')
+                TextColumn::make('saleConversion.tax_amount')
                     ->label('Taxes')
-                    ->money(fn (Sale $record): ?string => $record->converted_currency_code)
+                    ->money(fn (Sale $record): ?string => $record->saleConversion?->converted_currency_code)
                     ->placeholder('—')
                     ->toggleable(isToggledHiddenByDefault: true),
-                TextColumn::make('gross_amount')
+                TextColumn::make('saleConversion.gross_amount')
                     ->label('Gross')
-                    ->money(fn (Sale $record): ?string => $record->converted_currency_code)
+                    ->money(fn (Sale $record): ?string => $record->saleConversion?->converted_currency_code)
                     ->placeholder('—')
                     ->toggleable(isToggledHiddenByDefault: true),
-                TextColumn::make('exchange_rate')
+                TextColumn::make('saleConversion.exchange_rate')
                     ->label('Rate')
                     ->numeric(decimalPlaces: 6)
                     ->placeholder('—')
                     ->toggleable(isToggledHiddenByDefault: true),
-                TextColumn::make('converted_at')
+                TextColumn::make('saleConversion.converted_at')
                     ->label('Converted at')
                     ->dateTime()
                     ->placeholder('—')
@@ -85,7 +85,7 @@ class SaleResource extends Resource
                     )
                     ->searchable(),
             ])
-            ->modifyQueryUsing(fn (Builder $query) => $query->with('invoice'))
+            ->modifyQueryUsing(fn (Builder $query) => $query->with(['invoice', 'saleConversion']))
             ->filters([
                 TernaryFilter::make('converted')
                     ->label('Conversion')

@@ -46,7 +46,7 @@ beforeEach(function () {
 
 /**
  * The widget's original per-month query as the parity oracle, updated for currency conversion:
- * only sales converted into the account currency count, and they count at their net amount.
+ * only sales with a conversion into the account currency count, at the conversion's net amount.
  *
  * @return array{data: list<mixed>, labels: list<string>}
  */
@@ -58,12 +58,12 @@ function monthlySalesOracle(): array
     for ($month = 1; $month <= 12; $month++) {
 
         $total = Sale::query()
-            ->where('account_id', Filament::getTenant()->id)
-            ->whereNotNull('converted_at')
-            ->where('converted_currency_code', Filament::getTenant()->currency_code)
-            ->whereYear('transaction_date', now()->year)
-            ->whereMonth('transaction_date', $month)
-            ->sum('converted_amount');
+            ->join('sale_conversions', 'sale_conversions.sale_id', '=', 'sales.id')
+            ->where('sales.account_id', Filament::getTenant()->id)
+            ->where('sale_conversions.converted_currency_code', Filament::getTenant()->currency_code)
+            ->whereYear('sales.transaction_date', now()->year)
+            ->whereMonth('sales.transaction_date', $month)
+            ->sum('sale_conversions.converted_amount');
 
         $salesData[] = $total;
 

@@ -7,7 +7,7 @@ use Filament\Support\Contracts\HasLabel;
 use Illuminate\Contracts\Support\Htmlable;
 
 /**
- * Display-only status derived from Sale::$converted_at. Never stored.
+ * Display-only status derived from whether a Sale has a SaleConversion. Never stored.
  */
 enum SaleConversionStatus: string implements HasColor, HasLabel
 {

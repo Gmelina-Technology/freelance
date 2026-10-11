@@ -24,12 +24,12 @@ class EditSaleConversionAction
             ->visible(fn (Sale $record): bool => $record->isConverted())
             ->disabled(fn (Sale $record): bool => self::blockedReason($record) !== null)
             ->tooltip(fn (Sale $record): ?string => self::blockedReason($record))
-            ->fillForm(fn (Sale $record): array => [
-                'converted_amount' => $record->converted_amount,
-                'fee_amount' => $record->fee_amount,
-                'tax_amount' => $record->tax_amount,
-                'conversion_note' => $record->conversion_note,
-            ])
+            ->fillForm(fn (Sale $record): array => $record->saleConversion->only([
+                'converted_amount',
+                'fee_amount',
+                'tax_amount',
+                'conversion_note',
+            ]))
             ->schema(SaleConversionForm::components())
             ->action(function (Sale $record, array $data, Action $action, SaleConversionService $conversions) {
                 try {
@@ -59,8 +59,10 @@ class EditSaleConversionAction
             return SaleConversionException::missingAccountCurrency()->getMessage();
         }
 
-        if ($record->converted_currency_code !== $accountCurrencyCode) {
-            return SaleConversionException::accountCurrencyChanged($record->converted_currency_code, $accountCurrencyCode)->getMessage();
+        $convertedCurrencyCode = $record->saleConversion?->converted_currency_code;
+
+        if ($convertedCurrencyCode !== null && $convertedCurrencyCode !== $accountCurrencyCode) {
+            return SaleConversionException::accountCurrencyChanged($convertedCurrencyCode, $accountCurrencyCode)->getMessage();
         }
 
         return null;

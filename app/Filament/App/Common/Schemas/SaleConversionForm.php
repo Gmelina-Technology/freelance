@@ -4,7 +4,7 @@ namespace App\Filament\App\Common\Schemas;
 
 use App\Models\Currency;
 use App\Models\Sale;
-use App\Services\SaleConversionService;
+use App\Models\SaleConversion;
 use Filament\Facades\Filament;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
@@ -13,7 +13,7 @@ use Filament\Schemas\Components\Text;
 use Illuminate\Support\Number;
 
 /**
- * Mirrors the rules in SaleConversionService, which stays the source of truth.
+ * Mirrors SaleConversionValidator, which stays the source of truth.
  */
 class SaleConversionForm
 {
@@ -35,7 +35,7 @@ class SaleConversionForm
                 ->numeric()
                 ->required()
                 ->minValue(0.01)
-                ->maxValue((float) SaleConversionService::MAX_AMOUNT)
+                ->maxValue((float) SaleConversion::MAX_AMOUNT)
                 ->step(0.01)
                 ->rule('decimal:0,2')
                 ->prefix($accountCurrency),
@@ -43,7 +43,7 @@ class SaleConversionForm
                 ->label('Fees')
                 ->numeric()
                 ->minValue(0)
-                ->maxValue((float) SaleConversionService::MAX_AMOUNT)
+                ->maxValue((float) SaleConversion::MAX_AMOUNT)
                 ->step(0.01)
                 ->rule('decimal:0,2')
                 ->prefix($accountCurrency),
@@ -51,7 +51,7 @@ class SaleConversionForm
                 ->label('Taxes withheld')
                 ->numeric()
                 ->minValue(0)
-                ->maxValue((float) SaleConversionService::MAX_AMOUNT)
+                ->maxValue((float) SaleConversion::MAX_AMOUNT)
                 ->step(0.01)
                 ->rule('decimal:0,2')
                 ->prefix($accountCurrency),
