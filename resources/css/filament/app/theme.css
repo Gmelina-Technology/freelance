@@ -17,8 +17,7 @@
 }
 
 .fi-topbar > nav,
-.fi-sidebar-header,
-.fi-sidebar-nav {
+.fi-sidebar {
     @apply bg-white/90 backdrop-blur dark:bg-gray-900/90;
 }
 
@@ -27,11 +26,15 @@
     @apply border-brand-line ring-0 dark:border-white/10;
 }
 
-.fi-section,
+.fi-sidebar {
+    @apply lg:border-e;
+}
+
+.fi-section:not(.fi-section-not-contained),
 .fi-ta-ctn,
 .fi-wi-stats-overview-stat,
 .fi-in-table-repeatable {
-    @apply rounded-2xl border border-brand-line bg-white shadow-[0_24px_50px_-30px_rgba(16,35,26,0.35)] ring-0 dark:border-white/10 dark:bg-gray-900 dark:shadow-none;
+    @apply rounded-2xl border border-brand-line bg-white shadow-[0_1px_2px_0_rgba(16,35,26,0.04)] ring-0 dark:border-white/10 dark:bg-gray-900 dark:shadow-none;
 }
 
 .fi-btn {

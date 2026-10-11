@@ -13,11 +13,6 @@ class MonthlySalesChart extends ChartWidget
 
     protected static ?int $sort = 2;
 
-    public function getColumns(): int|array
-    {
-        return Auth::user()->isMember(Filament::getTenant()) ? 3 : 12;
-    }
-
     public static function canView(): bool
     {
         return ! Auth::user()->isMember(Filament::getTenant());
