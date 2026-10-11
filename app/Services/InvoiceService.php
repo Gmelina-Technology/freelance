@@ -49,6 +49,7 @@ class InvoiceService
                 'reference_key' => $invoice->number,
                 'amount' => $invoice->amount,
                 'transaction_date' => now(),
+                'currency_code' => $invoice->client?->currency_code,
             ]);
         });
     }

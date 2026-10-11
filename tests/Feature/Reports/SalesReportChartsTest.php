@@ -20,7 +20,7 @@ beforeEach(function () {
     $this->travelTo(CarbonImmutable::parse('2026-06-15 10:00:00'));
 
     $this->owner = User::factory()->create();
-    $this->account = Account::factory()->for($this->owner, 'owner')->create(['currency_code' => null]);
+    $this->account = Account::factory()->withCurrency('USD')->for($this->owner, 'owner')->create();
 
     foreach ([
         ['2025-02-10 09:00:00', 100],
@@ -28,11 +28,11 @@ beforeEach(function () {
         ['2026-01-10 09:00:00', 30],
         ['2026-05-10 09:00:00', 40],
     ] as [$at, $amount]) {
-        Sale::factory()->for($this->account)->create(['transaction_date' => $at, 'amount' => $amount]);
+        Sale::factory()->for($this->account)->converted('USD')->create(['transaction_date' => $at, 'amount' => $amount]);
     }
 
     // Another tenant with a year this account never sold in.
-    Sale::factory()->for(Account::factory())->create(['transaction_date' => '2019-03-01 09:00:00', 'amount' => 9999]);
+    Sale::factory()->for(Account::factory()->withCurrency('USD'))->converted('USD')->create(['transaction_date' => '2019-03-01 09:00:00', 'amount' => 9999]);
 
     bindFilamentTenant($this->owner, $this->account);
 
@@ -102,6 +102,9 @@ it('shows yearly totals from the first sale year', function () {
 it('formats totals in the account currency', function () {
     Currency::factory()->create(['code' => 'EUR', 'name' => 'Euro']);
     $this->account->update(['currency_code' => 'EUR']);
+
+    // The USD conversions above no longer count once the account currency is EUR.
+    Sale::factory()->for($this->account)->converted('EUR')->create(['transaction_date' => '2026-03-10 09:00:00', 'amount' => 370]);
 
     expect(Livewire::test(SalesByYearChart::class)->instance()->getDescription())->toBe('All-time total: €370.00');
 });

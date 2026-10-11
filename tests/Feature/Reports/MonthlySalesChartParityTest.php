@@ -16,9 +16,9 @@ beforeEach(function () {
     $this->travelTo(CarbonImmutable::parse('2026-06-15 10:00:00'));
 
     $this->owner = User::factory()->create();
-    $this->account = Account::factory()->for($this->owner, 'owner')->create();
+    $this->account = Account::factory()->withCurrency('USD')->for($this->owner, 'owner')->create();
     $this->account->users()->attach($this->owner, ['role' => AccountRole::Owner->value]);
-    $this->otherAccount = Account::factory()->create();
+    $this->otherAccount = Account::factory()->withCurrency('USD')->create();
 
     foreach ([
         ['2026-01-01 00:00:00', 10.10],
@@ -31,17 +31,22 @@ beforeEach(function () {
         ['2025-12-31 23:59:59', 1000],
         ['2027-01-01 00:00:00', 2000],
     ] as [$at, $amount]) {
-        Sale::factory()->for($this->account)->create(['transaction_date' => $at, 'amount' => $amount]);
+        Sale::factory()->for($this->account)->converted('USD')->create(['transaction_date' => $at, 'amount' => $amount]);
     }
 
-    Sale::factory()->for($this->otherAccount)->create(['transaction_date' => '2026-01-15 12:00:00', 'amount' => 5000]);
-    Sale::factory()->for($this->otherAccount)->create(['transaction_date' => '2026-06-01 12:00:00', 'amount' => 5000]);
+    Sale::factory()->for($this->otherAccount)->converted('USD')->create(['transaction_date' => '2026-01-15 12:00:00', 'amount' => 5000]);
+    Sale::factory()->for($this->otherAccount)->converted('USD')->create(['transaction_date' => '2026-06-01 12:00:00', 'amount' => 5000]);
+
+    // Neither of these may change the 282.80 total: one is unconverted, the other is in another currency.
+    Sale::factory()->for($this->account)->unconverted('EUR')->create(['transaction_date' => '2026-03-10 12:00:00', 'amount' => 3000]);
+    Sale::factory()->for($this->account)->converted('EUR')->create(['transaction_date' => '2026-05-10 12:00:00', 'amount' => 4000]);
 
     bindFilamentTenant($this->owner, $this->account);
 });
 
 /**
- * The widget's original per-month query, kept verbatim as the parity oracle.
+ * The widget's original per-month query as the parity oracle, updated for currency conversion:
+ * only sales converted into the account currency count, and they count at their net amount.
  *
  * @return array{data: list<mixed>, labels: list<string>}
  */
@@ -54,9 +59,11 @@ function monthlySalesOracle(): array
 
         $total = Sale::query()
             ->where('account_id', Filament::getTenant()->id)
+            ->whereNotNull('converted_at')
+            ->where('converted_currency_code', Filament::getTenant()->currency_code)
             ->whereYear('transaction_date', now()->year)
             ->whereMonth('transaction_date', $month)
-            ->sum('amount');
+            ->sum('converted_amount');
 
         $salesData[] = $total;
 

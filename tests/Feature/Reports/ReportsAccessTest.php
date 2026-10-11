@@ -27,7 +27,7 @@ beforeEach(function () {
     $this->travelTo(CarbonImmutable::parse('2026-06-15 10:00:00'));
 
     $this->owner = User::factory()->create();
-    $this->account = Account::factory()->for($this->owner, 'owner')->create();
+    $this->account = Account::factory()->withCurrency('USD')->for($this->owner, 'owner')->create();
 });
 
 /**
@@ -45,7 +45,7 @@ function seedReportTenant(Account $account, string $clientName, string $projectN
         'amount' => $amount,
         'status' => InvoiceStatus::Paid,
     ]);
-    Sale::factory()->forInvoice($paid)->create(['transaction_date' => $at]);
+    Sale::factory()->forInvoice($paid)->converted($account->currency_code ?? 'USD')->create(['transaction_date' => $at]);
 
     Invoice::factory()->create([
         'account_id' => $account->id,
@@ -104,7 +104,7 @@ it('forbids members from the sales chart widgets', function (string $widget) {
 describe('rendered pages', function () {
     beforeEach(function () {
         seedReportTenant($this->account, 'Acme Holdings', 'Aurora Website', 1234);
-        seedReportTenant(Account::factory()->create(), 'Rival Industries', 'Nebula Portal', 8888);
+        seedReportTenant(Account::factory()->withCurrency('USD')->create(), 'Rival Industries', 'Nebula Portal', 8888);
 
         bindFilamentTenant($this->owner, $this->account);
     });
@@ -142,7 +142,7 @@ describe('rendered pages', function () {
             'amount' => 500,
             'status' => InvoiceStatus::Paid,
         ]);
-        Sale::factory()->forInvoice($invoice)->create(['transaction_date' => '2025-05-01 10:00:00']);
+        Sale::factory()->forInvoice($invoice)->converted('USD')->create(['transaction_date' => '2025-05-01 10:00:00']);
 
         Livewire::test(ClientRevenueReportPage::class)
             ->assertSee(['Aurora Website', 'Legacy Intranet'])
@@ -172,18 +172,29 @@ describe('rendered pages', function () {
             ->assertDontSee('appear under Pending');
     });
 
-    it('shows figures in the client currency', function () {
+    it('shows client revenue in the account currency and receivables in the client currency', function () {
         Currency::factory()->create(['code' => 'EUR', 'name' => 'Euro']);
         Client::query()->where('name', 'Acme Holdings')->update(['currency_code' => 'EUR']);
 
-        Livewire::test(ClientRevenueReportPage::class)->assertSee('€1,234.00')->assertDontSee('$1,234.00');
+        Livewire::test(ClientRevenueReportPage::class)->assertSee('$1,234.00')->assertDontSee('€1,234.00');
         Livewire::test(ReceivablesReportPage::class)->assertSee(['€617.00', '€1,234.00']);
     });
+
+    it('explains that only converted sales are included', function (string $page) {
+        Livewire::test($page)->assertSee('Only sales converted into your account currency (USD) are included.');
+
+        $this->account->update(['currency_code' => null]);
+
+        Livewire::test($page)->assertSee('Set your account currency in Account Profile to see sales here.');
+    })->with([
+        'sales' => SalesReportPage::class,
+        'client revenue' => ClientRevenueReportPage::class,
+    ]);
 
     it('shows unattributed sales in the account currency', function () {
         Currency::factory()->create(['code' => 'EUR', 'name' => 'Euro']);
         $this->account->update(['currency_code' => 'EUR']);
-        Sale::factory()->for($this->account)->create(['amount' => 42, 'transaction_date' => '2026-02-01 10:00:00']);
+        Sale::factory()->for($this->account)->converted('EUR')->create(['amount' => 42, 'transaction_date' => '2026-02-01 10:00:00']);
 
         Livewire::test(ClientRevenueReportPage::class)
             ->assertSee('Unattributed sales')
@@ -210,6 +221,6 @@ describe('rendered pages', function () {
 it('shows empty states when there is nothing to report', function () {
     bindFilamentTenant($this->owner, $this->account);
 
-    Livewire::test(ClientRevenueReportPage::class)->assertSee('No sales recorded for this period.');
+    Livewire::test(ClientRevenueReportPage::class)->assertSee('No converted sales recorded for this period.');
     Livewire::test(ReceivablesReportPage::class)->assertSee('No outstanding or collected invoices.');
 });

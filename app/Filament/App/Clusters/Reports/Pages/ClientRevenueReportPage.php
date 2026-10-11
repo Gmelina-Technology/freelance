@@ -46,6 +46,15 @@ class ClientRevenueReportPage extends Page
         $this->form->fill(['year' => null]);
     }
 
+    public function getSubheading(): ?string
+    {
+        $currency = Filament::getTenant()->currency_code;
+
+        return $currency === null
+            ? 'Set your account currency in Account Profile to see sales here.'
+            : "Only sales converted into your account currency ({$currency}) are included.";
+    }
+
     public function form(Schema $schema): Schema
     {
         return $schema
@@ -104,14 +113,15 @@ class ClientRevenueReportPage extends Page
     protected function reportComponents(): array
     {
         $report = $this->report;
+        $currency = Filament::getTenant()->currency_code ?? 'USD';
 
         if ($report['clients'] === [] && $report['unattributed_total'] == 0) {
-            return [Text::make('No sales recorded for this period.')];
+            return [Text::make('No converted sales recorded for this period.')];
         }
 
         $components = array_map(fn (array $client): Section => Section::make($client['client_name'])
             ->key("client-{$client['client_id']}")
-            ->description('Total: '.Number::currency($client['total'], in: $client['currency_code'] ?? 'USD'))
+            ->description('Total: '.Number::currency($client['total'], in: $currency))
             ->schema([
                 RepeatableEntry::make('projects')
                     ->key("client-{$client['client_id']}-projects")
@@ -125,15 +135,13 @@ class ClientRevenueReportPage extends Page
                     ])
                     ->schema([
                         TextEntry::make('project_name'),
-                        TextEntry::make('amount')->money($client['currency_code']),
+                        TextEntry::make('amount')->money($currency),
                         TextEntry::make('share')->suffix('%'),
                         TextEntry::make('top_label')->badge()->color('success'),
                     ]),
             ]), $report['clients']);
 
         if ($report['unattributed_total'] != 0) {
-            $currency = Filament::getTenant()->currency_code ?? 'USD';
-
             $components[] = Section::make('Unattributed sales')
                 ->key('unattributed')
                 ->description('Sales with no linked invoice, or whose invoice, client or project was deleted.')

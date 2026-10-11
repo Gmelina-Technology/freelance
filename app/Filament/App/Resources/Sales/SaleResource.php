@@ -2,6 +2,8 @@
 
 namespace App\Filament\App\Resources\Sales;
 
+use App\Filament\App\Resources\Sales\Actions\ConvertSaleAction;
+use App\Filament\App\Resources\Sales\Actions\EditSaleConversionAction;
 use App\Filament\App\Resources\Sales\Pages\ListSales;
 use App\Models\Sale;
 use BackedEnum;
@@ -9,7 +11,9 @@ use Filament\Facades\Filament;
 use Filament\Resources\Resource;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Filters\TernaryFilter;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Auth;
 
 class SaleResource extends Resource
@@ -35,16 +39,68 @@ class SaleResource extends Resource
                     ->dateTime()
                     ->sortable(),
                 TextColumn::make('amount')
-                    ->numeric()
+                    ->label('Original amount')
+                    ->numeric(decimalPlaces: 2)
+                    ->description(fn (Sale $record): string => $record->currency_code ?? 'Currency unknown')
                     ->sortable(),
+                TextColumn::make('conversion_status')
+                    ->label('Status')
+                    ->badge(),
+                TextColumn::make('converted_amount')
+                    ->label('Net received')
+                    ->money(fn (Sale $record): ?string => $record->converted_currency_code)
+                    ->placeholder('—')
+                    ->sortable(),
+                TextColumn::make('fee_amount')
+                    ->label('Fees')
+                    ->money(fn (Sale $record): ?string => $record->converted_currency_code)
+                    ->placeholder('—')
+                    ->toggleable(isToggledHiddenByDefault: true),
+                TextColumn::make('tax_amount')
+                    ->label('Taxes')
+                    ->money(fn (Sale $record): ?string => $record->converted_currency_code)
+                    ->placeholder('—')
+                    ->toggleable(isToggledHiddenByDefault: true),
+                TextColumn::make('gross_amount')
+                    ->label('Gross')
+                    ->money(fn (Sale $record): ?string => $record->converted_currency_code)
+                    ->placeholder('—')
+                    ->toggleable(isToggledHiddenByDefault: true),
+                TextColumn::make('exchange_rate')
+                    ->label('Rate')
+                    ->numeric(decimalPlaces: 6)
+                    ->placeholder('—')
+                    ->toggleable(isToggledHiddenByDefault: true),
+                TextColumn::make('converted_at')
+                    ->label('Converted at')
+                    ->dateTime()
+                    ->placeholder('—')
+                    ->toggleable(isToggledHiddenByDefault: true),
                 TextColumn::make('reference_key')
                     ->url(
-                        fn (Sale $record) => route('filament.app.resources.invoices.view', [
+                        fn (Sale $record) => $record->invoice ? route('filament.app.resources.invoices.view', [
                             'tenant' => Filament::getTenant(),
                             'record' => $record->invoice,
-                        ])
+                        ]) : null
                     )
                     ->searchable(),
+            ])
+            ->modifyQueryUsing(fn (Builder $query) => $query->with('invoice'))
+            ->filters([
+                TernaryFilter::make('converted')
+                    ->label('Conversion')
+                    ->placeholder('All sales')
+                    ->trueLabel('Converted only')
+                    ->falseLabel('Unconverted only')
+                    ->queries(
+                        true: fn (Builder $query) => $query->converted(),
+                        false: fn (Builder $query) => $query->unconverted(),
+                        blank: fn (Builder $query) => $query,
+                    ),
+            ])
+            ->recordActions([
+                ConvertSaleAction::handle(),
+                EditSaleConversionAction::handle(),
             ]);
     }
 

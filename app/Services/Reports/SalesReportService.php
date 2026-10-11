@@ -10,13 +10,22 @@ use Illuminate\Database\Eloquent\Builder;
 class SalesReportService
 {
     /**
-     * Every Sale row of the account counts as a sale. Anything that reports sales builds on this.
+     * A sale counts once it is converted into the account's current currency. Unconverted sales,
+     * and sales converted into a different currency, are left out so totals are never mixed.
+     * Anything that reports sales builds on this.
      *
      * @return Builder<Sale>
      */
     public function query(Account $account): Builder
     {
-        return Sale::query()->where('sales.account_id', $account->getKey());
+        return Sale::query()
+            ->where('sales.account_id', $account->getKey())
+            ->whereNotNull('sales.converted_at')
+            ->when(
+                $account->currency_code === null,
+                fn (Builder $query) => $query->whereRaw('1 = 0'),
+                fn (Builder $query) => $query->where('sales.converted_currency_code', $account->currency_code),
+            );
     }
 
     /**
@@ -35,7 +44,7 @@ class SalesReportService
         $bindings = [];
 
         foreach (array_values($buckets) as $index => [$start, $end]) {
-            $columns[] = "SUM(CASE WHEN sales.transaction_date >= ? AND sales.transaction_date < ? THEN sales.amount ELSE 0 END) AS bucket_{$index}";
+            $columns[] = "SUM(CASE WHEN sales.transaction_date >= ? AND sales.transaction_date < ? THEN sales.converted_amount ELSE 0 END) AS bucket_{$index}";
             $bindings[] = $this->toDateTimeString($start);
             $bindings[] = $this->toDateTimeString($end);
         }

@@ -25,6 +25,7 @@ class SaleFactory extends Factory
             'transaction_date' => now(),
             'amount' => fake()->randomFloat(2, 10, 5000),
             'reference_key' => null,
+            'currency_code' => null,
         ];
     }
 
@@ -37,6 +38,33 @@ class SaleFactory extends Factory
             'account_id' => $invoice->account_id,
             'reference_key' => $invoice->number,
             'amount' => $invoice->amount,
+        ]);
+    }
+
+    /**
+     * A sale converted into $currencyCode. Net defaults to the original amount (1:1).
+     */
+    public function converted(string $currencyCode = 'USD', ?float $net = null): static
+    {
+        return $this->state(fn (): array => [
+            'currency_code' => $currencyCode,
+            'converted_currency_code' => $currencyCode,
+            'converted_amount' => fn (array $attributes) => $net ?? $attributes['amount'],
+            'gross_amount' => fn (array $attributes) => $net ?? $attributes['amount'],
+            'exchange_rate' => 1,
+            'converted_at' => now(),
+        ]);
+    }
+
+    public function unconverted(?string $currencyCode = null): static
+    {
+        return $this->state(fn (): array => [
+            'currency_code' => $currencyCode,
+            'converted_currency_code' => null,
+            'converted_amount' => null,
+            'gross_amount' => null,
+            'exchange_rate' => null,
+            'converted_at' => null,
         ]);
     }
 }

@@ -12,13 +12,13 @@ uses(RefreshDatabase::class);
 beforeEach(function () {
     $this->travelTo(CarbonImmutable::parse('2026-06-15 10:00:00'));
 
-    $this->account = Account::factory()->create();
+    $this->account = Account::factory()->withCurrency('USD')->create();
     $this->service = app(SalesReportService::class);
 });
 
 function recordSale(Account $account, string $at, float $amount): Sale
 {
-    return Sale::factory()->for($account)->create(['transaction_date' => $at, 'amount' => $amount]);
+    return Sale::factory()->for($account)->converted($account->currency_code ?? 'USD')->create(['transaction_date' => $at, 'amount' => $amount]);
 }
 
 it('buckets sales into calendar months including the boundary rows', function () {
@@ -97,7 +97,7 @@ it('returns no totals for no buckets without querying', function () {
 });
 
 it('never counts another account sales', function () {
-    $other = Account::factory()->create();
+    $other = Account::factory()->withCurrency('USD')->create();
     recordSale($this->account, '2026-02-01 09:00:00', 10);
     recordSale($other, '2026-02-01 09:00:00', 999);
     recordSale($other, '2020-02-01 09:00:00', 999);
@@ -110,11 +110,11 @@ it('never counts another account sales', function () {
 });
 
 it('runs the same number of queries regardless of sales volume', function (string $method) {
-    $small = Account::factory()->create();
+    $small = Account::factory()->withCurrency('USD')->create();
     recordSale($small, '2026-02-01 09:00:00', 10);
 
-    $large = Account::factory()->create();
-    Sale::factory()->for($large)->count(60)->sequence(
+    $large = Account::factory()->withCurrency('USD')->create();
+    Sale::factory()->for($large)->converted('USD')->count(60)->sequence(
         ['transaction_date' => '2024-03-01 09:00:00'],
         ['transaction_date' => '2025-07-15 09:00:00'],
         ['transaction_date' => '2026-05-20 09:00:00'],
@@ -133,3 +133,27 @@ it('runs the same number of queries regardless of sales volume', function (strin
 
     expect($count($small))->toBe($count($large));
 })->with(['monthlyTotals', 'quarterlyTotals', 'yearlyTotals']);
+
+it('leaves out unconverted sales and sales converted into another currency', function () {
+    recordSale($this->account, '2026-02-01 09:00:00', 10);
+    Sale::factory()->for($this->account)->unconverted('EUR')->create(['transaction_date' => '2026-02-02 09:00:00', 'amount' => 500]);
+    Sale::factory()->for($this->account)->converted('EUR')->create(['transaction_date' => '2026-02-03 09:00:00', 'amount' => 700]);
+
+    expect($this->service->monthlyTotals($this->account, 2026)[2])->toEqualWithDelta(10, 0.001)
+        ->and($this->service->query($this->account)->count())->toBe(1);
+});
+
+it('sums the net received rather than the original amount', function () {
+    Sale::factory()->for($this->account)->converted('USD', 92.5)->create(['transaction_date' => '2026-02-01 09:00:00', 'amount' => 100]);
+
+    expect($this->service->monthlyTotals($this->account, 2026)[2])->toEqualWithDelta(92.5, 0.001);
+});
+
+it('reports nothing for an account without a currency', function () {
+    $account = Account::factory()->create(['currency_code' => null]);
+    Sale::factory()->for($account)->unconverted()->create(['transaction_date' => '2026-02-01 09:00:00']);
+
+    expect($this->service->query($account)->count())->toBe(0)
+        ->and($this->service->query($account)->toRawSql())->toContain('1 = 0')
+        ->and(array_sum($this->service->monthlyTotals($account, 2026)))->toEqual(0.0);
+});
