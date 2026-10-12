@@ -25,10 +25,10 @@ You are acting as the **Orchestrator** for this run — see `.claude/reference/o
 
 **First, decide if this is a resume.** If `$ARGUMENTS` is a PR reference (`123`, `#123`, a PR URL) or an existing build id:
 
-1. Resolve the PR: `gh pr view <ref> --json number,headRefName,body,url`. The build id is on the `Build:` line of the PR body (see §8); otherwise match `pr` in `.claude/builds/*/state.json`.
-2. Make sure the PR's branch is checked out (in a worktree, via the app's branch tools; elsewhere `gh pr checkout <number>`) — the build folder is committed on that branch, so that's where it lives.
-3. If a matching `.claude/builds/<build-id>/state.json` exists → **reuse it. Do not create a new build and do not re-run §1–§5.** Go straight to **§9 PR feedback**.
-4. If no build matches → ask via `AskUserQuestion` whether to start a fresh build from the PR's description or stop. Never silently start a new one.
+1. Resolve the PR: `gh pr view <ref> --json number,headRefName,body,url,commits`. The build id is on the `Build:` line of the PR body or in a `Build:` trailer of the PR's commit messages (see §8); otherwise match `pr` in `.claude/builds/*/state.json`.
+2. Make sure the PR's branch is checked out (in a worktree, via the app's branch tools; elsewhere `gh pr checkout <number>`).
+3. Locate the build folder. It is **not committed** (`.claude/builds/` is gitignored), so look for `.claude/builds/<build-id>/state.json` in the current checkout first, then in the other checkouts listed by `git worktree list`. If found elsewhere, copy the folder into the current checkout's `.claude/builds/`. Found → **reuse it. Do not create a new build and do not re-run §1–§5.** Go straight to **§9 PR feedback**.
+4. If no build folder is found anywhere → ask via `AskUserQuestion` whether to start a fresh build from the PR's description or stop. Never silently start a new one.
 
 Otherwise, this is a new build:
 
@@ -109,7 +109,7 @@ Dispatch to `delivery-manager` with the current `state.json` and whatever findin
 
 When the build is ready for a PR (ask via `AskUserQuestion` before pushing or opening one):
 
-- Commit the build folder (`.claude/builds/<build-id>/`) on the same branch as the code — it's what lets §9 reuse this build later from any session.
+- Do **not** commit the build folder (`.claude/builds/<build-id>/`) — it stays local and gitignored. Instead, reference it: end every commit message for this build with a `Build: <build-id>` trailer (before any co-author lines). That reference is what lets §9 find and reuse this build later.
 - Put a `Build: <build-id>` line in the PR body.
 - Record the PR number in `state.json` (`pr`). If the user opens the PR themselves, record it the next time this build is resumed.
 
