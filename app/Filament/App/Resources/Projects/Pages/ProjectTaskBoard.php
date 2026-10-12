@@ -150,7 +150,7 @@ class ProjectTaskBoard extends BoardResourcePage
                 DeleteAction::make()->model(Task::class)
                     ->visible(fn (Task $record): bool => $record->billing_status->isBillable()),
             ])
-            ->cardAction('edit');
+            ->cardAction('editTask');
     }
 
     public function moveCard(
