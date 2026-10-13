@@ -171,9 +171,11 @@ it('refuses links that are not signed or were tampered with', function () {
         ->and($invitation->fresh()->isPending())->toBeTrue();
 });
 
-it('never logs anyone in from the controller', function () {
-    $source = file_get_contents(app_path('Http/Controllers/InvitationAcceptanceController.php'));
+it('never logs anyone in from the invitation flow', function () {
+    foreach (['Http/Controllers/InvitationAcceptanceController.php', 'Services/InvitationService.php'] as $file) {
+        $source = file_get_contents(app_path($file));
 
-    expect($source)->not->toContain('Auth::login')
-        ->and($source)->not->toContain("Hash::make('password')");
+        expect($source)->not->toContain('Auth::login')
+            ->and($source)->not->toContain("Hash::make('password')");
+    }
 });

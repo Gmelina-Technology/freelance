@@ -4,18 +4,16 @@ namespace App\Http\Controllers;
 
 use App\Models\Invitation;
 use App\Models\User;
-use Filament\Auth\Notifications\ResetPassword;
-use Filament\Facades\Filament;
+use App\Services\InvitationService;
 use Filament\Notifications\Notification;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Password;
-use Illuminate\Support\Str;
 
 class InvitationAcceptanceController extends Controller
 {
+    public function __construct(private InvitationService $invitations) {}
+
     public function accept(Request $request, string $token): RedirectResponse
     {
         $invitation = Invitation::where('token', $token)->firstOrFail();
@@ -59,20 +57,7 @@ class InvitationAcceptanceController extends Controller
             return redirect()->guest(route('filament.app.auth.login'));
         }
 
-        $invitedUser = DB::transaction(function () use ($invitation): User {
-            $invitedUser = new User([
-                'name' => Str::title(Str::before($invitation->email, '@')),
-                'email' => $invitation->email,
-                'password' => Str::password(64),
-            ]);
-            $invitedUser->forceFill(['email_verified_at' => now()])->save();
-
-            $this->completeAcceptance($invitation, $invitedUser);
-
-            return $invitedUser;
-        });
-
-        $this->sendPasswordSetupLink($invitedUser);
+        $this->invitations->acceptAsNewUser($invitation);
 
         Notification::make()
             ->success()
@@ -95,7 +80,7 @@ class InvitationAcceptanceController extends Controller
             return redirect()->route('filament.app.pages.dashboard', $invitation->account);
         }
 
-        $this->completeAcceptance($invitation, $user);
+        $this->invitations->acceptForUser($invitation, $user);
 
         Notification::make()
             ->success()
@@ -104,32 +89,5 @@ class InvitationAcceptanceController extends Controller
             ->send();
 
         return redirect()->route('filament.app.pages.dashboard', $invitation->account);
-    }
-
-    private function completeAcceptance(Invitation $invitation, User $user): void
-    {
-        $invitation->accept();
-
-        $account = $invitation->account;
-
-        if (! $account->users()->where('user_id', $user->getKey())->exists()) {
-            $account->users()->attach($user->getKey(), [
-                'role' => $invitation->role,
-            ]);
-        }
-    }
-
-    /**
-     * Email the standard Filament reset-password link so the invitee chooses their own password.
-     */
-    private function sendPasswordSetupLink(User $user): void
-    {
-        $panel = Filament::getPanel('app');
-        $token = Password::broker($panel->getAuthPasswordBroker())->createToken($user);
-
-        $notification = new ResetPassword($token);
-        $notification->url = $panel->getResetPasswordUrl($token, $user);
-
-        $user->notify($notification);
     }
 }
