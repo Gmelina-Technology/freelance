@@ -54,9 +54,6 @@ class TasksByTeamChart extends ChartWidget
                 [
                     'label' => 'Tasks',
                     'data' => $data,
-                    'backgroundColor' => '#3b82f6',
-                    'borderColor' => '#1e40af',
-                    'borderWidth' => 1,
                 ],
             ],
             'labels' => $labels,

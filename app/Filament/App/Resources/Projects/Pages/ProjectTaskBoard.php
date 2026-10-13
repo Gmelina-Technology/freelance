@@ -117,6 +117,7 @@ class ProjectTaskBoard extends BoardResourcePage
                     ->html()
                     ->hiddenLabel()
                     ->limit(100)
+                    ->lineClamp(3)
                     ->color('gray'),
                 CardFlex::make([
                     TextEntry::make('assignee.name')
