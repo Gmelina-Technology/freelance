@@ -27,7 +27,7 @@ class UpdateTask extends TaskTool
     {
         $data = $request->validate(['task_id' => ['required', 'integer']] + $this->tasks->rules($account, updating: true));
 
-        $task = $this->tasks->update($account, $data['task_id'], $data);
+        $task = $this->tasks->update($account, $user, $data['task_id'], $data);
 
         return $this->success(['data' => $this->present($task)]);
     }

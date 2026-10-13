@@ -73,9 +73,7 @@ class Account extends Model
 
     public function getUserRole(User $user): ?AccountRole
     {
-        $pivot = $this->users()->where('user_id', $user->getKey())->first()?->pivot;
-
-        return $pivot?->role;
+        return $user->getAccountRole($this);
     }
 
     public function hasUserRole(User $user, AccountRole|string $role): bool

@@ -7,14 +7,22 @@ use App\Models\Comment;
 use App\Models\CommentAttachment;
 use App\Models\Task;
 use App\Models\User;
+use App\Policies\CommentPolicy;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
+use Livewire\Features\SupportLockedProperties\CannotUpdateLockedPropertyException;
 use Livewire\Livewire;
 
 uses(RefreshDatabase::class);
+
+beforeEach(function () {
+    // The policy memoizes membership per user and account id, and ids repeat between refreshed databases.
+    (new ReflectionProperty(CommentPolicy::class, 'accountMembershipCache'))->setValue(null, []);
+});
 
 function accountWithMember(AccountRole $role = AccountRole::Member): array
 {
@@ -29,20 +37,20 @@ function accountWithMember(AccountRole $role = AccountRole::Member): array
     return [$account, $owner, $member];
 }
 
-function taskForAccount(Account $account): Task
+function taskForAccount(Account $account, ?User $assignee = null): Task
 {
     return Task::factory()
         ->for($account)
         ->create([
             'client_id' => null,
             'project_id' => null,
-            'assigned_user_id' => null,
+            'assigned_user_id' => $assignee?->id,
         ]);
 }
 
 it('allows a tenant member to create a task comment through livewire', function () {
     [$account, , $member] = accountWithMember();
-    $task = taskForAccount($account);
+    $task = taskForAccount($account, $member);
 
     Livewire::actingAs($member)
         ->test(CommentThread::class, ['record' => $task])
@@ -108,7 +116,7 @@ it('stores only user authors and exposes task comments polymorphically', functio
 
 it('nests replies under parent comments', function () {
     [$account, , $member] = accountWithMember();
-    $task = taskForAccount($account);
+    $task = taskForAccount($account, $member);
     $parent = $task->comments()->create([
         'account_id' => $account->id,
         'user_id' => $member->id,
@@ -129,7 +137,7 @@ it('nests replies under parent comments', function () {
 
 it('toggles unique reactions per user comment and reaction', function () {
     [$account, , $member] = accountWithMember();
-    $task = taskForAccount($account);
+    $task = taskForAccount($account, $member);
     $comment = $task->comments()->create([
         'account_id' => $account->id,
         'user_id' => $member->id,
@@ -177,7 +185,7 @@ it('allows authors owners and managers to moderate comments', function () {
 
 it('stores attachments privately and authorizes downloads', function () {
     [$account, , $member] = accountWithMember();
-    $task = taskForAccount($account);
+    $task = taskForAccount($account, $member);
 
     Storage::fake('local');
 
@@ -201,7 +209,7 @@ it('stores attachments privately and authorizes downloads', function () {
 
 it('renders the task comments component and submits comments', function () {
     [$account, , $member] = accountWithMember();
-    $task = taskForAccount($account);
+    $task = taskForAccount($account, $member);
 
     Livewire::actingAs($member)
         ->test(CommentThread::class, ['record' => $task])
@@ -209,4 +217,141 @@ it('renders the task comments component and submits comments', function () {
         ->fillForm(['body' => 'Rendered from the task comments tab.'])
         ->call('addComment')
         ->assertSee('Rendered from the task comments tab.');
+});
+
+it('lets owners and managers comment on any task', function (AccountRole $role) {
+    [$account, $owner] = accountWithMember();
+    $user = $role === AccountRole::Owner ? $owner : makeAccountUser($account, $role);
+    $task = taskForAccount($account);
+    $comment = $task->comments()->create([
+        'account_id' => $account->id,
+        'user_id' => $owner->id,
+        'body' => 'Existing note.',
+        'body_format' => 'rich',
+    ]);
+
+    expect(Gate::forUser($user)->allows('view', $comment))->toBeTrue()
+        ->and(Gate::forUser($user)->allows('create', [Comment::class, $task]))->toBeTrue()
+        ->and(Gate::forUser($user)->allows('react', $comment))->toBeTrue();
+
+    Livewire::actingAs($user)
+        ->test(CommentThread::class, ['record' => $task])
+        ->assertSee('Existing note.')
+        ->fillForm(['body' => 'Seen by '.$role->value])
+        ->call('addComment')
+        ->assertHasNoErrors();
+
+    expect($task->comments()->count())->toBe(2);
+})->with([AccountRole::Owner, AccountRole::Manager]);
+
+it('keeps a member out of the comments of tasks that are not assigned to them', function (bool $assignedToSomeoneElse) {
+    [$account, $owner, $member] = accountWithMember();
+    $task = taskForAccount($account, $assignedToSomeoneElse ? $owner : null);
+    $comment = $task->comments()->create([
+        'account_id' => $account->id,
+        'user_id' => $owner->id,
+        'body' => 'Private to the assignee.',
+        'body_format' => 'rich',
+    ]);
+    $attachment = CommentAttachment::factory()->for($comment)->create([
+        'disk' => 'local',
+        'path' => 'comments/hidden.txt',
+    ]);
+
+    Storage::fake('local');
+    Storage::disk('local')->put($attachment->path, 'hidden');
+
+    expect(Gate::forUser($member)->denies('view', $comment))->toBeTrue()
+        ->and(Gate::forUser($member)->denies('create', [Comment::class, $task]))->toBeTrue()
+        ->and(Gate::forUser($member)->denies('reply', $comment))->toBeTrue()
+        ->and(Gate::forUser($member)->denies('react', $comment))->toBeTrue();
+
+    Livewire::actingAs($member)
+        ->test(CommentThread::class, ['record' => $task])
+        ->assertDontSee('Private to the assignee.')
+        ->fillForm(['body' => 'Sneaking in.'])
+        ->call('addComment')
+        ->assertForbidden();
+
+    Livewire::actingAs($member)
+        ->test(CommentThread::class, ['record' => $task])
+        ->call('startReply', $comment->id)
+        ->assertForbidden();
+
+    Livewire::actingAs($member)
+        ->test(CommentThread::class, ['record' => $task])
+        ->call('toggleReaction', $comment->id, config('comments.allowed_reactions.0'))
+        ->assertForbidden();
+
+    $this->actingAs($member)
+        ->get(route('comments.attachments.download', $attachment))
+        ->assertForbidden();
+
+    expect($task->comments()->count())->toBe(1)
+        ->and($comment->reactions()->count())->toBe(0);
+})->with([
+    'assigned to someone else' => true,
+    'unassigned' => false,
+]);
+
+it('does not let the client retarget the comment thread', function () {
+    [$account, , $member] = accountWithMember();
+    $mine = taskForAccount($account, $member);
+    $other = taskForAccount($account);
+
+    Livewire::actingAs($member)
+        ->test(CommentThread::class, ['record' => $mine])
+        ->set('commentableId', $other->id);
+})->throws(CannotUpdateLockedPropertyException::class);
+
+it('does not let the client change the commentable type', function () {
+    [$account, , $member] = accountWithMember();
+    $mine = taskForAccount($account, $member);
+
+    Livewire::actingAs($member)
+        ->test(CommentThread::class, ['record' => $mine])
+        ->set('commentableType', User::class);
+})->throws(CannotUpdateLockedPropertyException::class);
+
+it('loads the task the same number of times however many comments the thread has', function () {
+    [$account, , $member] = accountWithMember();
+    $task = taskForAccount($account, $member);
+
+    $countTaskQueries = function (int $comments) use ($account, $member, $task): int {
+        $task->comments()->delete();
+
+        for ($i = 0; $i < $comments; $i++) {
+            $parent = $task->comments()->create([
+                'account_id' => $account->id,
+                'user_id' => $member->id,
+                'body' => "Comment {$i}",
+                'body_format' => 'rich',
+            ]);
+            $task->comments()->create([
+                'account_id' => $account->id,
+                'user_id' => $member->id,
+                'parent_id' => $parent->id,
+                'body' => "Reply {$i}",
+                'body_format' => 'rich',
+            ]);
+        }
+
+        $component = Livewire::actingAs($member)->test(CommentThread::class, ['record' => $task]);
+
+        $queries = 0;
+        DB::listen(function ($query) use (&$queries): void {
+            if (str_contains($query->sql, 'from "tasks"')) {
+                $queries++;
+            }
+        });
+
+        $component->call('$refresh')->assertSee('Comment '.($comments - 1));
+
+        return $queries;
+    };
+
+    $few = $countTaskQueries(2);
+    $many = $countTaskQueries(12);
+
+    expect($many)->toBe($few);
 });

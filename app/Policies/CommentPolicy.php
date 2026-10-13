@@ -17,12 +17,14 @@ class CommentPolicy
 
     public function view(User $user, Comment $comment): bool
     {
-        return $this->belongsToAccount($user, $comment->account_id);
+        return $this->belongsToAccount($user, $comment->account_id)
+            && $this->commentableVisible($user, $comment);
     }
 
     public function create(User $user, Commentable $commentable): bool
     {
-        return $this->belongsToAccount($user, $commentable->getCommentAccountId());
+        return $this->belongsToAccount($user, $commentable->getCommentAccountId())
+            && $commentable->isCommentVisibleTo($user);
     }
 
     public function update(User $user, Comment $comment): bool
@@ -47,6 +49,13 @@ class CommentPolicy
     public function react(User $user, Comment $comment): bool
     {
         return $this->view($user, $comment);
+    }
+
+    private function commentableVisible(User $user, Comment $comment): bool
+    {
+        $commentable = $comment->loadMissing('commentable')->commentable;
+
+        return $commentable instanceof Commentable && $commentable->isCommentVisibleTo($user);
     }
 
     private function canModerate(User $user, Comment $comment): bool

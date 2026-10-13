@@ -1,8 +1,10 @@
 <?php
 
+use App\Enums\AccountRole;
 use App\Enums\InvoiceStatus;
 use App\Enums\QuoteStatus;
 use App\Exceptions\NoBillableTasksException;
+use App\Filament\App\Resources\Projects\Actions\GenerateInvoiceAction;
 use App\Filament\App\Resources\Projects\Pages\ListProjects;
 use App\Models\Invoice;
 use App\Models\Quote;
@@ -202,4 +204,27 @@ it('requires at least one task to be selected', function () {
         ->assertHasActionErrors(['task_ids' => 'required']);
 
     expect(Invoice::count())->toBe(0);
+});
+
+it('offers invoice generation to owners and managers', function (string $kind) {
+    ['scenario' => $s] = acceptedProject();
+    $user = match ($kind) {
+        'owner_id' => $s['owner'],
+        'pivot owner' => makeAccountUser($s['account'], AccountRole::Owner),
+        'manager' => makeAccountUser($s['account'], AccountRole::Manager),
+    };
+    bindFilamentTenant($user, $s['account']);
+
+    expect(GenerateInvoiceAction::canGenerate())->toBeTrue();
+
+    Livewire\Livewire::test(ListProjects::class)
+        ->assertActionVisible(TestAction::make('generateInvoice')->table($s['project']));
+})->with(['owner_id', 'pivot owner', 'manager']);
+
+it('refuses invoice generation to members', function () {
+    ['scenario' => $s] = acceptedProject();
+    $member = makeAccountUser($s['account'], AccountRole::Member);
+    bindFilamentTenant($member, $s['account']);
+
+    expect(GenerateInvoiceAction::canGenerate())->toBeFalse();
 });

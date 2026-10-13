@@ -2,6 +2,7 @@
 
 namespace App\Contracts;
 
+use App\Models\User;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 
 interface Commentable
@@ -11,4 +12,6 @@ interface Commentable
     public function rootComments(): MorphMany;
 
     public function getCommentAccountId(): int;
+
+    public function isCommentVisibleTo(User $user): bool;
 }

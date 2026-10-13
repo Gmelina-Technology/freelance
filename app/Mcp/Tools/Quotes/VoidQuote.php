@@ -2,7 +2,6 @@
 
 namespace App\Mcp\Tools\Quotes;
 
-use App\Enums\AccountRole;
 use App\Exceptions\QuoteTransitionException;
 use App\Models\Account;
 use App\Models\User;
@@ -18,8 +17,6 @@ use Laravel\Mcp\Server\Tools\Annotations\IsDestructive;
 class VoidQuote extends QuoteTool
 {
     protected ?string $requiredAbility = 'quotes:write';
-
-    protected array $requiredRoles = [AccountRole::Owner, AccountRole::Manager];
 
     public function schema(JsonSchema $schema): array
     {

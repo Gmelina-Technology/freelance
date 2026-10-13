@@ -2,6 +2,7 @@
 
 namespace App\Filament\App\Resources\Sales\Actions;
 
+use App\Enums\AccountCapability;
 use App\Exceptions\SaleConversionException;
 use App\Filament\App\Common\Schemas\SaleBatchConversionForm;
 use App\Services\SaleConversionService;
@@ -21,7 +22,7 @@ class ConvertSalesBulkAction
             ->icon(Heroicon::ArrowsRightLeft)
             ->modalHeading('Convert selected sales')
             ->modalSubmitActionLabel('Convert')
-            ->authorize(fn (): bool => ! Auth::user()->isMember(Filament::getTenant()))
+            ->authorize(fn (): bool => Auth::user()->can(AccountCapability::ManageSales, Filament::getTenant()))
             ->disabled(fn (): bool => Filament::getTenant()->currency_code === null)
             ->tooltip(fn (): ?string => Filament::getTenant()->currency_code === null
                 ? 'Set your account currency in Account Profile first.'

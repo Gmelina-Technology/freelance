@@ -104,6 +104,10 @@ class User extends Authenticatable implements FilamentUser, HasDefaultTenant, Ha
 
     public function getAccountRole(Account $account): ?AccountRole
     {
+        if ((int) $account->owner_id === (int) $this->getKey()) {
+            return AccountRole::Owner;
+        }
+
         $pivot = $this->accounts->where('id', $account->getKey())->first()?->pivot;
 
         return $pivot?->role;

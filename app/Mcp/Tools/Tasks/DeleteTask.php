@@ -25,7 +25,7 @@ class DeleteTask extends TaskTool
     {
         $data = $request->validate(['task_id' => ['required', 'integer']]);
 
-        $this->tasks->delete($account, $data['task_id']);
+        $this->tasks->delete($account, $user, $data['task_id']);
 
         return $this->success(['deleted' => true, 'task_id' => $data['task_id']]);
     }

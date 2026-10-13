@@ -2,6 +2,7 @@
 
 namespace App\Mcp\Tools\Invoices;
 
+use App\Enums\AccountCapability;
 use App\Mcp\Tools\BaseTool;
 use App\Models\Account;
 use App\Models\Invoice;
@@ -12,6 +13,8 @@ use App\Models\InvoiceItem;
  */
 abstract class InvoiceTool extends BaseTool
 {
+    protected ?AccountCapability $requiredCapability = AccountCapability::ManageInvoices;
+
     /**
      * Find an invoice of the account; invoices of other accounts count as missing.
      */

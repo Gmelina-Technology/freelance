@@ -2,6 +2,7 @@
 
 namespace App\Filament\App\Resources\Quotes;
 
+use App\Enums\AccountCapability;
 use App\Filament\App\Common\GlobalSearch\GlobalSearchDetails;
 use App\Filament\App\Resources\Quotes\Pages\CreateQuote;
 use App\Filament\App\Resources\Quotes\Pages\EditQuote;
@@ -35,7 +36,7 @@ class QuoteResource extends Resource
 
     public static function canAccess(): bool
     {
-        return ! Auth::user()->isMember(Filament::getTenant());
+        return Auth::user()->can(AccountCapability::ManageQuotes, Filament::getTenant());
     }
 
     public static function canEdit(Model $record): bool

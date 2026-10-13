@@ -2,6 +2,7 @@
 
 namespace App\Filament\App\Resources\Sales;
 
+use App\Enums\AccountCapability;
 use App\Filament\App\Resources\Sales\Actions\ConvertSaleAction;
 use App\Filament\App\Resources\Sales\Actions\ConvertSalesBulkAction;
 use App\Filament\App\Resources\Sales\Actions\EditSaleConversionAction;
@@ -29,7 +30,7 @@ class SaleResource extends Resource
 
     public static function canAccess(): bool
     {
-        return ! Auth::user()->isMember(Filament::getTenant());
+        return Auth::user()->can(AccountCapability::ManageSales, Filament::getTenant());
     }
 
     public static function table(Table $table): Table

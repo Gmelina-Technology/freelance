@@ -6,7 +6,9 @@ use App\Enums\TaskPriority;
 use App\Enums\TaskStatus;
 use App\Models\Account;
 use App\Models\Task;
+use App\Models\User;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Validation\Rule;
 
 class TaskService
@@ -41,14 +43,14 @@ class TaskService
     }
 
     /**
-     * List the account's tasks, newest first.
+     * List the tasks the user may see in the account, newest first.
      *
      * @param  array{status?: ?string, overdue?: bool, project_id?: ?int, client_id?: ?int, limit?: ?int}  $filters
      * @return Collection<int, Task>
      */
-    public function list(Account $account, array $filters = []): Collection
+    public function list(Account $account, User $user, array $filters = []): Collection
     {
-        $query = $account->tasks()->with('client')->orderByDesc('id');
+        $query = $this->visibleTasks($account, $user)->with('client')->orderByDesc('id');
 
         if (! empty($filters['status'])) {
             $query->where('status', $filters['status']);
@@ -71,9 +73,9 @@ class TaskService
         return $query->limit($filters['limit'] ?? 25)->get();
     }
 
-    public function find(Account $account, int $taskId): Task
+    public function find(Account $account, User $user, int $taskId): Task
     {
-        return $account->tasks()->with('client')->findOrFail($taskId);
+        return $this->visibleTasks($account, $user)->with('client')->findOrFail($taskId);
     }
 
     /**
@@ -98,9 +100,9 @@ class TaskService
     /**
      * @param  array<string, mixed>  $data  validated attributes to change
      */
-    public function update(Account $account, int $taskId, array $data): Task
+    public function update(Account $account, User $user, int $taskId, array $data): Task
     {
-        $task = $account->tasks()->findOrFail($taskId);
+        $task = $this->visibleTasks($account, $user)->findOrFail($taskId);
 
         $task->fill(array_intersect_key($data, array_flip(self::WRITABLE_FIELDS)));
         $task->save();
@@ -108,13 +110,23 @@ class TaskService
         return $task->fresh('client');
     }
 
-    public function complete(Account $account, int $taskId): Task
+    public function complete(Account $account, User $user, int $taskId): Task
     {
-        return $this->update($account, $taskId, ['status' => TaskStatus::COMPLETED->value]);
+        return $this->update($account, $user, $taskId, ['status' => TaskStatus::COMPLETED->value]);
     }
 
-    public function delete(Account $account, int $taskId): void
+    public function delete(Account $account, User $user, int $taskId): void
     {
-        $account->tasks()->findOrFail($taskId)->delete();
+        $this->visibleTasks($account, $user)->findOrFail($taskId)->delete();
+    }
+
+    /**
+     * The account's tasks narrowed to the ones the user may see (members only see their own).
+     *
+     * @return HasMany<Task, Account>
+     */
+    private function visibleTasks(Account $account, User $user): HasMany
+    {
+        return $account->tasks()->visibleTo($user, $account);
     }
 }

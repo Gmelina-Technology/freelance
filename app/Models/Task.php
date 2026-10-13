@@ -83,6 +83,22 @@ class Task extends Model implements Commentable
         }
     }
 
+    /**
+     * In-memory form of scopeVisibleTo for a loaded task: members only see tasks assigned to them.
+     */
+    public function isVisibleTo(User $user, Account $account): bool
+    {
+        return ! $user->isMember($account)
+            || ($this->assigned_user_id !== null && (int) $this->assigned_user_id === (int) $user->getKey());
+    }
+
+    public function isCommentVisibleTo(User $user): bool
+    {
+        $this->loadMissing('account');
+
+        return $this->isVisibleTo($user, $this->account);
+    }
+
     public function category()
     {
         return $this->belongsTo(Category::class);
