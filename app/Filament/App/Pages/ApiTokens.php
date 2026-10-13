@@ -2,6 +2,7 @@
 
 namespace App\Filament\App\Pages;
 
+use App\Enums\AccountCapability;
 use App\Models\User;
 use BackedEnum;
 use Filament\Actions\Action;
@@ -60,6 +61,13 @@ class ApiTokens extends Page implements HasActions, HasSchemas, HasTable
 
     protected string $view = 'filament.pages.api-tokens';
 
+    public static function canAccess(): bool
+    {
+        $tenant = Filament::getTenant();
+
+        return $tenant !== null && (Auth::user()?->can(AccountCapability::UseApi, $tenant) ?? false);
+    }
+
     public function table(Table $table): Table
     {
         return $table
@@ -108,6 +116,7 @@ class ApiTokens extends Page implements HasActions, HasSchemas, HasTable
                 ->icon(Heroicon::Plus)
                 ->modalHeading('Create API token')
                 ->modalSubmitActionLabel('Create')
+                ->authorize(fn (): bool => static::canAccess())
                 ->schema([
                     TextInput::make('name')
                         ->required()
@@ -131,7 +140,7 @@ class ApiTokens extends Page implements HasActions, HasSchemas, HasTable
                     $user = Auth::user();
                     $account = Filament::getTenant();
 
-                    abort_unless($user->canAccessTenant($account), 403);
+                    abort_unless($user->can(AccountCapability::UseApi, $account), 403);
 
                     $token = $user->createAccountToken($account, $data['name'], $abilities);
 

@@ -218,14 +218,27 @@ it('requires the tasks:write ability for writes but not reads', function () {
     expect(Task::find($task->id))->not->toBeNull();
 });
 
-it('lets a regular member manage tasks of the account they belong to', function () {
+it('lets a manager manage tasks of the account they belong to', function () {
+    $manager = User::factory()->create();
+    $this->account->users()->attach($manager, ['role' => 'manager']);
+    actingAsToken($manager, ['tasks:write']);
+
+    BillingServer::tool(CreateTask::class, ['title' => 'From manager'])
+        ->assertOk()
+        ->assertSee('From manager');
+});
+
+it('refuses a member token on the task tools', function () {
     $member = User::factory()->create();
     $this->account->users()->attach($member, ['role' => 'member']);
+    $task = Task::factory()->for($this->account)->create(['assigned_user_id' => $member->id]);
     actingAsToken($member, ['tasks:write']);
 
-    BillingServer::tool(CreateTask::class, ['title' => 'From member'])
-        ->assertOk()
-        ->assertSee('From member');
+    BillingServer::tool(CreateTask::class, ['title' => 'From member'])->assertHasErrors(['API access is not available']);
+    BillingServer::tool(ListTasks::class)->assertHasErrors(['API access is not available']);
+    BillingServer::tool(GetTask::class, ['task_id' => $task->id])->assertHasErrors(['API access is not available']);
+
+    expect(Task::where('title', 'From member')->exists())->toBeFalse();
 });
 
 it('keeps a token bound to one account away from the users other accounts', function () {

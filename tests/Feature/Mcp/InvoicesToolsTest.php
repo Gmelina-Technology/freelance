@@ -356,22 +356,22 @@ it('requires the invoices:write ability for writes but not reads', function () {
     expect($invoice->fresh()->status)->toBe(InvoiceStatus::Sent);
 });
 
-it('limits invoice writes to owners and managers', function () {
+it('refuses member tokens on invoice tools and lets managers write', function () {
     $s = billableScenario();
     $invoice = generatedInvoice($s, InvoiceStatus::Sent);
     $member = makeAccountUser($s['account'], AccountRole::Member);
     $manager = makeAccountUser($s['account'], AccountRole::Manager);
 
     actingAsToken($member, ['*']);
-    BillingServer::tool(ListInvoices::class)->assertOk();
+    BillingServer::tool(ListInvoices::class)->assertHasErrors(['API access is not available']);
 
     foreach ([MarkInvoicePaid::class, VoidInvoice::class, SendInvoice::class] as $tool) {
         BillingServer::tool($tool, ['invoice_id' => $invoice->id])
-            ->assertHasErrors(['owner or manager']);
+            ->assertHasErrors(['API access is not available']);
     }
 
     BillingServer::tool(GenerateInvoice::class, ['project_id' => $s['project']->id])
-        ->assertHasErrors(['owner or manager']);
+        ->assertHasErrors(['API access is not available']);
 
     actingAsToken($manager, ['*']);
     BillingServer::tool(MarkInvoicePaid::class, ['invoice_id' => $invoice->id])->assertOk();

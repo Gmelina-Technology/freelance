@@ -22,7 +22,7 @@ class TaskController extends Controller
      */
     public function index(Request $request): JsonResponse
     {
-        $tasks = $this->tasks->list($this->account($request), [
+        $tasks = $this->tasks->list($this->account($request), $request->user(), [
             'status' => $request->filled('status') ? $request->string('status')->toString() : null,
             'overdue' => $request->boolean('overdue'),
             'limit' => $request->integer('limit', 25),
@@ -46,7 +46,7 @@ class TaskController extends Controller
      */
     public function update(UpdateTaskRequest $request, int $task): JsonResponse
     {
-        $model = $this->tasks->update($this->account($request), $task, $request->validated());
+        $model = $this->tasks->update($this->account($request), $request->user(), $task, $request->validated());
 
         return (new TaskResource($model))->response();
     }

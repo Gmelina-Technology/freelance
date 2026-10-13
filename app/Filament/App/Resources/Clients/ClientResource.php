@@ -2,6 +2,7 @@
 
 namespace App\Filament\App\Resources\Clients;
 
+use App\Enums\AccountCapability;
 use App\Filament\App\Common\GlobalSearch\GlobalSearchDetails;
 use App\Filament\App\Resources\Clients\Pages\CreateClient;
 use App\Filament\App\Resources\Clients\Pages\EditClient;
@@ -89,6 +90,6 @@ class ClientResource extends Resource
 
     public static function canAccess(): bool
     {
-        return Auth::user()->isOwner(Filament::getTenant());
+        return Auth::user()->can(AccountCapability::ManageClients, Filament::getTenant());
     }
 }

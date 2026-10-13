@@ -4,40 +4,72 @@ namespace App\Http\Controllers;
 
 use App\Models\Invitation;
 use App\Models\User;
+use App\Services\InvitationService;
 use Filament\Notifications\Notification;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
-use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Str;
 
 class InvitationAcceptanceController extends Controller
 {
+    public function __construct(private InvitationService $invitations) {}
+
     public function accept(Request $request, string $token): RedirectResponse
     {
         $invitation = Invitation::where('token', $token)->firstOrFail();
 
         $user = $request->user();
-        $invitedUser = User::firstWhere('email', $invitation->email);
 
-        if ($user && $user->email !== $invitation->email) {
+        if (! $user) {
+            return $this->acceptForGuest($invitation);
+        }
+
+        if ($user->email !== $invitation->email) {
             abort(403);
         }
 
-        if (! $user) {
-            if (! $invitedUser) {
-                $invitedUser = User::create([
-                    'name' => Str::title(Str::before($invitation->email, '@')),
-                    'email' => $invitation->email,
-                    'password' => Hash::make('password'),
-                ]);
-            }
+        return $this->acceptForUser($invitation, $user);
+    }
 
-            Auth::login($invitedUser);
-            $user = $invitedUser;
+    /**
+     * A logged-out visitor is never logged in by the link. A brand-new invitee gets an
+     * account with an unknown password and a reset email; anyone else has to log in first.
+     */
+    private function acceptForGuest(Invitation $invitation): RedirectResponse
+    {
+        if ($invitation->isAccepted()) {
+            Notification::make()
+                ->warning()
+                ->title('Invitation already accepted')
+                ->body('This invitation has already been accepted. Please log in.')
+                ->send();
+
+            return redirect()->route('filament.app.auth.login');
         }
 
+        if (User::where('email', $invitation->email)->exists()) {
+            Notification::make()
+                ->info()
+                ->title('Log in to accept the invitation')
+                ->body('Log in with your account to join the invited account.')
+                ->send();
+
+            return redirect()->guest(route('filament.app.auth.login'));
+        }
+
+        $this->invitations->acceptAsNewUser($invitation);
+
+        Notification::make()
+            ->success()
+            ->title('Invitation accepted')
+            ->body('Check your email for a link to set your password, then log in.')
+            ->send();
+
+        return redirect()->route('filament.app.auth.login');
+    }
+
+    private function acceptForUser(Invitation $invitation, User $user): RedirectResponse
+    {
         if ($invitation->isAccepted()) {
             Notification::make()
                 ->warning()
@@ -48,15 +80,7 @@ class InvitationAcceptanceController extends Controller
             return redirect()->route('filament.app.pages.dashboard', $invitation->account);
         }
 
-        $invitation->accept();
-
-        $account = $invitation->account;
-
-        if (! $account->users()->where('user_id', $user->getKey())->exists()) {
-            $account->users()->attach($user->getKey(), [
-                'role' => $invitation->role,
-            ]);
-        }
+        $this->invitations->acceptForUser($invitation, $user);
 
         Notification::make()
             ->success()

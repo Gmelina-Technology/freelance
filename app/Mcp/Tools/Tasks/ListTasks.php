@@ -38,7 +38,7 @@ class ListTasks extends TaskTool
             'limit' => ['nullable', 'integer', 'min:1', 'max:100'],
         ]);
 
-        $tasks = $this->tasks->list($account, $filters);
+        $tasks = $this->tasks->list($account, $user, $filters);
 
         return $this->success(['data' => $tasks->map(fn (Task $task) => $this->present($task))->all()]);
     }

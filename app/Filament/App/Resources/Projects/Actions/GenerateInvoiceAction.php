@@ -2,6 +2,7 @@
 
 namespace App\Filament\App\Resources\Projects\Actions;
 
+use App\Enums\AccountCapability;
 use App\Exceptions\NoBillableTasksException;
 use App\Filament\App\Resources\Invoices\Pages\ViewInvoice;
 use App\Models\Project;
@@ -22,7 +23,7 @@ class GenerateInvoiceAction
      */
     public static function canGenerate(): bool
     {
-        return ! Auth::user()->isMember(Filament::getTenant());
+        return Auth::user()->can(AccountCapability::ManageInvoices, Filament::getTenant());
     }
 
     public static function handle(): Action

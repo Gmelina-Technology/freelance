@@ -2,13 +2,14 @@
 
 namespace App\Mcp\Tools;
 
-use App\Enums\AccountRole;
+use App\Enums\AccountCapability;
 use App\Mcp\Exceptions\ToolFailedException;
 use App\Models\Account;
 use App\Models\User;
 use App\Services\TokenAccountResolver;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\ValidationException;
 use Laravel\Mcp\Request;
 use Laravel\Mcp\Response;
@@ -40,9 +41,10 @@ use Laravel\Mcp\Server\Tool;
  *
  * What handle() does for you, before execute() runs:
  *  - $requiredAbility (e.g. 'tasks:write'): the token must carry it, or '*'. Null means read-only.
- *  - $requiredRoles: roles allowed on the account (the owner always passes); [] means any member.
- *    Use [AccountRole::Owner, AccountRole::Manager] for send/accept/void/mark-paid.
  *  - the account is the one the token is bound to (see resolveAccount()); tools take no account argument.
+ *    Roles that may not use the API at all (members) are refused here.
+ *  - $requiredCapability: the AccountCapability the user's role must hold on the account; null means
+ *    any role that may use the API. The role rules live in AccountCapability, not in the tools.
  *  - ToolFailedException, ValidationException and ModelNotFoundException thrown anywhere in
  *    execute() are turned into Response::error(...).
  *
@@ -51,7 +53,7 @@ use Laravel\Mcp\Server\Tool;
  *  - failure(string $message): Response   error response (return it)
  *  - fail(string $message): never         throw to abort from nested code
  *  - resolveAccount(Request, User): Account, requireAbility(User, string): void,
- *    requireRole(Account, User, array): void   (all throw ToolFailedException)
+ *    requireCapability(Account, User, AccountCapability): void   (all throw ToolFailedException)
  *
  * Testing: actingAsToken($user, ['tasks:write']) (tests/Pest.php, binds a real token to the account); then
  *     BillingServer::tool(CompleteTaskTool::class, ['task_id' => 1])->assertOk()->assertSee('...');
@@ -65,11 +67,9 @@ abstract class BaseTool extends Tool
     protected ?string $requiredAbility = null;
 
     /**
-     * Account roles allowed to run the tool. An empty list allows any member.
-     *
-     * @var array<int, AccountRole>
+     * Capability the user's role must hold on the bound account, or null when any role that may use the API can run the tool.
      */
-    protected array $requiredRoles = [];
+    protected ?AccountCapability $requiredCapability = null;
 
     /**
      * Run the tool for the resolved account.
@@ -91,8 +91,8 @@ abstract class BaseTool extends Tool
 
             $account = $this->resolveAccount($request, $user);
 
-            if ($this->requiredRoles !== []) {
-                $this->requireRole($account, $user, $this->requiredRoles);
+            if ($this->requiredCapability !== null) {
+                $this->requireCapability($account, $user, $this->requiredCapability);
             }
 
             return $this->execute($request, $account, $user);
@@ -130,21 +130,12 @@ abstract class BaseTool extends Tool
     }
 
     /**
-     * Require the user to hold one of the roles on the account. The account's
-     * owner_id always counts as Owner; otherwise the account_user pivot role is used.
-     *
-     * @param  array<int, AccountRole>  $roles
+     * Require the user's role on the account to hold the capability.
      */
-    protected function requireRole(Account $account, User $user, array $roles): void
+    protected function requireCapability(Account $account, User $user, AccountCapability $capability): void
     {
-        $role = $account->owner_id === $user->getKey()
-            ? AccountRole::Owner
-            : $account->getUserRole($user);
-
-        if ($role === null || ! in_array($role, $roles, true)) {
-            $allowed = implode(' or ', array_map(fn (AccountRole $allowedRole): string => $allowedRole->value, $roles));
-
-            $this->fail("This action requires the {$allowed} role on the account.");
+        if (Gate::forUser($user)->denies($capability, $account)) {
+            $this->fail("This action requires the {$capability->describeAllowedRoles()} role on the account.");
         }
     }
 

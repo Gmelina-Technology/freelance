@@ -2,7 +2,6 @@
 
 namespace App\Mcp\Tools\Invoices;
 
-use App\Enums\AccountRole;
 use App\Exceptions\NoBillableTasksException;
 use App\Models\Account;
 use App\Models\User;
@@ -16,8 +15,6 @@ use Laravel\Mcp\Server\Attributes\Description;
 class GenerateInvoice extends InvoiceTool
 {
     protected ?string $requiredAbility = 'invoices:write';
-
-    protected array $requiredRoles = [AccountRole::Owner, AccountRole::Manager];
 
     public function schema(JsonSchema $schema): array
     {

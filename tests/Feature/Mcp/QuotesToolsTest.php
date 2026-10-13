@@ -334,7 +334,7 @@ it('requires the quotes:write ability for writes only', function () {
     BillingServer::tool(GetQuote::class, ['quote_id' => $quote->id])->assertHasNoErrors();
 });
 
-it('limits send, accept, decline and void to owners and managers', function () {
+it('refuses member tokens on quote tools and lets managers decline', function () {
     $member = User::factory()->create();
     $manager = User::factory()->create();
     $this->account->users()->attach($member, ['role' => AccountRole::Member->value]);
@@ -345,7 +345,7 @@ it('limits send, accept, decline and void to owners and managers', function () {
 
     foreach ([SendQuote::class, AcceptQuote::class, DeclineQuote::class, VoidQuote::class] as $tool) {
         BillingServer::tool($tool, ['quote_id' => $quote->id])
-            ->assertHasErrors(['owner or manager']);
+            ->assertHasErrors(['API access is not available']);
     }
 
     expect($quote->fresh()->status)->toBe(QuoteStatus::Sent);

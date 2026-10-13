@@ -105,6 +105,5 @@ php artisan pail
 
 ## Notes
 
-- Temporary invoice preview routes are available under `/temp/invoices/*` for testing and debugging.
 - The root `/` route currently renders the default welcome view.
 - Filament resources live under `app/Filament/App/Resources` and `app/Filament/Admin/Resources`.

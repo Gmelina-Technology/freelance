@@ -2,6 +2,7 @@
 
 namespace App\Filament\App\Resources\Invoices;
 
+use App\Enums\AccountCapability;
 use App\Enums\InvoiceStatus;
 use App\Filament\App\Common\GlobalSearch\GlobalSearchDetails;
 use App\Filament\App\Resources\Invoices\Pages\CreateInvoice;
@@ -34,7 +35,7 @@ class InvoiceResource extends Resource
 
     public static function canAccess(): bool
     {
-        return ! Auth::user()->isMember(Filament::getTenant());
+        return Auth::user()->can(AccountCapability::ManageInvoices, Filament::getTenant());
     }
 
     public static function canEdit(Model $record): bool

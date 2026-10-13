@@ -2,6 +2,7 @@
 
 namespace App\Filament\App\Resources\Sales\Actions;
 
+use App\Enums\AccountCapability;
 use App\Exceptions\SaleConversionException;
 use App\Filament\App\Common\Schemas\SaleConversionForm;
 use App\Models\Sale;
@@ -20,7 +21,7 @@ class EditSaleConversionAction
             ->label('Edit conversion')
             ->icon(Heroicon::PencilSquare)
             ->modalHeading('Edit conversion')
-            ->authorize(fn (): bool => ! Auth::user()->isMember(Filament::getTenant()))
+            ->authorize(fn (): bool => Auth::user()->can(AccountCapability::ManageSales, Filament::getTenant()))
             ->visible(fn (Sale $record): bool => $record->isConverted())
             ->disabled(fn (Sale $record): bool => self::blockedReason($record) !== null)
             ->tooltip(fn (Sale $record): ?string => self::blockedReason($record))

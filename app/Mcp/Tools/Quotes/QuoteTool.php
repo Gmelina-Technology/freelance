@@ -2,6 +2,7 @@
 
 namespace App\Mcp\Tools\Quotes;
 
+use App\Enums\AccountCapability;
 use App\Mcp\Tools\BaseTool;
 use App\Models\Account;
 use App\Models\Quote;
@@ -16,6 +17,8 @@ use Illuminate\Validation\Rule;
  */
 abstract class QuoteTool extends BaseTool
 {
+    protected ?AccountCapability $requiredCapability = AccountCapability::ManageQuotes;
+
     protected function findQuote(Account $account, mixed $quoteId): Quote
     {
         return Quote::query()->where('account_id', $account->getKey())->findOrFail($quoteId);

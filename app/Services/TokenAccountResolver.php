@@ -2,9 +2,11 @@
 
 namespace App\Services;
 
+use App\Enums\AccountCapability;
 use App\Models\Account;
 use App\Models\User;
 use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Support\Facades\Gate;
 use Laravel\Sanctum\PersonalAccessToken;
 
 /**
@@ -32,6 +34,14 @@ class TokenAccountResolver
         $account = $user->accounts()->whereKey($boundAccountId)->first()
             ?? $user->ownedAccounts()->whereKey($boundAccountId)->first();
 
-        return $account ?? throw new AuthorizationException('You do not have access to that account.');
+        if ($account === null) {
+            throw new AuthorizationException('You do not have access to that account.');
+        }
+
+        if (Gate::forUser($user)->denies(AccountCapability::UseApi, $account)) {
+            throw new AuthorizationException('API access is not available for your role on this account.');
+        }
+
+        return $account;
     }
 }

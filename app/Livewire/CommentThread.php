@@ -23,6 +23,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
+use Livewire\Attributes\Locked;
 use Livewire\Component;
 use Livewire\Features\SupportFileUploads\WithFileUploads;
 
@@ -31,8 +32,10 @@ class CommentThread extends Component implements HasForms
     use InteractsWithForms;
     use WithFileUploads;
 
+    #[Locked]
     public ?string $commentableType = null;
 
+    #[Locked]
     public ?int $commentableId = null;
 
     public string $body = '';
@@ -445,9 +448,28 @@ class CommentThread extends Component implements HasForms
             return new Collection;
         }
 
-        return $commentable->rootComments()
+        $comments = $commentable->rootComments()
             ->withNestedReplies()
             ->get();
+
+        $this->primeCommentable($comments, $commentable);
+
+        return $comments;
+    }
+
+    /**
+     * Hand the already loaded commentable to every comment and reply so the policy
+     * does not query it again for each one.
+     *
+     * @param  Collection<int, Comment>  $comments
+     */
+    private function primeCommentable(Collection $comments, Model $commentable): void
+    {
+        foreach ($comments as $comment) {
+            $comment->setRelation('commentable', $commentable);
+
+            $this->primeCommentable($comment->replies, $commentable);
+        }
     }
 
     /**

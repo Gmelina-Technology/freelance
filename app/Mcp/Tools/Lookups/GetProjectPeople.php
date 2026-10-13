@@ -2,6 +2,7 @@
 
 namespace App\Mcp\Tools\Lookups;
 
+use App\Enums\AccountCapability;
 use App\Mcp\Tools\BaseTool;
 use App\Models\Account;
 use App\Models\User;
@@ -15,6 +16,8 @@ use Laravel\Mcp\Server\Tools\Annotations\IsReadOnly;
 #[IsReadOnly]
 class GetProjectPeople extends BaseTool
 {
+    protected ?AccountCapability $requiredCapability = AccountCapability::LookUpClients;
+
     public function schema(JsonSchema $schema): array
     {
         return [

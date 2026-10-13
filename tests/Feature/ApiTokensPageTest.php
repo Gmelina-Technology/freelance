@@ -1,5 +1,6 @@
 <?php
 
+use App\Enums\AccountRole;
 use App\Filament\App\Pages\ApiTokens;
 use App\Models\Account;
 use App\Models\User;
@@ -156,4 +157,41 @@ it('cannot revoke a token bound to another account', function () {
     }
 
     expect($this->user->tokens()->count())->toBe(1);
+});
+
+it('gives owners and managers the page and lets them create tokens', function (AccountRole $role) {
+    $user = makeAccountUser($this->account, $role);
+    bindFilamentTenant($user, $this->account);
+
+    expect(ApiTokens::canAccess())->toBeTrue();
+
+    Livewire::test(ApiTokens::class)
+        ->assertOk()
+        ->callAction('createToken', ['name' => 'Role token', 'abilities' => []])
+        ->assertHasNoActionErrors();
+
+    expect($user->tokens()->sole()->account_id)->toBe($this->account->id);
+})->with([AccountRole::Owner, AccountRole::Manager]);
+
+it('keeps the page from members', function () {
+    $member = makeAccountUser($this->account, AccountRole::Member);
+    bindFilamentTenant($member, $this->account);
+
+    expect(ApiTokens::canAccess())->toBeFalse();
+
+    Livewire::test(ApiTokens::class)->assertForbidden();
+});
+
+it('refuses token creation once the user was demoted to member after opening the page', function () {
+    $manager = makeAccountUser($this->account, AccountRole::Manager);
+    bindFilamentTenant($manager, $this->account);
+
+    $component = Livewire::test(ApiTokens::class)->assertOk();
+
+    $this->account->users()->updateExistingPivot($manager->id, ['role' => AccountRole::Member->value]);
+    $manager->unsetRelation('accounts');
+
+    $component->call('mountAction', 'createToken')->assertStatus(403);
+
+    expect($manager->tokens()->count())->toBe(0);
 });

@@ -27,6 +27,6 @@ class CompleteTask extends TaskTool
     {
         $data = $request->validate(['task_id' => ['required', 'integer']]);
 
-        return $this->success(['data' => $this->present($this->tasks->complete($account, $data['task_id']))]);
+        return $this->success(['data' => $this->present($this->tasks->complete($account, $user, $data['task_id']))]);
     }
 }

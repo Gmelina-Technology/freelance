@@ -1,6 +1,7 @@
 <?php
 
 use App\Enums\AccountRole;
+use App\Filament\App\Pages\ApiTokens;
 use App\Models\Account;
 use App\Models\Task;
 use App\Models\User;
@@ -167,12 +168,49 @@ it('denies legacy tokens without a bound account', function () {
 });
 
 it('denies a token once the user is removed from its account', function () {
-    $member = makeAccountUser($this->account, AccountRole::Member);
-    actingAsToken($member, ['*'], $this->account);
+    $manager = makeAccountUser($this->account, AccountRole::Manager);
+    actingAsToken($manager, ['*'], $this->account);
 
     $this->getJson('/api/tasks')->assertOk();
 
-    $this->account->users()->detach($member);
+    $this->account->users()->detach($manager);
 
     $this->getJson('/api/tasks')->assertForbidden();
+});
+
+it('lets a read-only token list tasks', function () {
+    actingAsToken($this->owner, []);
+
+    $this->getJson('/api/tasks')->assertOk();
+});
+
+it('lets write tokens create and update tasks', function (array $abilities) {
+    actingAsToken($this->owner, $abilities);
+
+    $id = $this->postJson('/api/tasks', ['title' => 'Written'])->assertCreated()->json('data.id');
+
+    $this->patchJson("/api/tasks/{$id}", ['title' => 'Rewritten'])
+        ->assertOk()
+        ->assertJsonPath('data.title', 'Rewritten');
+})->with([
+    'tasks:write' => [['tasks:write']],
+    'wildcard' => [['*']],
+]);
+
+it('refuses writes from tokens without the tasks:write ability', function (array $abilities) {
+    $task = Task::factory()->for($this->account)->create(['title' => 'Original']);
+    actingAsToken($this->owner, $abilities);
+
+    $this->postJson('/api/tasks', ['title' => 'Blocked'])->assertForbidden();
+    $this->patchJson("/api/tasks/{$task->id}", ['title' => 'Changed'])->assertForbidden();
+
+    expect(Task::count())->toBe(1)
+        ->and($task->fresh()->title)->toBe('Original');
+})->with([
+    'read-only' => [[]],
+    'other ability' => [['quotes:write']],
+]);
+
+it('checks the write routes against an ability the token page can issue', function () {
+    expect(ApiTokens::ABILITIES)->toHaveKey('tasks:write');
 });

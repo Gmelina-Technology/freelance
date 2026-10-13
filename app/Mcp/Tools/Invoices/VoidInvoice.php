@@ -2,7 +2,6 @@
 
 namespace App\Mcp\Tools\Invoices;
 
-use App\Enums\AccountRole;
 use App\Exceptions\InvalidInvoiceTransitionException;
 use App\Models\Account;
 use App\Models\User;
@@ -18,8 +17,6 @@ use Laravel\Mcp\Server\Tools\Annotations\IsDestructive;
 class VoidInvoice extends InvoiceTool
 {
     protected ?string $requiredAbility = 'invoices:write';
-
-    protected array $requiredRoles = [AccountRole::Owner, AccountRole::Manager];
 
     public function schema(JsonSchema $schema): array
     {

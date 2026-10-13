@@ -2,6 +2,7 @@
 
 namespace App\Filament\App\Resources\Clients\Pages;
 
+use App\Enums\AccountCapability;
 use App\Filament\App\Resources\Clients\ClientResource;
 use Filament\Actions\CreateAction;
 use Filament\Facades\Filament;
@@ -21,6 +22,6 @@ class ListClients extends ListRecords
 
     public static function canAccess(array $parameters = []): bool
     {
-        return Auth::user()->isOwner(Filament::getTenant());
+        return Auth::user()->can(AccountCapability::ManageClients, Filament::getTenant());
     }
 }

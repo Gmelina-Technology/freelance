@@ -16,6 +16,8 @@ use Illuminate\Support\Facades\Route;
 
 Route::middleware(['auth:sanctum', 'bind.account'])->group(function () {
     Route::get('/tasks', [TaskController::class, 'index']);
-    Route::post('/tasks', [TaskController::class, 'store']);
-    Route::patch('/tasks/{task}', [TaskController::class, 'update'])->whereNumber('task');
+    Route::middleware('abilities:tasks:write')->group(function () {
+        Route::post('/tasks', [TaskController::class, 'store']);
+        Route::patch('/tasks/{task}', [TaskController::class, 'update'])->whereNumber('task');
+    });
 });

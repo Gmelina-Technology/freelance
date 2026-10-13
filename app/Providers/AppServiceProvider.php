@@ -2,8 +2,11 @@
 
 namespace App\Providers;
 
+use App\Enums\AccountCapability;
 use App\Filament\App\Widgets\MyTasksTable;
+use App\Models\Account;
 use App\Models\Comment;
+use App\Models\User;
 use App\Policies\CommentPolicy;
 use Filament\Support\Colors\Color;
 use Filament\Support\Facades\FilamentColor;
@@ -62,6 +65,13 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         Gate::policy(Comment::class, CommentPolicy::class);
+
+        foreach (AccountCapability::cases() as $capability) {
+            Gate::define(
+                $capability,
+                fn (User $user, Account $account): bool => $capability->isGrantedTo($user->getAccountRole($account)),
+            );
+        }
 
         FilamentColor::register([
             'primary' => self::BRAND_PALETTE,

@@ -23,6 +23,6 @@ class GetTask extends TaskTool
     {
         $data = $request->validate(['task_id' => ['required', 'integer']]);
 
-        return $this->success(['data' => $this->present($this->tasks->find($account, $data['task_id']))]);
+        return $this->success(['data' => $this->present($this->tasks->find($account, $user, $data['task_id']))]);
     }
 }

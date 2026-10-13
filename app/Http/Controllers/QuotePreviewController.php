@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\AccountCapability;
 use App\Mail\QuoteMailSent;
 use App\Models\Quote;
 use Illuminate\Http\Request;
@@ -19,7 +20,7 @@ class QuotePreviewController extends Controller
         $account = $quote->account;
 
         abort_unless(
-            $account !== null && $user->canAccessTenant($account) && ! $user->isMember($account),
+            $account !== null && $user->canAccessTenant($account) && $user->can(AccountCapability::ManageQuotes, $account),
             403,
         );
 

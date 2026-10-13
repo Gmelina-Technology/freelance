@@ -1,5 +1,6 @@
 <?php
 
+use App\Enums\AccountCapability;
 use App\Enums\AccountRole;
 use App\Mcp\Servers\BillingServer;
 use App\Mcp\Tools\BaseTool;
@@ -24,16 +25,21 @@ class AbilityProbeTool extends ProbeTool
     protected ?string $requiredAbility = 'quotes:write';
 }
 
-class RoleProbeTool extends ProbeTool
+class CapabilityProbeTool extends ProbeTool
 {
-    protected array $requiredRoles = [AccountRole::Owner, AccountRole::Manager];
+    protected ?AccountCapability $requiredCapability = AccountCapability::ManageInvoices;
+}
+
+class OwnerOnlyProbeTool extends ProbeTool
+{
+    protected ?AccountCapability $requiredCapability = AccountCapability::ManageClients;
 }
 
 class ProbeServer extends BillingServer
 {
     protected function discoverTools(): array
     {
-        return [ProbeTool::class, AbilityProbeTool::class, RoleProbeTool::class];
+        return [ProbeTool::class, AbilityProbeTool::class, CapabilityProbeTool::class, OwnerOnlyProbeTool::class];
     }
 }
 
@@ -77,12 +83,21 @@ it('resolves the account the token is bound to', function () {
         ->assertSee('"account_id":'.$second->id);
 });
 
-it('works for a member bound to the account', function () {
+it('works for a manager bound to the account', function () {
+    $manager = makeAccountUser($this->account, AccountRole::Manager);
+    actingAsToken($manager, ['*'], $this->account);
+
+    ProbeServer::tool(ProbeTool::class)
+        ->assertSee('"account_id":'.$this->account->id);
+});
+
+it('refuses a member token before the tool runs', function () {
     $member = makeAccountUser($this->account, AccountRole::Member);
     actingAsToken($member, ['*'], $this->account);
 
     ProbeServer::tool(ProbeTool::class)
-        ->assertSee('"account_id":'.$this->account->id);
+        ->assertHasErrors(['API access is not available for your role on this account.'])
+        ->assertDontSee('account_id');
 });
 
 it('ignores an account_id argument and keeps acting on the bound account', function () {
@@ -100,12 +115,12 @@ it('denies legacy tokens that are not bound to an account', function () {
 });
 
 it('stops working once the user is removed from the account', function () {
-    $member = makeAccountUser($this->account, AccountRole::Member);
-    actingAsToken($member, ['*'], $this->account);
+    $manager = makeAccountUser($this->account, AccountRole::Manager);
+    actingAsToken($manager, ['*'], $this->account);
 
     ProbeServer::tool(ProbeTool::class)->assertHasNoErrors();
 
-    $this->account->users()->detach($member);
+    $this->account->users()->detach($manager);
 
     ProbeServer::tool(ProbeTool::class)->assertHasErrors(['do not have access']);
 });
@@ -139,19 +154,29 @@ it('lets wildcard tokens pass any ability check', function () {
     ProbeServer::tool(AbilityProbeTool::class)->assertHasNoErrors();
 });
 
-it('limits role-restricted tools to owners and managers', function () {
-    $manager = User::factory()->create();
-    $member = User::factory()->create();
-    $this->account->users()->attach($manager, ['role' => AccountRole::Manager->value]);
-    $this->account->users()->attach($member, ['role' => AccountRole::Member->value]);
+it('limits capability-restricted tools to the roles that hold the capability', function () {
+    $manager = makeAccountUser($this->account, AccountRole::Manager);
+    $member = makeAccountUser($this->account, AccountRole::Member);
 
     actingAsToken($this->owner, ['*']);
-    ProbeServer::tool(RoleProbeTool::class)->assertHasNoErrors();
+    ProbeServer::tool(CapabilityProbeTool::class)->assertHasNoErrors();
 
     actingAsToken($manager, ['*']);
-    ProbeServer::tool(RoleProbeTool::class)->assertHasNoErrors();
+    ProbeServer::tool(CapabilityProbeTool::class)->assertHasNoErrors();
 
     actingAsToken($member, ['*']);
-    ProbeServer::tool(RoleProbeTool::class)
-        ->assertHasErrors(['owner or manager']);
+    ProbeServer::tool(CapabilityProbeTool::class)
+        ->assertHasErrors(['API access is not available']);
+});
+
+it('checks the tool capability on its own once the role may use the API', function () {
+    $manager = makeAccountUser($this->account, AccountRole::Manager);
+
+    actingAsToken($this->owner, ['*']);
+    ProbeServer::tool(OwnerOnlyProbeTool::class)->assertHasNoErrors();
+
+    actingAsToken($manager, ['*']);
+    ProbeServer::tool(OwnerOnlyProbeTool::class)
+        ->assertHasErrors(['requires the owner role'])
+        ->assertDontSee('account_id');
 });
