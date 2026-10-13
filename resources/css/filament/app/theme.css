@@ -6,43 +6,158 @@
 @source "../../../../vendor/relaticle/flowforge/resources/views/**/*.blade.php";
 
 @theme {
-    --color-brand-ink: #10231a;
-    --color-brand-soft: #f6f9f7;
-    --color-brand-line: #e7ece9;
+    /* One soft shadow, reserved for layers that genuinely float (menus, modals, toasts). */
+    --shadow-overlay: 0 4px 16px -4px rgb(0 0 0 / 0.08), 0 2px 4px -2px rgb(0 0 0 / 0.04);
 }
 
-/* Gmelina-style look: soft tinted canvas, airy white surfaces, rounded-2xl cards. */
-.fi-body {
-    @apply bg-brand-soft dark:bg-gray-950;
+/*
+ * Flat, bordered look: neutral canvas, white surfaces separated by 1px hairlines,
+ * modest 8px radii and no resting shadows. Depth comes from borders, not elevation.
+ */
+
+/* Canvas & chrome */
+.fi-body,
+.fi-simple-layout {
+    @apply bg-gray-50 dark:bg-gray-950;
 }
 
-.fi-topbar > nav,
+.fi-topbar {
+    @apply border-b border-gray-200 bg-white shadow-none ring-0 dark:border-white/10 dark:bg-gray-900;
+}
+
 .fi-sidebar {
-    @apply bg-white/90 backdrop-blur dark:bg-gray-900/90;
+    @apply bg-white dark:bg-gray-900 lg:border-e lg:border-gray-200 dark:lg:border-white/10;
 }
 
-.fi-sidebar,
-.fi-topbar > nav {
-    @apply border-brand-line ring-0 dark:border-white/10;
+/* Sidebar navigation */
+.fi-sidebar-nav-groups {
+    @apply gap-y-5;
 }
 
-.fi-sidebar {
-    @apply lg:border-e;
+.fi-sidebar-group-label {
+    @apply text-xs font-semibold tracking-wider text-gray-400 uppercase dark:text-gray-500;
 }
 
+.fi-sidebar-item-btn {
+    @apply rounded-md px-2.5 py-1.5;
+}
+
+.fi-sidebar-item.fi-active > .fi-sidebar-item-btn {
+    @apply bg-primary-50 dark:bg-primary-400/10;
+
+    & > .fi-sidebar-item-label {
+        @apply font-semibold;
+    }
+}
+
+/* Resting surfaces: border, no shadow */
 .fi-section:not(.fi-section-not-contained),
 .fi-ta-ctn,
 .fi-wi-stats-overview-stat,
-.fi-in-table-repeatable {
-    @apply rounded-2xl border border-brand-line bg-white shadow-[0_1px_2px_0_rgba(16,35,26,0.04)] ring-0 dark:border-white/10 dark:bg-gray-900 dark:shadow-none;
+.fi-in-table-repeatable,
+.fi-empty-state:not(.fi-empty-state-not-contained),
+.fi-tabs:not(.fi-contained),
+.fi-fo-repeater-item,
+.fi-fo-builder-item,
+.fi-sc-tabs.fi-contained,
+.fi-sc-wizard.fi-contained {
+    @apply rounded-lg border border-gray-200 bg-white shadow-none ring-0 dark:border-white/10 dark:bg-gray-900;
 }
 
-.fi-btn {
-    @apply rounded-lg font-semibold;
+.fi-simple-main {
+    @apply border border-gray-200 shadow-none ring-0 sm:rounded-lg dark:border-white/10;
 }
 
+/*
+ * Flowforge board: it reuses .fi-ta-ctn as an invisible wrapper around the filter/search
+ * toolbar, so strip the card chrome (and the table toolbar's divider) from it. Columns and
+ * cards follow the same flat, bordered treatment as everything else.
+ */
+.fi-ta-ctn:has(~ * .flowforge-column) {
+    @apply rounded-none border-0;
+
+    & .fi-ta-header-toolbar {
+        @apply justify-end border-0 py-0;
+    }
+}
+
+.flowforge-column,
+.flowforge-card {
+    @apply rounded-lg shadow-none dark:border-white/10;
+}
+
+.flowforge-column {
+    @apply bg-gray-100/60 dark:bg-white/[0.02];
+}
+
+.flowforge-card {
+    @apply hover:border-gray-300 dark:hover:border-white/20;
+}
+
+/* Page header */
 .fi-header-heading {
-    @apply font-extrabold tracking-tight text-brand-ink dark:text-white;
+    @apply text-2xl font-semibold tracking-tight text-gray-950 dark:text-white;
+}
+
+/* Tables */
+.fi-ta-table > thead > tr {
+    @apply bg-gray-50/70 dark:bg-white/[0.03];
+}
+
+.fi-ta-header-cell {
+    @apply py-2.5 text-xs font-medium tracking-wide text-gray-500 uppercase dark:text-gray-400;
+}
+
+.fi-ta-text {
+    @apply tabular-nums;
+}
+
+/* Stats */
+.fi-wi-stats-overview-stat {
+    @apply p-5;
+
+    & .fi-wi-stats-overview-stat-label {
+        @apply text-xs tracking-wide uppercase;
+    }
+
+    & .fi-wi-stats-overview-stat-value {
+        @apply text-2xl;
+    }
+}
+
+/* Charts (values are read by Chart.js, so unitless) */
+.fi-wi-chart {
+    --chart-bar-border-radius: 3;
+    --chart-point-radius: 0;
+}
+
+/* Controls: flat, slightly tighter radii */
+.fi-btn {
+    @apply rounded-md font-medium shadow-none;
+}
+
+.fi-btn-group,
+.fi-input-wrp,
+.fi-pagination .fi-pagination-items,
+.fi-fo-file-upload .filepond--root {
+    @apply rounded-md shadow-none;
+}
+
+.fi-badge {
+    @apply rounded;
+}
+
+/* Floating layers keep one soft shadow plus a hairline border */
+.fi-dropdown-panel,
+.fi-global-search-results-ctn,
+.fi-fo-date-time-picker-panel,
+.fi-no-notification:not(.fi-inline),
+.fi-modal > .fi-modal-window-ctn > .fi-modal-window {
+    @apply shadow-overlay;
+}
+
+.fi-no-notification:not(.fi-inline) {
+    @apply rounded-lg;
 }
 
 .fi-commentable-content span[data-type="mention"],

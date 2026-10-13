@@ -34,8 +34,6 @@ class MonthlySalesChart extends ChartWidget
                 [
                     'label' => 'Sales',
                     'data' => $salesData,
-                    'backgroundColor' => '#36A2EB',
-                    'borderColor' => '#36A2EB',
                 ],
             ],
             'labels' => $labels,

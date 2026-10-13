@@ -109,11 +109,8 @@ it('keeps the dataset presentation and widget settings', function () {
     $widget = new MonthlySalesChart;
     $data = monthlySalesChartData();
 
-    expect($data['datasets'][0])->toMatchArray([
-        'label' => 'Sales',
-        'backgroundColor' => '#36A2EB',
-        'borderColor' => '#36A2EB',
-    ])
+    expect($data['datasets'][0])->toMatchArray(['label' => 'Sales'])
+        ->not->toHaveKeys(['backgroundColor', 'borderColor'])
         ->and($widget->getHeading())->toBe('Monthly Sales')
         ->and(MonthlySalesChart::getSort())->toBe(2)
         ->and($widget->getColumnSpan())->toBe(1)
