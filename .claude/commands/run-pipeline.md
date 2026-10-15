@@ -55,6 +55,22 @@ Otherwise, this is a new build:
 
 **Before every routing decision below, re-read `state.json`. After every transition, rewrite it.** These counters are not something to track in your own reasoning across turns — a compaction, a restart, or you simply being wrong about how many retries something has had must not be able to violate a cap. `state.json` is the only source of truth for stage/tier/counters; if your sense of the history ever disagrees with the file, the file wins. Every time you dispatch to any subagent, increment `steps_spent`; if it would exceed `budget_step_cap`, stop and go to **§7 Escalate** instead, independent of anything else going on.
 
+### Audit log
+
+Every agent iteration — every Task-tool dispatch to any subagent, including retries, bounces, escalations, and §9 PR-feedback rounds — appends exactly one line to `.claude/builds/<build-id>/audit.jsonl`, written immediately after that dispatch returns and before the next routing decision. The file is append-only: never rewrite, reorder, or delete earlier lines, and on a resumed build keep appending to the existing file.
+
+```json
+{"ts": "2026-10-15T14:03:22Z", "step": 7, "stage": "implementation", "agent": "developer", "total_tokens": 48213, "tool_uses": 22, "duration_ms": 184500}
+```
+
+- `ts` — UTC ISO-8601 time the dispatch returned.
+- `step` — the `steps_spent` value for this dispatch, so the log lines up with `state.json`.
+- `stage` — `state.json`'s `stage` at dispatch time.
+- `agent` — the subagent name exactly as dispatched (`business-analyst`, `developer`, …).
+- `total_tokens`, `tool_uses`, `duration_ms` — copied verbatim from the `<usage>` block at the end of that Task-tool result. Never estimate or carry over a number from another dispatch: if the result has no usage block, write `null` for the missing fields.
+
+The Validator in §6 is not an agent and gets no line.
+
 ## 1. Intake
 
 Dispatch to the `business-analyst` subagent (Task tool) with the raw requirement (`$ARGUMENTS`, or the file/folder it points to). It writes `intake.md` and `intake-sources/` inside the build folder. If it reports the requirement is too ambiguous to structure at all, stop and ask the user with `AskUserQuestion` — don't guess on its behalf. Set `stage: "planning"`.
@@ -103,7 +119,7 @@ Route strictly by these rules, checking the relevant counter in `state.json` bef
 
 ## 7. Escalate
 
-Dispatch to `delivery-manager` with the current `state.json` and whatever findings triggered this. Stop. Do not attempt another automatic retry of anything after this, regardless of how minor the last failure looks — that judgment belongs to the human this hands off to, not to you.
+Dispatch to `delivery-manager` with the current `state.json`, `audit.jsonl`, and whatever findings triggered this. Stop. Do not attempt another automatic retry of anything after this, regardless of how minor the last failure looks — that judgment belongs to the human this hands off to, not to you.
 
 ## 8. Pull request → Deploy → Technical Writer
 
