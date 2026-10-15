@@ -17,7 +17,7 @@ use Relaticle\Flowforge\Services\DecimalPosition;
 
 class QuoteService
 {
-    public function __construct(public InvoiceService $invoiceService) {}
+    public function __construct(public InvoiceService $invoiceService, private BusinessEventLogger $events) {}
 
     /**
      * Generate a unique quote number.
@@ -197,7 +197,9 @@ class QuoteService
      */
     public function accept(Quote $quote): Quote
     {
-        return DB::transaction(function () use ($quote): Quote {
+        $tasksCreated = null;
+
+        $accepted = DB::transaction(function () use ($quote, &$tasksCreated): Quote {
             $quote = Quote::withoutGlobalScopes()->lockForUpdate()->findOrFail($quote->getKey());
 
             if ($quote->status === QuoteStatus::Accepted) {
@@ -207,6 +209,8 @@ class QuoteService
             if (! $quote->status->canTransitionTo(QuoteStatus::Accepted)) {
                 throw new QuoteNotAcceptableException($quote);
             }
+
+            $tasksCreated = 0;
 
             foreach ($quote->items()->get() as $item) {
                 if ($item->tasks()->withoutGlobalScopes()->exists()) {
@@ -227,6 +231,8 @@ class QuoteService
                     'billing_status' => TaskBillingStatus::Billable,
                     'position' => $this->nextBoardPosition($quote),
                 ]);
+
+                $tasksCreated++;
             }
 
             $quote->update([
@@ -236,6 +242,15 @@ class QuoteService
 
             return $quote;
         });
+
+        if ($tasksCreated !== null) {
+            $this->events->record('quote.accepted', $accepted->account_id, [
+                'quote_id' => $accepted->getKey(),
+                'tasks_created' => $tasksCreated,
+            ]);
+        }
+
+        return $accepted;
     }
 
     /**

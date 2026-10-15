@@ -4,12 +4,14 @@ namespace App\Filament\App\Pages;
 
 use App\Enums\AccountCapability;
 use App\Models\User;
+use App\Services\BusinessEventLogger;
 use BackedEnum;
 use Filament\Actions\Action;
 use Filament\Actions\Concerns\InteractsWithActions;
 use Filament\Actions\Contracts\HasActions;
 use Filament\Facades\Filament;
 use Filament\Forms\Components\CheckboxList;
+use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Pages\Page;
 use Filament\Schemas\Concerns\InteractsWithSchemas;
@@ -19,6 +21,7 @@ use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Concerns\InteractsWithTable;
 use Filament\Tables\Contracts\HasTable;
 use Filament\Tables\Table;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\Rules\Unique;
 use Laravel\Sanctum\PersonalAccessToken;
@@ -61,6 +64,31 @@ class ApiTokens extends Page implements HasActions, HasSchemas, HasTable
 
     protected string $view = 'filament.pages.api-tokens';
 
+    /**
+     * The expiry option preselected when creating a token, from config: 'never', or a number of days
+     * from the configured options. Anything else falls back to 90 days.
+     */
+    public static function defaultExpiryOption(): string
+    {
+        $configured = config('api.tokens.default_expiry');
+
+        if ($configured === null || $configured === '' || $configured === 'never') {
+            return 'never';
+        }
+
+        $days = filter_var($configured, FILTER_VALIDATE_INT);
+
+        return in_array($days, config('api.tokens.expiry_options'), true) ? (string) $days : '90';
+    }
+
+    /**
+     * Expiry timestamp for a chosen option ('30', '90', '365' or 'never').
+     */
+    public static function expiryFromOption(string $option): ?Carbon
+    {
+        return $option === 'never' ? null : now()->addDays((int) $option);
+    }
+
     public static function canAccess(): bool
     {
         $tenant = Filament::getTenant();
@@ -90,6 +118,11 @@ class ApiTokens extends Page implements HasActions, HasSchemas, HasTable
                     ->since()
                     ->dateTimeTooltip()
                     ->placeholder('Never'),
+                TextColumn::make('expires_at')
+                    ->label('Expires')
+                    ->since()
+                    ->dateTimeTooltip()
+                    ->placeholder('Never'),
             ])
             ->recordActions([
                 Action::make('revoke')
@@ -99,7 +132,13 @@ class ApiTokens extends Page implements HasActions, HasSchemas, HasTable
                     ->requiresConfirmation()
                     ->modalHeading('Revoke token')
                     ->modalDescription('Any client using this token will immediately lose access.')
-                    ->action(fn (PersonalAccessToken $record) => $record->delete()),
+                    ->action(function (PersonalAccessToken $record): void {
+                        $record->delete();
+
+                        app(BusinessEventLogger::class)->record('api_token.revoked', $record->account_id, [
+                            'token_id' => $record->getKey(),
+                        ]);
+                    }),
             ])
             ->emptyStateHeading('No API tokens yet')
             ->emptyStateDescription('Create a token for this account to connect an MCP client or call the REST API.');
@@ -133,6 +172,12 @@ class ApiTokens extends Page implements HasActions, HasSchemas, HasTable
                         ->options(self::ABILITIES)
                         ->default(array_keys(self::ABILITIES))
                         ->helperText('Leave everything unchecked for a read-only token.'),
+                    Select::make('expires_in')
+                        ->label('Expires')
+                        ->options(['30' => '30 days', '90' => '90 days', '365' => '1 year', 'never' => 'No expiry'])
+                        ->default(static::defaultExpiryOption())
+                        ->in(['30', '90', '365', 'never'])
+                        ->required(),
                 ])
                 ->action(function (array $data): void {
                     $abilities = array_values(array_intersect(array_keys(self::ABILITIES), $data['abilities'] ?? []));
@@ -142,7 +187,12 @@ class ApiTokens extends Page implements HasActions, HasSchemas, HasTable
 
                     abort_unless($user->can(AccountCapability::UseApi, $account), 403);
 
-                    $token = $user->createAccountToken($account, $data['name'], $abilities);
+                    $token = $user->createAccountToken(
+                        $account,
+                        $data['name'],
+                        $abilities,
+                        static::expiryFromOption($data['expires_in']),
+                    );
 
                     $this->replaceMountedAction('revealToken', ['token' => $token->plainTextToken]);
                 }),

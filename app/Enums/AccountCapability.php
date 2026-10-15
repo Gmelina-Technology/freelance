@@ -10,6 +10,8 @@ enum AccountCapability: string
     case ManageClients = 'clients.manage';
     case LookUpClients = 'clients.lookup';
     case UseApi = 'api.use';
+    case ManageMembers = 'members.manage';
+    case ManageOwners = 'owners.manage';
 
     /**
      * @return array<int, AccountRole>
@@ -17,12 +19,14 @@ enum AccountCapability: string
     public function allowedRoles(): array
     {
         return match ($this) {
-            self::ManageClients => [AccountRole::Owner],
+            self::ManageClients,
+            self::ManageOwners => [AccountRole::Owner],
             self::ManageInvoices,
             self::ManageQuotes,
             self::ManageSales,
             self::LookUpClients,
-            self::UseApi => [AccountRole::Owner, AccountRole::Manager],
+            self::UseApi,
+            self::ManageMembers => [AccountRole::Owner, AccountRole::Manager],
         };
     }
 
@@ -34,5 +38,13 @@ enum AccountCapability: string
     public function describeAllowedRoles(): string
     {
         return implode(' or ', array_map(fn (AccountRole $role): string => $role->value, $this->allowedRoles()));
+    }
+
+    /**
+     * The capability needed to move someone from $from (null = not yet a member) to $to.
+     */
+    public static function forRoleChange(?AccountRole $from, AccountRole $to): self
+    {
+        return in_array(AccountRole::Owner, [$from, $to], true) ? self::ManageOwners : self::ManageMembers;
     }
 }

@@ -64,7 +64,8 @@ it('grants each capability to exactly the roles in the map', function (string $s
     $ownerOrManager = in_array($role, [AccountRole::Owner, AccountRole::Manager], true);
 
     foreach (AccountCapability::cases() as $capability) {
-        $expected = $capability === AccountCapability::ManageClients
+        $ownerOnly = in_array($capability, [AccountCapability::ManageClients, AccountCapability::ManageOwners], true);
+        $expected = $ownerOnly
             ? $role === AccountRole::Owner
             : $ownerOrManager;
 
@@ -78,6 +79,16 @@ it('describes the roles that may run a capability', function () {
         ->and(AccountCapability::ManageClients->describeAllowedRoles())->toBe('owner')
         ->and(AccountCapability::ManageInvoices->isGrantedTo(null))->toBeFalse();
 });
+
+it('picks the owner capability for any role change that involves the owner role', function (?AccountRole $from, AccountRole $to, AccountCapability $expected) {
+    expect(AccountCapability::forRoleChange($from, $to))->toBe($expected);
+})->with([
+    'member to owner' => [AccountRole::Member, AccountRole::Owner, AccountCapability::ManageOwners],
+    'owner to manager' => [AccountRole::Owner, AccountRole::Manager, AccountCapability::ManageOwners],
+    'member to manager' => [AccountRole::Member, AccountRole::Manager, AccountCapability::ManageMembers],
+    'invite as member' => [null, AccountRole::Member, AccountCapability::ManageMembers],
+    'invite as owner' => [null, AccountRole::Owner, AccountCapability::ManageOwners],
+]);
 
 it('shows invoices, quotes and sales to owners and managers', function (string $situation) {
     [$user, $account] = userWithRoleSituation($situation);

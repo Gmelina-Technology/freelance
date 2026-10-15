@@ -16,7 +16,15 @@ class InvitationAcceptanceController extends Controller
 
     public function accept(Request $request, string $token): RedirectResponse
     {
-        $invitation = Invitation::where('token', $token)->firstOrFail();
+        if (! $request->hasValidSignature()) {
+            return $this->invalidInvitation();
+        }
+
+        $invitation = Invitation::where('token', $token)->first();
+
+        if ($invitation === null || ($invitation->isPending() && $invitation->isExpired())) {
+            return $this->invalidInvitation();
+        }
 
         $user = $request->user();
 
@@ -29,6 +37,21 @@ class InvitationAcceptanceController extends Controller
         }
 
         return $this->acceptForUser($invitation, $user);
+    }
+
+    /**
+     * One outcome for every link that cannot be used (bad or expired signature, unknown or revoked
+     * token, passed expiry), so a visitor learns nothing about which invitations exist.
+     */
+    private function invalidInvitation(): RedirectResponse
+    {
+        Notification::make()
+            ->warning()
+            ->title('Invitation expired or no longer valid')
+            ->body('Ask the account owner or manager to send you a new invitation.')
+            ->send();
+
+        return redirect()->route('filament.app.auth.login');
     }
 
     /**

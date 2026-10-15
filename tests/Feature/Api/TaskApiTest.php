@@ -214,3 +214,45 @@ it('refuses writes from tokens without the tasks:write ability', function (array
 it('checks the write routes against an ability the token page can issue', function () {
     expect(ApiTokens::ABILITIES)->toHaveKey('tasks:write');
 });
+
+it('returns at most the requested number of tasks', function (?string $limit, int $expectedCount) {
+    actingAsToken($this->owner);
+    Task::factory()->for($this->account)->count(30)->create();
+
+    $uri = $limit === null ? '/api/tasks' : "/api/tasks?limit={$limit}";
+
+    $this->getJson($uri)->assertOk()->assertJsonCount($expectedCount, 'data');
+})->with([
+    'default' => [null, 25],
+    'one' => ['1', 1],
+    'the maximum' => ['100', 30],
+]);
+
+it('refuses a limit outside 1 to 100 with a 422', function (string $limit) {
+    actingAsToken($this->owner);
+
+    $this->getJson("/api/tasks?limit={$limit}")
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors('limit');
+})->with(['0', '101', 'abc', '1.5']);
+
+it('answers an invalid limit with JSON 422 even without an Accept header', function () {
+    actingAsToken($this->owner);
+
+    $response = $this->get('/api/tasks?limit=101');
+
+    $response->assertStatus(422);
+    expect($response->headers->get('Content-Type'))->toContain('application/json')
+        ->and($response->json('errors.limit'))->not->toBeEmpty();
+});
+
+it('answers an unauthenticated request without an Accept header with 401 JSON, not a redirect', function () {
+    $response = $this->get('/api/tasks');
+
+    $response->assertUnauthorized();
+    expect($response->headers->get('Content-Type'))->toContain('application/json');
+});
+
+it('still redirects a guest on a panel page to the app login', function () {
+    $this->get('/app/new')->assertRedirect(route('filament.app.auth.login'));
+});

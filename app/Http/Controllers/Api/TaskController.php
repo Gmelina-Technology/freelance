@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Api\IndexTaskRequest;
 use App\Http\Requests\Api\StoreTaskRequest;
 use App\Http\Requests\Api\UpdateTaskRequest;
 use App\Http\Resources\TaskResource;
@@ -18,9 +19,9 @@ class TaskController extends Controller
     /**
      * List tasks for the authenticated account.
      *
-     * Query params: status (enum), overdue (bool), limit (int, default 25).
+     * Query params: status (enum), overdue (bool), limit (int 1-100, default 25; out of range responds 422).
      */
-    public function index(Request $request): JsonResponse
+    public function index(IndexTaskRequest $request): JsonResponse
     {
         $tasks = $this->tasks->list($this->account($request), $request->user(), [
             'status' => $request->filled('status') ? $request->string('status')->toString() : null,

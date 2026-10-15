@@ -306,10 +306,26 @@ class CommentThread extends Component implements HasForms
         ]);
     }
 
+    /**
+     * Rules for one uploaded file. The extension is checked against the client's file name and the
+     * MIME type against the file's detected content, so a renamed file is refused.
+     *
+     * @return array<int, string>
+     */
+    private function attachmentRules(): array
+    {
+        return [
+            'file',
+            'max:'.config('comments.attachments.max_size'),
+            'extensions:'.implode(',', config('comments.attachments.allowed_extensions')),
+            'mimetypes:'.implode(',', config('comments.attachments.allowed_mimetypes')),
+        ];
+    }
+
     private function validateCommentInput(mixed $body): void
     {
         $this->validate([
-            'attachments.*' => ['file', 'max:'.config('comments.attachments.max_size')],
+            'attachments.*' => $this->attachmentRules(),
         ]);
 
         if ($this->richContentIsBlank($body) && empty($this->attachments)) {
@@ -322,7 +338,7 @@ class CommentThread extends Component implements HasForms
     private function validateReplyInput(mixed $body): void
     {
         $this->validate([
-            'replyAttachments.*' => ['file', 'max:'.config('comments.attachments.max_size')],
+            'replyAttachments.*' => $this->attachmentRules(),
         ]);
 
         if ($this->richContentIsBlank($body) && empty($this->replyAttachments)) {

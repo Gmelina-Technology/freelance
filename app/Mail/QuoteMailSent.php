@@ -118,7 +118,11 @@ class QuoteMailSent extends Mailable implements ShouldQueue
             'status' => QuoteStatus::Draft,
         ]);
 
-        Log::info('Failed to send email for quote: '.$this->quote->number);
+        Log::error('Failed to send quote email', [
+            'quote_id' => $this->quote->getKey(),
+            'account_id' => $this->quote->account_id,
+            'exception' => $exception::class.': '.$exception->getMessage(),
+        ]);
     }
 
     /**

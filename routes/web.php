@@ -5,15 +5,12 @@ use App\Http\Controllers\InvitationAcceptanceController;
 use App\Http\Controllers\QuotePreviewController;
 use Illuminate\Support\Facades\Route;
 
-Route::get('/', function () {
-    return view('welcome');
-});
+Route::view('/', 'welcome');
 
 Route::view('/terms', 'legal.terms')->name('terms');
 Route::view('/privacy', 'legal.privacy')->name('privacy');
 
-Route::middleware(['signed'])
-    ->get('/invitations/accept/{token}', [InvitationAcceptanceController::class, 'accept'])
+Route::get('/invitations/accept/{token}', [InvitationAcceptanceController::class, 'accept'])
     ->name('invitations.accept');
 
 Route::middleware(['auth'])

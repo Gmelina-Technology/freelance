@@ -1,4 +1,4 @@
-<section class="fi-commentable space-y-8" wire:poll.{{ $pollInterval }}>
+<section class="fi-commentable space-y-8" wire:poll.{{ $pollInterval }}.visible>
     <form class="fi-commentable-form space-y-3" wire:submit="addComment">
         <div class="fi-commentable-editor-shell">
             {{ $this->form }}

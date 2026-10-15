@@ -23,6 +23,8 @@ use Illuminate\Validation\ValidationException;
 
 class InvoiceService
 {
+    public function __construct(private BusinessEventLogger $events) {}
+
     /**
      * Mark the invoice paid, settle its tasks and record the sale.
      *
@@ -52,6 +54,8 @@ class InvoiceService
                 'currency_code' => $invoice->client?->currency_code,
             ]);
         });
+
+        $this->events->record('invoice.paid', $invoice->account_id, ['invoice_id' => $invoice->getKey()]);
     }
 
     /**
@@ -72,6 +76,8 @@ class InvoiceService
 
             $invoice->update(['status' => InvoiceStatus::Sent]);
         });
+
+        $this->events->record('invoice.sent', $invoice->account_id, ['invoice_id' => $invoice->getKey()]);
     }
 
     /**
