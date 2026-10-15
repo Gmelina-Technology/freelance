@@ -54,7 +54,7 @@ Three independent counters, not one shared count — see Open Decision in the ma
 
 ## What it logs
 
-Every transition, every cap check (pass or trip), and every routing decision — timestamped, per build — for audit and, on client work, billing traceability. Log which counter incremented on every bounce (Architect/Tech Lead, Product Manager bounce, or Developer/QA Engineer) so a build that thrashes across multiple loop types is visible as such, not just as "a lot of retries." This log is what the Delivery Manager formats for a human and what feeds `deviation-log.md` alongside the Technical Writer's own entries.
+Every transition, every cap check (pass or trip), and every routing decision — timestamped, per build — for audit and, on client work, billing traceability. Log which counter incremented on every bounce (Architect/Tech Lead, Product Manager bounce, or Developer/QA Engineer) so a build that thrashes across multiple loop types is visible as such, not just as "a lot of retries." Every agent dispatch also logs the agent name and its token usage (total tokens, tool uses, duration), so cost is attributable per agent and per iteration. This log is what the Delivery Manager formats for a human and what feeds `deviation-log.md` alongside the Technical Writer's own entries.
 
 ## What it explicitly does not do
 
