@@ -132,10 +132,10 @@ class ApiTokens extends Page implements HasActions, HasSchemas, HasTable
                     ->requiresConfirmation()
                     ->modalHeading('Revoke token')
                     ->modalDescription('Any client using this token will immediately lose access.')
-                    ->action(function (PersonalAccessToken $record): void {
+                    ->action(function (PersonalAccessToken $record, BusinessEventLogger $events): void {
                         $record->delete();
 
-                        app(BusinessEventLogger::class)->record('api_token.revoked', $record->account_id, [
+                        $events->record('api_token.revoked', $record->account_id, [
                             'token_id' => $record->getKey(),
                         ]);
                     }),

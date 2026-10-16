@@ -11,6 +11,7 @@ Route::view('/terms', 'legal.terms')->name('terms');
 Route::view('/privacy', 'legal.privacy')->name('privacy');
 
 Route::get('/invitations/accept/{token}', [InvitationAcceptanceController::class, 'accept'])
+    ->middleware('signed')
     ->name('invitations.accept');
 
 Route::middleware(['auth'])

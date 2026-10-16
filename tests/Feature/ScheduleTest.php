@@ -19,11 +19,6 @@ function scheduledEvent(string $command): Event
         ?? test()->fail("{$command} is not scheduled.");
 }
 
-function scheduledPosition(string $command): int
-{
-    return collect(scheduledEvents())->search(fn (Event $event): bool => str_contains($event->command, $command));
-}
-
 it('runs a short-lived queue worker every minute without overlapping runs', function () {
     $worker = scheduledEvent('queue:work');
 
@@ -48,16 +43,8 @@ it('prunes expired API tokens daily', function () {
         ->and($prune->expression)->toBe('0 3 * * *');
 });
 
-it('backs up the database daily at 02:30, before the worker', function () {
-    $backup = scheduledEvent('backup:database');
+it('schedules no database backup, which hPanel takes care of', function () {
+    $commands = collect(scheduledEvents())->map(fn (Event $event): string => $event->command);
 
-    expect($backup->expression)->toBe('30 2 * * *')
-        ->and($backup->withoutOverlapping)->toBeTrue()
-        ->and(scheduledPosition('backup:database'))->toBeLessThan(scheduledPosition('queue:work'));
+    expect($commands->contains(fn (string $command): bool => str_contains($command, 'backup:database')))->toBeFalse();
 });
-
-it('runs the backup only when backups are enabled', function (bool $enabled) {
-    config(['backup.enabled' => $enabled]);
-
-    expect(scheduledEvent('backup:database')->filtersPass(app()))->toBe($enabled);
-})->with([true, false]);

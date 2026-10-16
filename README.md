@@ -112,15 +112,14 @@ php artisan pail
 
 ### Hosting prerequisites
 
-- The document root is `public/`. If the host cannot do that, add a root `.htaccess` that denies everything outside `public/`. This protects `.env` and `storage/app/backups`.
+- The document root is `public/`. If the host cannot do that, add a root `.htaccess` that denies everything outside `public/`. This protects `.env`.
 - PHP 8.4 in hPanel **and** for the SSH CLI (`php -v`, or `$DEPLOY_PHP_BIN -v`). `composer` must run on that interpreter too.
-- `proc_open` and `exec` are enabled, and `mysqldump` is installed (`which mysqldump`). Check with `php artisan schedule:run -v` once the cron below is in place.
-- Disk quota for 14 days of gzipped database dumps, plus about twice one raw dump while a backup runs.
+- `proc_open` and `exec` are enabled. Check with `php artisan schedule:run -v` once the cron below is in place.
 - Create the production `.env` from `.env.production.example`. `APP_DEBUG` must be `false`.
 
 ### Cron
 
-One entry runs everything (backups, expired-token pruning and the queue worker):
+One entry runs everything (expired-token pruning and the queue worker):
 
 ```
 * * * * * cd /home/<user>/domains/<domain>/<app-dir> && /path/to/php8.4 artisan schedule:run >> /dev/null 2>&1
@@ -152,22 +151,23 @@ The deploy log prints `Previous release: <sha>`.
 
 **(a) Code only.** Preferred: revert on `main` and let CI deploy. By hand: `php artisan down`, `git checkout <sha>` (detached), `composer install --no-dev`, `php artisan optimize`, `php artisan queue:restart`, `php artisan up`.
 
-**(b) A migration ran.** If the migration is reversible and nothing depends on data written since, run `php artisan migrate:rollback --step=N` and then (a). Otherwise restore the latest scheduled dump (up to about 24 hours old) or an hPanel backup, then (a). The deploy does not take a dump of its own.
+**(b) A migration ran.** If the migration is reversible and nothing depends on data written since, run `php artisan migrate:rollback --step=N` and then (a). Otherwise restore the most recent hPanel backup (daily; check its time in hPanel, Backups), then (a). The deploy does not take a backup of its own, so take an on-demand hPanel backup before a risky migration.
 
 Phase B migrations: rolling back the invitation column loses only `expires_at`, and the task index rollback is safe on MySQL.
 
-### Backup and restore
+### Backups
 
-`backup:database` runs daily at 02:30 when `BACKUP_ENABLED=true`. It writes `storage/app/backups/db-YYYYMMDD-HHMMSS.sql.gz` (mode 0600, with a deny-all `.htaccess`) and deletes dumps older than `BACKUP_RETENTION_DAYS` (default 14). Pruning only happens after a successful dump. Failures are logged at `error`. Backups stay on the same server, so keep the hPanel backups as the off-server fallback.
+The app takes no backups of its own. The hosting plan (hPanel) backs up the database and files daily, and that is the recovery path.
+
+- Before a risky deploy or migration, take an on-demand backup in hPanel (Backups).
+- Recommended before launch: restore one database backup to staging or a local database and check that `php artisan migrate:status` matches the code, and note the retention days and whether the copies are stored off the web server.
 
 Restore:
 
-```bash
-php artisan down
-gunzip -c storage/app/backups/db-YYYYMMDD-HHMMSS.sql.gz | mysql -h <host> -u <user> -p <database>
-php artisan migrate:status   # should match the code's migrations
-php artisan up
-```
+1. `php artisan down`
+2. Restore the most recent hPanel backup of the database from hPanel.
+3. `php artisan migrate:status` should match the code's migrations.
+4. `php artisan up`
 
 ### Logs
 

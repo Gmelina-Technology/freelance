@@ -16,14 +16,10 @@ class InvitationAcceptanceController extends Controller
 
     public function accept(Request $request, string $token): RedirectResponse
     {
-        if (! $request->hasValidSignature()) {
-            return $this->invalidInvitation();
-        }
-
         $invitation = Invitation::where('token', $token)->first();
 
         if ($invitation === null || ($invitation->isPending() && $invitation->isExpired())) {
-            return $this->invalidInvitation();
+            return self::invalidInvitationResponse();
         }
 
         $user = $request->user();
@@ -42,8 +38,10 @@ class InvitationAcceptanceController extends Controller
     /**
      * One outcome for every link that cannot be used (bad or expired signature, unknown or revoked
      * token, passed expiry), so a visitor learns nothing about which invitations exist.
+     * The signature itself is enforced by the route's signed middleware, which bootstrap/app.php
+     * renders through this method.
      */
-    private function invalidInvitation(): RedirectResponse
+    public static function invalidInvitationResponse(): RedirectResponse
     {
         Notification::make()
             ->warning()

@@ -19,7 +19,7 @@ class ListInvitations extends ListRecords
     {
         return [
             CreateAction::make()
-                ->using(fn (array $data): Invitation => app(InvitationService::class)->invite(
+                ->using(fn (array $data, InvitationService $invitations): Invitation => $invitations->invite(
                     Filament::getTenant(),
                     Auth::user(),
                     $data['email'],

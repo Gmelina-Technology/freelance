@@ -51,11 +51,11 @@ it('ships a production env template with safe defaults and no secrets', function
         'SESSION_SECURE_COOKIE' => 'true',
         'ADMIN_EMAILS' => '',
         'QUEUE_CONNECTION' => 'database',
-        'BACKUP_ENABLED' => 'true',
         'DB_CONNECTION' => 'mysql',
     ])
         ->and($env['APP_KEY'])->toBe('')
         ->and($env['DB_PASSWORD'])->toBe('')
+        ->and($env)->not->toHaveKey('BACKUP_ENABLED')
         ->and($env['MAIL_PASSWORD'])->toBe('');
 });
 
@@ -64,9 +64,9 @@ it('lists the new settings in the development env template', function () {
 
     expect($env)->toMatchArray([
         'ADMIN_EMAILS' => '',
-        'BACKUP_ENABLED' => 'false',
         'API_RATE_LIMIT_PER_MINUTE' => '60',
-    ]);
+    ])
+        ->and($env)->not->toHaveKey('BACKUP_ENABLED');
 });
 
 it('serves the home page from a view route that can be cached', function () {
@@ -90,7 +90,9 @@ it('documents production operations in the README', function () {
         ->toContain('## Production operations')
         ->toContain('artisan schedule:run')
         ->toContain('DEPLOY_PORT')
-        ->toContain('latest scheduled dump')
+        ->toContain('restore the most recent hPanel backup')
+        ->not->toContain('backup:database')
+        ->not->toContain('mysqldump')
         ->not->toContain('pre-deploy dump')
         ->toContain('ADMIN_EMAILS');
 });

@@ -8,11 +8,6 @@ Artisan::command('inspire', function () {
     $this->comment(Inspiring::quote());
 })->purpose('Display an inspiring quote');
 
-Schedule::command('backup:database')
-    ->dailyAt('02:30')
-    ->withoutOverlapping(120)
-    ->when(fn (): bool => (bool) config('backup.enabled'));
-
 Schedule::command('sanctum:prune-expired', ['--hours' => 24])->dailyAt('03:00');
 
 Schedule::command('queue:work', [

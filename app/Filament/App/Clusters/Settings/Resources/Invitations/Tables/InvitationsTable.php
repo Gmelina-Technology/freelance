@@ -53,8 +53,8 @@ class InvitationsTable
                     ->requiresConfirmation()
                     ->visible(fn (Invitation $record): bool => static::canResend($record))
                     ->authorize(fn (Invitation $record): bool => static::canResend($record))
-                    ->action(function (Invitation $record): void {
-                        app(InvitationService::class)->resend(Filament::getTenant(), Auth::user(), $record);
+                    ->action(function (Invitation $record, InvitationService $invitations): void {
+                        $invitations->resend(Filament::getTenant(), Auth::user(), $record);
 
                         Notification::make()
                             ->title('Invitation re-sent')

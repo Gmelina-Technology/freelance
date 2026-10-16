@@ -65,8 +65,8 @@ class MemberResource extends Resource
                             ->options(fn (): array => static::assignableRoleOptions())
                             ->required(),
                     ])
-                    ->action(function (array $data, User $record): void {
-                        app(AccountMemberService::class)->changeRole(
+                    ->action(function (array $data, User $record, AccountMemberService $members): void {
+                        $members->changeRole(
                             Filament::getTenant(),
                             Auth::user(),
                             $record,
