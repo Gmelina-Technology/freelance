@@ -13,10 +13,17 @@ use Filament\Support\Facades\FilamentColor;
 use Filament\Support\Facades\FilamentView;
 use Filament\Tables\View\TablesRenderHook;
 use Filament\View\PanelsRenderHook;
+use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Http\Request;
+use Illuminate\Queue\Events\JobFailed;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Queue;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\HtmlString;
 use Illuminate\Support\ServiceProvider;
+use Laravel\Sanctum\PersonalAccessToken;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -78,6 +85,38 @@ class AppServiceProvider extends ServiceProvider
             'gray' => Color::Zinc,
         ]);
 
+        RateLimiter::for('api', fn (Request $request): Limit => Limit::perMinute(max(1, (int) config('api.rate_limits.api')))->by($this->apiClientKey($request)));
+        RateLimiter::for('mcp', fn (Request $request): Limit => Limit::perMinute(max(1, (int) config('api.rate_limits.mcp')))->by($this->apiClientKey($request)));
+
+        Queue::failing(function (JobFailed $event): void {
+            Log::error('Queued job failed', [
+                'job' => $event->job->resolveName(),
+                'job_id' => $event->job->getJobId(),
+                'uuid' => $event->job->uuid(),
+                'connection' => $event->connectionName,
+                'queue' => $event->job->getQueue(),
+                'exception' => $event->exception::class.': '.$event->exception->getMessage(),
+            ]);
+        });
+
         Model::preventLazyLoading(! $this->app->isProduction());
+    }
+
+    /**
+     * Rate limit bucket for an API or MCP request: the Sanctum token, else the user, else the IP.
+     */
+    private function apiClientKey(Request $request): string
+    {
+        $token = $request->user()?->currentAccessToken();
+
+        if ($token instanceof PersonalAccessToken) {
+            return 'token:'.$token->getKey();
+        }
+
+        if ($request->user() !== null) {
+            return 'user:'.$request->user()->getKey();
+        }
+
+        return 'ip:'.$request->ip();
     }
 }

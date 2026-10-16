@@ -4,7 +4,9 @@ namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 use App\Enums\AccountRole;
+use App\Services\BusinessEventLogger;
 use Database\Factories\UserFactory;
+use DateTimeInterface;
 use Filament\Auth\MultiFactor\Email\Concerns\InteractsWithEmailAuthentication;
 use Filament\Auth\MultiFactor\Email\Contracts\HasEmailAuthentication;
 use Filament\Models\Contracts\FilamentUser;
@@ -18,7 +20,9 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Str;
 use Laravel\Sanctum\HasApiTokens;
 use Laravel\Sanctum\NewAccessToken;
 
@@ -84,15 +88,21 @@ class User extends Authenticatable implements FilamentUser, HasDefaultTenant, Ha
     }
 
     /**
-     * Issue a personal access token that only works on the given account.
+     * Issue a personal access token that only works on the given account. A null expiry never expires.
      *
      * @param  array<int, string>  $abilities
      */
-    public function createAccountToken(Account $account, string $name, array $abilities = ['*']): NewAccessToken
+    public function createAccountToken(Account $account, string $name, array $abilities = ['*'], ?DateTimeInterface $expiresAt = null): NewAccessToken
     {
-        $token = $this->createToken($name, $abilities);
+        $token = $this->createToken($name, $abilities, $expiresAt);
 
         $token->accessToken->forceFill(['account_id' => $account->getKey()])->save();
+
+        app(BusinessEventLogger::class)->record('api_token.created', $account->getKey(), [
+            'token_id' => $token->accessToken->getKey(),
+            'abilities' => implode(',', $abilities),
+            'expires_at' => $expiresAt?->format(DATE_ATOM),
+        ]);
 
         return $token;
     }
@@ -111,6 +121,21 @@ class User extends Authenticatable implements FilamentUser, HasDefaultTenant, Ha
         $pivot = $this->accounts->where('id', $account->getKey())->first()?->pivot;
 
         return $pivot?->role;
+    }
+
+    /**
+     * Role on the account with this id, read from the accounts / ownedAccounts relations loaded once on
+     * this instance. The owner_id rule wins, matching getAccountRole(). Null when the user is not in the account.
+     */
+    public function getAccountRoleById(int $accountId): ?AccountRole
+    {
+        $this->loadMissing(['accounts', 'ownedAccounts']);
+
+        if ($this->ownedAccounts->contains('id', $accountId)) {
+            return AccountRole::Owner;
+        }
+
+        return $this->accounts->firstWhere('id', $accountId)?->pivot?->role;
     }
 
     public function hasAccountRole(Account $account, AccountRole|string $role): bool
@@ -166,6 +191,19 @@ class User extends Authenticatable implements FilamentUser, HasDefaultTenant, Ha
             return true;
         }
 
-        return in_array($this->email, explode(',', config('app.admin_emails')));
+        return $this->isPlatformAdmin() && $this->hasEmailAuthentication();
+    }
+
+    /**
+     * Whether the email is on the ADMIN_EMAILS allowlist. Tolerates a null, empty, string or array config,
+     * trims each entry and ignores case.
+     */
+    public function isPlatformAdmin(): bool
+    {
+        return collect(Arr::wrap(config('app.admin_emails')))
+            ->flatMap(fn ($value): array => explode(',', (string) $value))
+            ->map(fn (string $email): string => Str::lower(trim($email)))
+            ->filter()
+            ->contains(Str::lower(trim((string) $this->email)));
     }
 }

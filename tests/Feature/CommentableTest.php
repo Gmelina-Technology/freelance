@@ -19,11 +19,6 @@ use Livewire\Livewire;
 
 uses(RefreshDatabase::class);
 
-beforeEach(function () {
-    // The policy memoizes membership per user and account id, and ids repeat between refreshed databases.
-    (new ReflectionProperty(CommentPolicy::class, 'accountMembershipCache'))->setValue(null, []);
-});
-
 function accountWithMember(AccountRole $role = AccountRole::Member): array
 {
     $owner = User::factory()->create();
@@ -355,3 +350,62 @@ it('loads the task the same number of times however many comments the thread has
 
     expect($many)->toBe($few);
 });
+
+it('denies a fresh user instance once the membership was revoked', function () {
+    [$account, $owner, $member] = accountWithMember();
+    $task = taskForAccount($account, $member);
+    $comment = $task->comments()->create([
+        'account_id' => $account->id,
+        'user_id' => $owner->id,
+        'body' => 'Visible while a member.',
+        'body_format' => 'rich',
+    ]);
+
+    expect(Gate::forUser($member)->allows('view', $comment))->toBeTrue()
+        ->and(Gate::forUser($member)->allows('create', [Comment::class, $task]))->toBeTrue();
+
+    $account->users()->detach($member);
+
+    $fresh = User::find($member->id);
+
+    expect(Gate::forUser($fresh)->denies('view', $comment))->toBeTrue()
+        ->and(Gate::forUser($fresh)->denies('create', [Comment::class, $task]))->toBeTrue();
+});
+
+it('keeps no membership state in the policy between requests', function () {
+    expect((new ReflectionClass(CommentPolicy::class))->getStaticProperties())->toBeEmpty();
+});
+
+it('asks the database for membership a fixed number of times however many comments are shown', function (AccountRole $role) {
+    $countMembershipQueries = function (int $comments) use ($role): int {
+        [$account, $owner, $viewer] = accountWithMember($role);
+        $task = taskForAccount($account, $viewer);
+
+        for ($i = 0; $i < $comments; $i++) {
+            $task->comments()->create([
+                'account_id' => $account->id,
+                'user_id' => $owner->id,
+                'body' => "Comment {$i}",
+                'body_format' => 'rich',
+            ]);
+        }
+
+        $component = Livewire::actingAs($viewer)->test(CommentThread::class, ['record' => $task]);
+
+        $queries = 0;
+        DB::listen(function ($query) use (&$queries): void {
+            if (str_contains($query->sql, '"account_user"') || str_contains($query->sql, 'from "accounts"')) {
+                $queries++;
+            }
+        });
+
+        $component->call('$refresh')->assertSee('Comment '.($comments - 1));
+
+        return $queries;
+    };
+
+    $few = $countMembershipQueries(2);
+    $many = $countMembershipQueries(12);
+
+    expect($many)->toBe($few);
+})->with([AccountRole::Member, AccountRole::Manager]);

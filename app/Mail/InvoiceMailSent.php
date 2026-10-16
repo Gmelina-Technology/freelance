@@ -92,7 +92,11 @@ class InvoiceMailSent extends Mailable implements ShouldQueue
             'status' => InvoiceStatus::Draft,
         ]);
 
-        Log::info('Failed to send email for invoice: '.$this->invoice->number);
+        Log::error('Failed to send invoice email', [
+            'invoice_id' => $this->invoice->getKey(),
+            'account_id' => $this->invoice->account_id,
+            'exception' => $exception::class.': '.$exception->getMessage(),
+        ]);
     }
 
     /**

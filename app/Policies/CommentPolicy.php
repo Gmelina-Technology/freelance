@@ -3,18 +3,12 @@
 namespace App\Policies;
 
 use App\Contracts\Commentable;
+use App\Enums\AccountRole;
 use App\Models\Comment;
 use App\Models\User;
 
 class CommentPolicy
 {
-    /**
-     * Cache for account membership checks [userId => [accountId => bool]]
-     *
-     * @var array<int, array<int, bool>>
-     */
-    private static array $accountMembershipCache = [];
-
     public function view(User $user, Comment $comment): bool
     {
         return $this->belongsToAccount($user, $comment->account_id)
@@ -60,28 +54,11 @@ class CommentPolicy
 
     private function canModerate(User $user, Comment $comment): bool
     {
-        return $user->accounts()
-            ->whereKey($comment->account_id)
-            ->wherePivotIn('role', ['owner', 'manager'])
-            ->exists()
-            || $user->ownedAccounts()->whereKey($comment->account_id)->exists();
+        return in_array($user->getAccountRoleById($comment->account_id), [AccountRole::Owner, AccountRole::Manager], true);
     }
 
     private function belongsToAccount(User $user, int $accountId): bool
     {
-        $userId = $user->id;
-
-        // Check cache first to avoid duplicate queries in the same request
-        if (isset(self::$accountMembershipCache[$userId][$accountId])) {
-            return self::$accountMembershipCache[$userId][$accountId];
-        }
-
-        $result = $user->accounts()->whereKey($accountId)->exists()
-            || $user->ownedAccounts()->whereKey($accountId)->exists();
-
-        // Cache the result
-        self::$accountMembershipCache[$userId][$accountId] = $result;
-
-        return $result;
+        return $user->getAccountRoleById($accountId) !== null;
     }
 }

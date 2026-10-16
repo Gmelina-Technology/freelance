@@ -21,10 +21,12 @@ class Invitation extends Model
         'token',
         'invited_by_id',
         'accepted_at',
+        'expires_at',
     ];
 
     protected $casts = [
         'accepted_at' => 'datetime',
+        'expires_at' => 'datetime',
         'role' => AccountRole::class,
     ];
 
@@ -34,6 +36,8 @@ class Invitation extends Model
             if (blank($invitation->token)) {
                 $invitation->token = Str::random(40);
             }
+
+            $invitation->expires_at ??= now()->addDays(config('invitations.expiry_days'));
 
             if (blank($invitation->invited_by_id) && Auth::check()) {
                 $invitation->invited_by_id = Auth::id();
@@ -49,6 +53,14 @@ class Invitation extends Model
     public function isPending(): bool
     {
         return $this->accepted_at === null;
+    }
+
+    /**
+     * Whether the invitation ran past its expiry. A null expiry never expires.
+     */
+    public function isExpired(): bool
+    {
+        return $this->expires_at !== null && $this->expires_at->isPast();
     }
 
     public function isAccepted(): bool

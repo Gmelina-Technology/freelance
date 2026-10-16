@@ -2,12 +2,14 @@
 
 namespace App\Filament\App\Clusters\Settings\Resources\Invitations\Pages;
 
+use App\Enums\AccountRole;
 use App\Filament\App\Clusters\Settings\Resources\Invitations\InvitationResource;
-use App\Mail\InvitationEmail;
 use App\Models\Invitation;
+use App\Services\InvitationService;
 use Filament\Actions\CreateAction;
+use Filament\Facades\Filament;
 use Filament\Resources\Pages\ListRecords;
-use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Auth;
 
 class ListInvitations extends ListRecords
 {
@@ -17,9 +19,12 @@ class ListInvitations extends ListRecords
     {
         return [
             CreateAction::make()
-                ->after(function (Invitation $record): void {
-                    Mail::to($record->email)->send(new InvitationEmail($record));
-                }),
+                ->using(fn (array $data, InvitationService $invitations): Invitation => $invitations->invite(
+                    Filament::getTenant(),
+                    Auth::user(),
+                    $data['email'],
+                    AccountRole::from($data['role']),
+                )),
         ];
     }
 }

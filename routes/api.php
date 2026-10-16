@@ -14,7 +14,7 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
-Route::middleware(['auth:sanctum', 'bind.account'])->group(function () {
+Route::middleware(['auth:sanctum', 'throttle:api', 'bind.account'])->group(function () {
     Route::get('/tasks', [TaskController::class, 'index']);
     Route::middleware('abilities:tasks:write')->group(function () {
         Route::post('/tasks', [TaskController::class, 'store']);

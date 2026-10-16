@@ -4,9 +4,11 @@ use App\Enums\AccountRole;
 use App\Models\Account;
 use App\Models\Invitation;
 use App\Models\User;
+use App\Services\InvitationService;
 use Filament\Auth\Http\Responses\Contracts\LoginResponse;
 use Filament\Auth\Notifications\ResetPassword;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\URL;
@@ -164,9 +166,10 @@ it('refuses a logged-in user whose email does not match the invitation', functio
 it('refuses links that are not signed or were tampered with', function () {
     $invitation = invite($this->account, 'new.person@example.com');
 
-    $this->get(route('invitations.accept', ['token' => $invitation->token]))->assertForbidden();
-    $this->get(acceptUrl($invitation).'x')->assertForbidden();
+    $this->get(route('invitations.accept', ['token' => $invitation->token]))->assertRedirect(route('filament.app.auth.login'));
+    $this->get(acceptUrl($invitation).'x')->assertRedirect(route('filament.app.auth.login'));
 
+    $this->assertGuest();
     expect(User::where('email', 'new.person@example.com')->exists())->toBeFalse()
         ->and($invitation->fresh()->isPending())->toBeTrue();
 });
@@ -178,4 +181,127 @@ it('never logs anyone in from the invitation flow', function () {
         expect($source)->not->toContain('Auth::login')
             ->and($source)->not->toContain("Hash::make('password')");
     }
+});
+
+/**
+ * Assert the warning every unusable link ends in is queued for the login page.
+ */
+function expectInvalidInvitationNotice(): void
+{
+    $titles = collect(session('filament.notifications'))->pluck('title')->all();
+
+    expect($titles)->toContain('Invitation expired or no longer valid');
+}
+
+it('sends every unusable link to the login page with the same warning and changes nothing', function (Closure $makeUrl) {
+    $invitation = invite($this->account, 'new.person@example.com');
+
+    $this->get($makeUrl($invitation))->assertRedirect(route('filament.app.auth.login'));
+
+    $this->assertGuest();
+    expectInvalidInvitationNotice();
+    expect(User::where('email', 'new.person@example.com')->exists())->toBeFalse()
+        ->and($invitation->fresh()->isPending())->toBeTrue();
+})->with([
+    'expired column with a valid signature' => [function (Invitation $invitation): string {
+        $invitation->forceFill(['expires_at' => now()->subMinute()])->save();
+
+        return acceptUrl($invitation);
+    }],
+    'unsigned link' => [fn (Invitation $invitation): string => route('invitations.accept', ['token' => $invitation->token])],
+    'tampered link' => [fn (Invitation $invitation): string => acceptUrl($invitation).'x'],
+    'expired signature' => [function (Invitation $invitation): string {
+        $url = acceptUrl($invitation);
+        test()->travel(8)->days();
+
+        return $url;
+    }],
+]);
+
+it('gives an unknown or revoked token the same outcome as a bad signature', function () {
+    $invitation = invite($this->account, 'new.person@example.com');
+    $revokedUrl = acceptUrl($invitation);
+    $invitation->delete();
+
+    $unknownUrl = URL::temporarySignedRoute('invitations.accept', now()->addDays(7), ['token' => 'no-such-token']);
+
+    $this->get($revokedUrl)->assertRedirect(route('filament.app.auth.login'));
+    expectInvalidInvitationNotice();
+
+    $this->get($unknownUrl)->assertRedirect(route('filament.app.auth.login'));
+    $this->get(route('invitations.accept', ['token' => 'no-such-token']))->assertRedirect(route('filament.app.auth.login'));
+    $this->assertGuest();
+});
+
+it('checks the signature before looking the invitation up', function () {
+    $invitation = invite($this->account, 'new.person@example.com');
+
+    $unsignedKnown = $this->get(route('invitations.accept', ['token' => $invitation->token]));
+    $unsignedUnknown = $this->get(route('invitations.accept', ['token' => 'no-such-token']));
+
+    expect($unsignedKnown->getTargetUrl())->toBe($unsignedUnknown->getTargetUrl())
+        ->and($unsignedKnown->getStatusCode())->toBe($unsignedUnknown->getStatusCode());
+});
+
+it('still shows the accepted notice for an expired invitation that was already accepted', function () {
+    $invitation = Invitation::factory()->for($this->account)->accepted()->expired()->create(['email' => 'done@example.com']);
+
+    $this->get(acceptUrl($invitation))->assertRedirect(route('filament.app.auth.login'));
+
+    $titles = collect(session('filament.notifications'))->pluck('title')->all();
+
+    expect($titles)->toContain('Invitation already accepted')
+        ->and($titles)->not->toContain('Invitation expired or no longer valid');
+});
+
+it('gives new invitations the configured expiry and accepts them until then', function () {
+    Notification::fake();
+    $this->travelTo(now()->startOfSecond());
+    $invitation = invite($this->account, 'fresh@example.com');
+
+    expect($invitation->expires_at->equalTo(now()->addDays(7)))->toBeTrue()
+        ->and($invitation->isExpired())->toBeFalse();
+
+    $url = URL::temporarySignedRoute('invitations.accept', $invitation->expires_at, ['token' => $invitation->token]);
+
+    $this->travel(6)->days();
+    $this->get($url)->assertRedirect(route('filament.app.auth.login'));
+
+    expect($invitation->fresh()->isAccepted())->toBeTrue();
+});
+
+it('refuses to accept an expired pending invitation at the service level', function () {
+    $invitation = Invitation::factory()->for($this->account)->expired()->create(['email' => 'late@example.com']);
+    $user = User::factory()->create(['email' => 'late@example.com']);
+    $newInvitee = Invitation::factory()->for($this->account)->expired()->create();
+
+    expect(fn () => app(InvitationService::class)->acceptForUser($invitation, $user))
+        ->toThrow(DomainException::class, 'expired')
+        ->and(fn () => app(InvitationService::class)->acceptAsNewUser($newInvitee))
+        ->toThrow(DomainException::class, 'expired');
+
+    expect($invitation->fresh()->isPending())->toBeTrue()
+        ->and($user->getAccountRole($this->account))->toBeNull();
+});
+
+function runInvitationExpiryBackfill(): void
+{
+    (require database_path('migrations/2026_10_15_000002_backfill_invitations_expires_at.php'))->up();
+}
+
+it('backfills expiry for invitations created before it existed and leaves the rest alone', function () {
+    $legacy = Invitation::factory()->for($this->account)->create();
+    DB::table('invitations')->where('id', $legacy->id)->update(['expires_at' => null, 'created_at' => '2026-10-01 10:00:00']);
+
+    $noCreatedAt = Invitation::factory()->for($this->account)->create();
+    DB::table('invitations')->where('id', $noCreatedAt->id)->update(['expires_at' => null, 'created_at' => null]);
+
+    $filled = Invitation::factory()->for($this->account)->create(['expires_at' => '2027-01-01 00:00:00']);
+
+    runInvitationExpiryBackfill();
+    runInvitationExpiryBackfill();
+
+    expect($legacy->fresh()->expires_at->toDateTimeString())->toBe('2026-10-08 10:00:00')
+        ->and($noCreatedAt->fresh()->expires_at)->not->toBeNull()
+        ->and($filled->fresh()->expires_at->toDateTimeString())->toBe('2027-01-01 00:00:00');
 });

@@ -20,9 +20,13 @@ class CommentAttachmentDownloadController extends Controller
             abort(404);
         }
 
-        return Storage::disk($commentAttachment->disk)->download(
+        $response = Storage::disk($commentAttachment->disk)->download(
             $commentAttachment->path,
             $commentAttachment->original_name,
         );
+
+        $response->headers->set('X-Content-Type-Options', 'nosniff');
+
+        return $response;
     }
 }
