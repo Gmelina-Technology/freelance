@@ -110,7 +110,7 @@ Route strictly by these rules, checking the relevant counter in `state.json` bef
 ## 6. Developer → Validation → QA Engineer
 
 - Dispatch to `developer` with `design.md` + `spec.md` (standard/major tier) or `plan.md` + `spec.md` (trivial tier).
-- **Validator** — deterministic, run yourself, do not delegate to a subagent: `vendor/bin/pint --dirty --format agent`, then `php artisan test --compact` (narrow with `--filter` if the build only touches part of the app). This is this project's actual Validator, per its own CLAUDE.md/Boost conventions.
+- **Validator** — deterministic, run yourself, do not delegate to a subagent: `vendor/bin/pint --dirty --format agent`, then only the tests related to the change (`php artisan test --compact <test files>` or `--filter=<name>`). Never run the full suite locally — it is slow and memory-hungry, and the PR's CI (`.github/workflows/test.yml`) runs all of it. This is this project's actual Validator, per its own CLAUDE.md/Boost conventions.
   - Fails → increment `developer_qa_count`. `< 3` → back to `developer` with the failure. `>= 3` → §7.
 - Dispatch to `qa-engineer` — a **separate** Task-tool call from the Developer's, not a continuation of it — with `spec.md`'s acceptance criteria.
   - Fails, `developer_qa_count < 3` → increment, back to `developer` with the QA Engineer's finding.

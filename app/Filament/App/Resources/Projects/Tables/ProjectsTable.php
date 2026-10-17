@@ -2,9 +2,11 @@
 
 namespace App\Filament\App\Resources\Projects\Tables;
 
+use App\Enums\ProjectStatus;
 use App\Filament\App\Resources\Projects\Actions\GenerateInvoiceAction;
 use Filament\Facades\Filament;
 use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Grouping\Group;
 use Filament\Tables\Table;
 use Illuminate\Contracts\Database\Eloquent\Builder;
@@ -35,6 +37,10 @@ class ProjectsTable
                     ->dateTime()
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
+            ])
+            ->filters([
+                SelectFilter::make('status')
+                    ->options(ProjectStatus::class),
             ])
             ->recordActions([
                 GenerateInvoiceAction::handle(),
