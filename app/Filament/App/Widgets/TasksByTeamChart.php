@@ -4,6 +4,7 @@ namespace App\Filament\App\Widgets;
 
 use App\Enums\TaskStatus;
 use App\Models\Task;
+use App\Models\User;
 use Filament\Facades\Filament;
 use Filament\Widgets\ChartWidget;
 use Illuminate\Support\Facades\Auth;
@@ -25,28 +26,21 @@ class TasksByTeamChart extends ChartWidget
     {
         $accountId = Filament::getTenant()->id;
 
-        $tasks = Task::where('account_id', $accountId)
+        $taskCounts = Task::where('account_id', $accountId)
             ->whereIn('status', [TaskStatus::OPEN, TaskStatus::IN_PROGRESS])
-            ->with('assignee')
-            ->get()
+            ->toBase()
+            ->selectRaw('assigned_user_id, COUNT(*) as aggregate')
             ->groupBy('assigned_user_id')
-            ->map(function ($group) {
-                return $group->count();
-            });
+            ->pluck('aggregate', 'assigned_user_id');
 
-        $assigneeNames = Task::where('account_id', $accountId)
-            ->whereIn('status', [TaskStatus::OPEN, TaskStatus::IN_PROGRESS])
-            ->distinct('assigned_user_id')
-            ->with('assignee')
-            ->get()
-            ->pluck('assignee.name', 'assigned_user_id');
+        $assigneeNames = User::whereIn('id', $taskCounts->keys()->filter()->all())->pluck('name', 'id');
 
         $labels = [];
         $data = [];
 
-        foreach ($tasks as $userId => $count) {
+        foreach ($taskCounts as $userId => $count) {
             $labels[] = $assigneeNames[$userId] ?? 'Unassigned';
-            $data[] = $count;
+            $data[] = (int) $count;
         }
 
         return [

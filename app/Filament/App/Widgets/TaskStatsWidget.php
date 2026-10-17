@@ -24,19 +24,26 @@ class TaskStatsWidget extends BaseWidget
         $thisWeekStart = Carbon::now()->startOfWeek();
         $thisWeekEnd = Carbon::now()->endOfWeek();
 
-        $pendingTasks = Task::where('account_id', $accountId)
-            ->whereIn('status', [TaskStatus::OPEN, TaskStatus::IN_PROGRESS])
-            ->count();
+        $now = Carbon::now();
 
-        $tasksThisWeek = Task::where('account_id', $accountId)
-            ->whereBetween('due_date', [$thisWeekStart, $thisWeekEnd])
+        $counts = Task::where('account_id', $accountId)
             ->whereIn('status', [TaskStatus::OPEN, TaskStatus::IN_PROGRESS])
-            ->count();
+            ->toBase()
+            ->selectRaw(
+                'COUNT(*) as pending, '
+                .'COALESCE(SUM(CASE WHEN due_date BETWEEN ? AND ? THEN 1 ELSE 0 END), 0) as this_week, '
+                .'COALESCE(SUM(CASE WHEN due_date < ? THEN 1 ELSE 0 END), 0) as overdue',
+                [
+                    $thisWeekStart->toDateTimeString(),
+                    $thisWeekEnd->toDateTimeString(),
+                    $now->toDateTimeString(),
+                ]
+            )
+            ->first();
 
-        $overdueTasks = Task::where('account_id', $accountId)
-            ->where('due_date', '<', Carbon::now())
-            ->whereIn('status', [TaskStatus::OPEN, TaskStatus::IN_PROGRESS])
-            ->count();
+        $pendingTasks = (int) $counts->pending;
+        $tasksThisWeek = (int) $counts->this_week;
+        $overdueTasks = (int) $counts->overdue;
 
         return [
             Stat::make('Overdue Tasks', $overdueTasks)
