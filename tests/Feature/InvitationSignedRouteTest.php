@@ -14,13 +14,13 @@ beforeEach(function () {
 });
 
 /**
- * Title and body of the last queued notification.
+ * Title and body of the last notification queued since the previous call.
  *
  * @return array{title: string, body: string}
  */
 function lastNotice(): array
 {
-    $notice = collect(session('filament.notifications'))->last();
+    $notice = collect(pullFilamentNotifications())->last();
 
     return ['title' => $notice['title'], 'body' => $notice['body']];
 }
@@ -50,6 +50,6 @@ it('keeps the default 403 for signed routes outside the invitation flow', functi
     $this->get(route('filament.app.auth.password-reset.reset', ['email' => 'someone@example.com', 'token' => 'abc']))
         ->assertForbidden();
 
-    expect(collect(session('filament.notifications'))->pluck('title')->all())
+    expect(collect(pullFilamentNotifications())->pluck('title')->all())
         ->not->toContain('Invitation expired or no longer valid');
 });

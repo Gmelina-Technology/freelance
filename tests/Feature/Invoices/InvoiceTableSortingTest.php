@@ -128,6 +128,7 @@ it('lets the due date header override the default status order on the main table
     $draftMid = sortingInvoice($this, InvoiceStatus::Draft, '2026-05-01');
 
     Livewire::test(ListInvoices::class)
+        ->toggleAllTableColumns()
         ->sortTable('due_date')
         ->assertCanSeeTableRecords([$paidEarly, $draftMid, $overdueLate], inOrder: true);
 });
@@ -137,6 +138,7 @@ it('lets the issued at header override the default status order on the main tabl
     $paid = sortingInvoice($this, InvoiceStatus::Paid, '2026-01-01', '2026-01-01');
 
     Livewire::test(ListInvoices::class)
+        ->toggleAllTableColumns()
         ->sortTable('issued_at')
         ->assertCanSeeTableRecords([$paid, $overdue], inOrder: true);
 });

@@ -9,7 +9,7 @@
     ]
   },
   "resources/css/filament/admin/theme.css": {
-    "file": "assets/theme-D2-tBCI_.css",
+    "file": "assets/theme-BaSG37tT.css",
     "src": "resources/css/filament/app/theme.css",
     "isEntry": true,
     "name": "theme",
@@ -19,7 +19,7 @@
     ]
   },
   "resources/css/filament/app/theme.css": {
-    "file": "assets/theme-D2-tBCI_.css",
+    "file": "assets/theme-BaSG37tT.css",
     "src": "resources/css/filament/app/theme.css",
     "isEntry": true,
     "name": "theme",
