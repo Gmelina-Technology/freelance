@@ -188,7 +188,7 @@ it('never logs anyone in from the invitation flow', function () {
  */
 function expectInvalidInvitationNotice(): void
 {
-    $titles = collect(session('filament.notifications'))->pluck('title')->all();
+    $titles = collect(pullFilamentNotifications())->pluck('title')->all();
 
     expect($titles)->toContain('Invitation expired or no longer valid');
 }
@@ -248,7 +248,7 @@ it('still shows the accepted notice for an expired invitation that was already a
 
     $this->get(acceptUrl($invitation))->assertRedirect(route('filament.app.auth.login'));
 
-    $titles = collect(session('filament.notifications'))->pluck('title')->all();
+    $titles = collect(pullFilamentNotifications())->pluck('title')->all();
 
     expect($titles)->toContain('Invitation already accepted')
         ->and($titles)->not->toContain('Invitation expired or no longer valid');

@@ -9,6 +9,7 @@ use App\Models\Quote;
 use App\Models\QuoteItem;
 use App\Models\Unit;
 use App\Models\User;
+use Filament\Notifications\NotificationMailbox;
 use Laravel\Sanctum\PersonalAccessToken;
 use Tests\TestCase;
 
@@ -135,4 +136,18 @@ function actingAsToken(User $user, array $abilities = ['*'], ?Account $account =
     app('auth')->shouldUse('sanctum');
 
     return $token;
+}
+
+/**
+ * Pull the Filament notifications queued so far. Filament keeps them in a cache-backed
+ * mailbox addressed by the session, not in the session itself, and pulling empties it.
+ *
+ * @return array<int, array<string, mixed>>
+ */
+function pullFilamentNotifications(): array
+{
+    $mailbox = app(NotificationMailbox::class);
+    $mailbox->flush();
+
+    return $mailbox->pull();
 }
