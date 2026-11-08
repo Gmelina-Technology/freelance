@@ -2,12 +2,17 @@
 
 namespace App\Filament\App\Resources\Quotes\Schemas;
 
+use App\Models\Quote;
+use Filament\Actions\Action;
 use Filament\Forms\Components\Repeater\TableColumn;
 use Filament\Infolists\Components\RepeatableEntry;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Schemas\Components\Group;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
+use Filament\Support\Enums\Width;
+use Filament\Support\Icons\Heroicon;
+use Illuminate\Contracts\View\View;
 
 class QuoteInfolist
 {
@@ -72,7 +77,19 @@ class QuoteInfolist
                         TextEntry::make('notes')->label('Notes'),
                         TextEntry::make('attachment_path')->label('Custom attachment')
                             ->formatStateUsing(fn (string $state): string => basename($state))
-                            ->visible(fn ($record): bool => filled($record->attachment_path)),
+                            ->visible(fn ($record): bool => filled($record->attachment_path))
+                            ->afterContent(
+                                Action::make('previewAttachment')
+                                    ->label('Preview')
+                                    ->icon(Heroicon::Eye)
+                                    ->link()
+                                    ->visible(fn (Quote $record): bool => $record->hasStoredAttachment())
+                                    ->modalHeading('Custom attachment')
+                                    ->modalSubmitAction(false)
+                                    ->modalCancelActionLabel('Close')
+                                    ->modalWidth(Width::FiveExtraLarge)
+                                    ->modalContent(fn (Quote $record): View => view('filament.quotes.attachment-preview', ['quote' => $record])),
+                            ),
                     ])->columnSpan(2),
 
             ])->columns([
