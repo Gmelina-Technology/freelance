@@ -9,6 +9,7 @@ use App\Filament\App\Resources\Quotes\Pages\ViewQuote;
 use App\Mail\QuoteMailSent;
 use App\Models\EmailTemplate;
 use App\Models\User;
+use Filament\Actions\Testing\TestAction;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Mail;
@@ -130,6 +131,56 @@ it('shows the attachment name on the quote view page', function () {
 
     Livewire::test(ViewQuote::class, ['record' => $quote->id])
         ->assertSee('mine.pdf');
+});
+
+it('previews the attachment in a modal from the quote view page for any status', function (QuoteStatus $status) {
+    ['owner' => $owner, 'account' => $account, 'quote' => $quote] = attachmentScenario(flag: true, withUpload: true);
+    $quote->update(['status' => $status]);
+    bindFilamentTenant($owner, $account);
+
+    $action = TestAction::make('previewAttachment')->schemaComponent('attachment_path');
+
+    Livewire::test(ViewQuote::class, ['record' => $quote->id])
+        ->assertActionVisible($action)
+        ->mountAction($action)
+        ->assertMountedActionModalSee(route('quotes.attachment.preview', $quote), escape: false);
+})->with([QuoteStatus::Draft, QuoteStatus::Accepted]);
+
+it('hides the attachment preview when the stored file is missing from disk', function () {
+    ['owner' => $owner, 'account' => $account, 'quote' => $quote] = attachmentScenario(flag: true, withUpload: true);
+    Storage::disk('local')->delete('quote-attachments/mine.pdf');
+    bindFilamentTenant($owner, $account);
+
+    Livewire::test(ViewQuote::class, ['record' => $quote->id])
+        ->assertSee('mine.pdf')
+        ->assertActionDoesNotExist(TestAction::make('previewAttachment')->schemaComponent('attachment_path'));
+});
+
+it('streams the uploaded pdf inline from the attachment route even when the flag is off', function () {
+    ['quote' => $quote, 'owner' => $owner] = attachmentScenario(flag: false, withUpload: true);
+
+    $response = $this->actingAs($owner)->get(route('quotes.attachment.preview', $quote));
+
+    $response->assertOk();
+    expect($response->headers->get('Content-Type'))->toContain('application/pdf')
+        ->and($response->headers->get('Content-Disposition'))->toStartWith('inline')
+        ->and($response->streamedContent())->toBe('%PDF-1.4 uploaded');
+});
+
+it('returns not found from the attachment route when nothing is stored', function () {
+    ['quote' => $quote, 'owner' => $owner] = attachmentScenario(flag: true, withUpload: false);
+
+    $this->actingAs($owner)->get(route('quotes.attachment.preview', $quote))->assertNotFound();
+});
+
+it('forbids the attachment route to other accounts and members', function () {
+    ['quote' => $quote, 'account' => $account] = attachmentScenario(flag: true, withUpload: true);
+
+    $member = User::factory()->create();
+    $account->users()->syncWithoutDetaching([$member->id => ['role' => AccountRole::Member->value]]);
+
+    $this->actingAs(User::factory()->create())->get(route('quotes.attachment.preview', $quote))->assertForbidden();
+    $this->actingAs($member)->get(route('quotes.attachment.preview', $quote))->assertForbidden();
 });
 
 it('deletes the stored file when the quote is deleted', function () {

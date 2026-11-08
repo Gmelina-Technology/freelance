@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\CommentAttachmentDownloadController;
 use App\Http\Controllers\InvitationAcceptanceController;
+use App\Http\Controllers\QuoteAttachmentPreviewController;
 use App\Http\Controllers\QuotePreviewController;
 use Illuminate\Support\Facades\Route;
 
@@ -21,3 +22,7 @@ Route::middleware(['auth'])
 Route::middleware(['auth'])
     ->get('/quotes/{quote}/preview.pdf', QuotePreviewController::class)
     ->name('quotes.preview');
+
+Route::middleware(['auth'])
+    ->get('/quotes/{quote}/attachment.pdf', QuoteAttachmentPreviewController::class)
+    ->name('quotes.attachment.preview');
