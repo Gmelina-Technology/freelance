@@ -11,7 +11,7 @@
         "axios": "^1.15.2",
         "concurrently": "^10.0.5",
         "laravel-vite-plugin": "^2.0.0",
-        "tailwindcss": "^4.2.2",
+        "tailwindcss": "^4.3.5",
         "vite": "^7.3.3"
     }
 }
